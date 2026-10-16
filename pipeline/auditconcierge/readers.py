@@ -2,6 +2,8 @@
 
 Supported formats: ERP export / bank statement / vendor master (CSV), Excel (.xlsx),
 PDF with a text layer, and scanned images (Tesseract OCR, Thai + English).
+Fields of text documents come from an LLM when one is configured (extract_llm.py), else from
+the templates below, which are also the fallback when no model answers.
 """
 import csv
 import hashlib
@@ -102,29 +104,33 @@ def _ocr_lines(path: Path):
     return lines
 
 
-def _text_record(path: Path, rel: str, fmt: str):
+def _text_record(path: Path, rel: str, fmt: str, llm=None):
     lines = _pdf_lines(path) if fmt == "pdf" else _ocr_lines(path)
     text = "\n".join(l[0] for l in lines)
-    method = "ocr" if fmt == "scan" else "template"
+    got = llm.extract(lines, "ocr" if fmt == "scan" else "llm", rel) if llm else None
+    kind, fields = got if got else _template_fields(lines, text, "ocr" if fmt == "scan" else "template")
+    if kind is None:
+        return None
+    doc_no = fields.get(f"{kind}_no")
+    rid = doc_no.value if doc_no is not None and doc_no.clear and doc_no.verified else f"{Path(rel).stem} (อ่านเลขที่ไม่ชัด)"
+    return Record(rid, kind, rel, fmt, sha256(path), text, fields)
+
+
+def _template_fields(lines, text, method):
     title = lines[0][0] if lines else ""
     flat = squash(text)
     invoice_hits = sum(k in flat for k in ("ใบกำกับภาษี", "ใบแจ้งหนี้", "ยอดรวมทั้งสิ้น", "ภาษีมูลค่าเพิ่ม"))
     if "สัญญา" in title:
-        fields = _apply_template(lines, CONTRACT_PATTERNS, method)
-        kind, key = "contract", "contract_no"
+        kind, fields = "contract", _apply_template(lines, CONTRACT_PATTERNS, method)
     elif invoice_hits >= 2:  # keyword vote, so one OCR misread in the title does not hide an invoice
-        fields = _apply_template(lines, INVOICE_PATTERNS, method)
-        kind, key = "invoice", "invoice_no"
+        kind, fields = "invoice", _apply_template(lines, INVOICE_PATTERNS, method)
     elif "นโยบาย" in title:
-        fields = _apply_template(lines, {"policy_no": (r"เลขที่\s*(\S+)", str)}, method)
-        kind, key = "policy", "policy_no"
+        kind, fields = "policy", _apply_template(lines, {"policy_no": (r"เลขที่\s*(\S+)", str)}, method)
     else:
-        return None
+        return None, {}
     for f in fields.values():
         f.verified = verify(f.quote, text)
-    doc_no = fields.get(key)
-    rid = doc_no.value if doc_no is not None and doc_no.clear else f"{Path(rel).stem} (อ่านเลขที่ไม่ชัด)"
-    return Record(rid, kind, rel, fmt, sha256(path), text, fields)
+    return kind, fields
 
 
 # ---------- tables ----------
@@ -216,8 +222,8 @@ def _read_xlsx(path: Path, rel: str):
     return recs
 
 
-def read_engagement(folder: Path):
-    """Return (records, unreadable_files)."""
+def read_engagement(folder: Path, llm=None):
+    """Return (records, unreadable_files). llm: an extract_llm.LLMExtractor, or None for templates only."""
     records, skipped = [], []
     for path in sorted(p for p in folder.rglob("*") if p.is_file()):
         rel = path.relative_to(folder).as_posix()
@@ -229,7 +235,7 @@ def read_engagement(folder: Path):
         elif ext == ".xlsx":
             records += _read_xlsx(path, rel)
         elif ext in (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff"):
-            rec = _text_record(path, rel, "pdf" if ext == ".pdf" else "scan")
+            rec = _text_record(path, rel, "pdf" if ext == ".pdf" else "scan", llm)
             if rec:
                 records.append(rec)
             else:
