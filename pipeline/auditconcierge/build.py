@@ -89,7 +89,7 @@ def build(folder: Path, out: Path | None = None) -> dict:
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "engagement": {"client": cfg["client"], "tolerance_pct": cfg["tolerance_pct"], "materiality_thb": cfg["materiality_thb"],
-                       "synthetic": True},
+                       "synthetic": cfg.get("synthetic", True)},
         "rules": [{k: v for k, v in r.items()} for r in cfg["rules"]],
         "vendors": [{k: v for k, v in v.items() if k not in ("keys", "account_token")} for v in book.vendors.values()],
         "files": [{"file": f, "sha256": next((r.sha256 for r in records if r.file == f), None),

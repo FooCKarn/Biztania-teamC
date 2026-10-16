@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Decision } from "../types";
 import type { Trail, TrailAction } from "../decisions";
+import { ROLE_LABEL } from "../api";
 
 interface Props {
   flagId: string;
@@ -39,8 +40,12 @@ export default function DecisionBox({ flagId, trail }: Props) {
     setReason(decision?.reason ?? "");
     setError(null);
   }, [flagId, decision]);
-  const who = initials.trim().toUpperCase();
-  const ok = reason.trim().length >= 5 && who.length >= 2 && !busy && trail.mode !== "loading";
+  // Engagement: the account signs. Demo: typed initials.
+  const signedIn = !!trail.actor;
+  const who = (trail.actor ?? initials).trim().toUpperCase();
+  const locked = !!trail.readOnly;
+  const canReview = !signedIn || trail.role === "reviewer" || trail.role === "manager";
+  const ok = reason.trim().length >= 5 && who.length >= 2 && !busy && trail.mode !== "loading" && !locked;
   const history = trail.events.filter((e) => e.target === flagId);
 
   const remember = (v: string) => {
@@ -64,10 +69,17 @@ export default function DecisionBox({ flagId, trail }: Props) {
     <section className="group" aria-label="ลงนาม">
       <h3 className="group-title">ลงนามกระดาษทำการ</h3>
       <div className="group-body signoff">
-        <label className="field-row">
-          <span>ชื่อย่อของคุณ</span>
-          <input value={initials} onChange={(e) => remember(e.target.value)} maxLength={4} placeholder="เช่น SK" aria-label="ชื่อย่อผู้ลงนาม" />
-        </label>
+        {signedIn ? (
+          <p className="muted small">
+            ลงนามในชื่อ <b>{trail.actor}</b> ({ROLE_LABEL[trail.role ?? ""] ?? trail.role}) จากบัญชีที่เข้าสู่ระบบ
+            {locked && " · Engagement ปิดแล้ว ดูได้อย่างเดียว"}
+          </p>
+        ) : (
+          <label className="field-row">
+            <span>ชื่อย่อของคุณ</span>
+            <input value={initials} onChange={(e) => remember(e.target.value)} maxLength={4} placeholder="เช่น SK" aria-label="ชื่อย่อผู้ลงนาม" />
+          </label>
+        )}
 
         <div className="step">
           <span className={"step-dot" + (decision ? " done" : "")} aria-hidden>
@@ -85,7 +97,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
                 </span>{" "}
                 <button
                   className="link"
-                  disabled={busy}
+                  disabled={busy || locked}
                   onClick={() => needWho() && run({ action: "reopen", target: flagId, actor: who })}
                   title="ประวัติเดิมยังอยู่ใน Audit Trail"
                 >
@@ -110,7 +122,9 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   <button className="btn" disabled={!ok} onClick={() => prepare("not_issue")}>
                     ไม่เป็นประเด็น
                   </button>
-                  {!ok && !busy && <span className="muted small">ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร</span>}
+                  {!ok && !busy && !locked && (
+                    <span className="muted small">{signedIn ? "ใส่เหตุผลอย่างน้อย 5 ตัวอักษร" : "ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร"}</span>
+                  )}
                 </div>
               </>
             )}
@@ -130,7 +144,11 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   {" "}
                   · {decision.review.by} · {when(decision.review.at)}
                 </span>{" "}
-                <button className="link" disabled={busy} onClick={() => needWho() && run({ action: "unreview", target: flagId, actor: who })}>
+                <button
+                  className="link"
+                  disabled={busy || locked || !canReview}
+                  onClick={() => needWho() && run({ action: "unreview", target: flagId, actor: who })}
+                >
                   ยกเลิก
                 </button>
               </p>
@@ -138,12 +156,13 @@ export default function DecisionBox({ flagId, trail }: Props) {
               <div className="row">
                 <button
                   className="btn filled"
-                  disabled={who.length < 2 || samePerson || busy}
+                  disabled={who.length < 2 || samePerson || busy || locked || !canReview}
                   onClick={() => run({ action: "review", target: flagId, actor: who })}
                 >
                   ลงนามสอบทาน
                 </button>
                 {samePerson && <span className="muted small">ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ</span>}
+                {!canReview && !samePerson && <span className="muted small">ต้องเป็นผู้สอบทานหรือ Manager ของ Engagement นี้</span>}
               </div>
             ) : (
               <p className="muted small">รอผู้จัดทำลงนามก่อน</p>
@@ -183,7 +202,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
           {trail.mode === "server"
             ? `บันทึกเป็น Audit Trail บน server (เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้) · ${
                 trail.chainOk ? "สายแฮชครบ ไม่ถูกแก้ไข" : "สายแฮชไม่ตรง ควรตรวจว่ามีการแก้ข้อมูล"
-              } · workspace ${trail.workspace}`
+              }${trail.actor ? "" : ` · workspace ${trail.workspace}`}`
             : trail.mode === "local"
               ? "เดโม: ยังไม่ได้เชื่อมฐานข้อมูล จึงบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น"
               : "กำลังโหลด Audit Trail…"}

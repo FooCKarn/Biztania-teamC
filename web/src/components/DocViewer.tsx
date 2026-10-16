@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Doc } from "../types";
 import { FIELD_LABEL, KIND_LABEL } from "../labels";
+import { useSource } from "../source";
 
 /** One value to tick on the source: a box on a page image, or a row (and cell) in a table file. */
 export interface Mark {
@@ -50,6 +51,7 @@ const sameValue = (cell: string, v: Mark["value"]) =>
 // accounts stay masked (and page images have account-like lines blacked out by the pipeline).
 export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
   const activeRef = useRef<HTMLElement | null>(null);
+  const { base, engagement } = useSource();
   const active = marks.find((m) => m.active);
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
@@ -72,7 +74,13 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
   );
 
   let body;
-  if (doc.page) {
+  if (doc.page && engagement?.purged) {
+    body = (
+      <p className="viewer-hint">
+        ไฟล์ต้นฉบับและภาพหน้าเอกสารถูกลบแล้วตามนโยบายลบไฟล์หลังปิดงาน ข้อความอ้างอิง (quote) ยังอยู่ในกระดาษทำการ
+      </p>
+    );
+  } else if (doc.page) {
     const { width: W, height: H } = doc.page;
     const pct = (b: number[]) => ({
       left: `${(b[0] / W) * 100}%`,
@@ -82,7 +90,7 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
     });
     body = (
       <div className="page">
-        <img src={`data/${doc.page.image}`} alt={`หน้าเอกสาร ${doc.file}`} width={W} height={H} />
+        <img src={`${base}${doc.page.image}`} alt={`หน้าเอกสาร ${doc.file}`} width={W} height={H} />
         {marks
           .filter((m) => m.doc === doc.id && m.bbox)
           .map((m) => (
@@ -191,7 +199,7 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
                   {String(f.value)}
                   {!f.clear && <span className="pill warn">? อ่านไม่ชัด ไม่นำไปใช้ตรวจ</span>}
                   {!f.verified && <span className="pill warn">ไม่พบข้อความต้นฉบับ</span>}
-                  {f.crop && <img src={`data/${f.crop}`} alt={`ภาพจากไฟล์สแกน: ${f.quote}`} className="crop" />}
+                  {f.crop && !engagement?.purged && <img src={`${base}${f.crop}`} alt={`ภาพจากไฟล์สแกน: ${f.quote}`} className="crop" />}
                 </td>
                 <td className="muted small">{f.locator}</td>
               </tr>

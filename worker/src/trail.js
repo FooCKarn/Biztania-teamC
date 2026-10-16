@@ -10,9 +10,10 @@
 // current state (review needs a different person than the preparer), and the evidence reference,
 // which it copies from the published conflict_map.json (doc, file, locator, file SHA-256).
 //
-// Demo safety: no file uploads, small JSON bodies only, a daily write limit per IP, and each
-// browser gets its own workspace unless a ?ws= link is shared. Initials are self-declared
-// until there is a login; the trail records them as typed.
+// Public demo (/api/trail): small JSON bodies only, a daily write limit per IP, and each browser
+// gets its own workspace unless a ?ws= link is shared; initials there are typed, not verified.
+// Engagements (/api/engagements/<id>/trail, engagements.js) use the same log with workspace
+// "eng-<id>" and the signed-in user's initials, so the signer is the account, not a typed name.
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
@@ -167,47 +168,16 @@ async function loadMap(request, env) {
 const notConfigured = () =>
   json({ configured: false, error: "ยังไม่ได้ผูกฐานข้อมูล Audit Trail (D1 binding AUDIT_DB)" }, 503);
 
-export async function handleTrailGet(request, env) {
-  if (!env.AUDIT_DB) return notConfigured();
-  const url = new URL(request.url);
-  const ws = url.searchParams.get("ws") || "";
-  const run = url.searchParams.get("run") || "";
-  if (!WS_RE.test(ws) || !run) return json({ error: "ต้องระบุ ws และ run" }, 400);
-  await ensureSchema(env.AUDIT_DB);
-  const events = await loadEvents(env.AUDIT_DB, ws, run);
-  return json({ configured: true, events: events.map(publicEvent), state: replay(events), chain_ok: await verifyChain(events) });
+// The trail of one workspace + run: events, replayed state, and whether the hash chain holds.
+export async function readTrail(db, ws, run) {
+  await ensureSchema(db);
+  const events = await loadEvents(db, ws, run);
+  return { configured: true, events: events.map(publicEvent), state: replay(events), chain_ok: await verifyChain(events) };
 }
 
-export async function handleTrailPost(request, env) {
-  if (!env.AUDIT_DB) return notConfigured();
-  const text = await request.text();
-  if (text.length > MAX_BODY) return json({ error: "คำขอใหญ่เกินไป" }, 413);
-  let body;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return json({ error: "รูปแบบคำขอไม่ถูกต้อง" }, 400);
-  }
-  const ws = String(body.ws || "");
-  const run = String(body.run || "");
-  if (!WS_RE.test(ws)) return json({ error: "workspace ไม่ถูกต้อง" }, 400);
-  const a = {
-    action: String(body.action || ""),
-    target: String(body.target || ""),
-    value: body.value == null ? null : String(body.value),
-    reason: String(body.reason || "").trim(),
-    actor: String(body.actor || "").trim().toUpperCase(),
-  };
-
-  const map = await loadMap(request, env);
-  if (!map) return json({ error: "ไม่พบผลการตรวจ (conflict_map.json)" }, 500);
-  if (run !== map.run_id) return json({ error: "ผลการตรวจถูกรันใหม่แล้ว กรุณาโหลดหน้าใหม่" }, 409);
-
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
-  if (!(await takeWrite(env, ip, new Date().toISOString().slice(0, 10))))
-    return json({ error: "บันทึกครบโควตาของเดโมวันนี้แล้ว" }, 429);
-
-  const db = env.AUDIT_DB;
+// Appends one event after checking it against the current state. Used by the public demo
+// (workspace per browser, typed initials) and by engagements (workspace = engagement, signer = login).
+export async function appendEvent(db, ws, run, map, a) {
   await ensureSchema(db);
   // Two writers can read the same last seq; the primary key rejects the second insert, so re-read and retry.
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -242,3 +212,48 @@ export async function handleTrailPost(request, env) {
   }
   return json({ error: "มีผู้อื่นบันทึกพร้อมกัน กรุณาลองใหม่" }, 409);
 }
+
+export async function handleTrailGet(request, env) {
+  if (!env.AUDIT_DB) return notConfigured();
+  const url = new URL(request.url);
+  const ws = url.searchParams.get("ws") || "";
+  const run = url.searchParams.get("run") || "";
+  if (!WS_RE.test(ws) || !run) return json({ error: "ต้องระบุ ws และ run" }, 400);
+  if (ws.startsWith("eng-")) return json({ error: "workspace นี้ต้องเข้าสู่ระบบ" }, 403); // engagements use their own route
+  return json(await readTrail(env.AUDIT_DB, ws, run));
+}
+
+export async function handleTrailPost(request, env) {
+  if (!env.AUDIT_DB) return notConfigured();
+  const text = await request.text();
+  if (text.length > MAX_BODY) return json({ error: "คำขอใหญ่เกินไป" }, 413);
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return json({ error: "รูปแบบคำขอไม่ถูกต้อง" }, 400);
+  }
+  const ws = String(body.ws || "");
+  const run = String(body.run || "");
+  if (!WS_RE.test(ws)) return json({ error: "workspace ไม่ถูกต้อง" }, 400);
+  if (ws.startsWith("eng-")) return json({ error: "workspace นี้ต้องเข้าสู่ระบบ" }, 403);
+  const a = parseAction(body, String(body.actor || ""));
+
+  const map = await loadMap(request, env);
+  if (!map) return json({ error: "ไม่พบผลการตรวจ (conflict_map.json)" }, 500);
+  if (run !== map.run_id) return json({ error: "ผลการตรวจถูกรันใหม่แล้ว กรุณาโหลดหน้าใหม่" }, 409);
+
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  if (!(await takeWrite(env, ip, new Date().toISOString().slice(0, 10))))
+    return json({ error: "บันทึกครบโควตาของเดโมวันนี้แล้ว" }, 429);
+
+  return appendEvent(env.AUDIT_DB, ws, run, map, a);
+}
+
+export const parseAction = (body, actor) => ({
+  action: String(body.action || ""),
+  target: String(body.target || ""),
+  value: body.value == null ? null : String(body.value),
+  reason: String(body.reason || "").trim(),
+  actor: actor.trim().toUpperCase(),
+});

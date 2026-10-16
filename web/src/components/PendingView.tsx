@@ -24,11 +24,13 @@ export default function PendingView({ data, docs, trail }: { data: ConflictMap; 
   const picked = trail.pairs;
   const [error, setError] = useState<string | null>(null);
   const pick = async (doc: string, cand: string) => {
-    let actor = "";
-    try {
-      actor = (localStorage.getItem("ac-initials") ?? "").trim().toUpperCase();
-    } catch {
-      /* ignore */
+    let actor = trail.actor ?? "";
+    if (!actor) {
+      try {
+        actor = (localStorage.getItem("ac-initials") ?? "").trim().toUpperCase();
+      } catch {
+        /* ignore */
+      }
     }
     if (actor.length < 2) return setError("ใส่ชื่อย่อในช่องลงนามของหน้า ควรตรวจ ก่อนยืนยันคู่");
     setError(await trail.act({ action: "pair", target: `pair:${doc}`, value: cand, actor }));

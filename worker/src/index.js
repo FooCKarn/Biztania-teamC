@@ -2,14 +2,25 @@
 //  - GET  /*        → static web app (web/dist) via the ASSETS binding
 //  - POST /api/ask  → question about the results, answered by Gemini from conflict_map.json only
 //  - GET/POST /api/trail → append-only Audit Trail of sign-offs and decisions (D1, see trail.js)
+//  - /api/auth/*, /api/users*      → login, sessions, accounts (auth.js)
+//  - /api/engagements*             → engagements, team roles, encrypted uploads, pipeline runs,
+//                                    results and their Audit Trail (engagements.js)
+//  - /api/internal/*               → callbacks from the Python pipeline host, HMAC-signed
+//  - cron                          → deletes raw files 90 days after an engagement closes
 //
 // Safety rules for the demo:
 //  - The Gemini key lives only here (secret GEMINI_API_KEY); the browser never sees it.
-//  - There is no upload endpoint: the model only ever sees the published synthetic results.
+//  - The public demo has no upload: there the model only sees the published synthetic results.
+//    Uploaded engagements get Q&A only when marked synthetic (until the AI provider is switched),
+//    and only from that engagement's results, for its members.
 //  - Per-IP and total daily limits keep the free tier from being drained.
 //  - The model is told to point at items worth checking, never to declare fraud.
 
 import { handleTrailGet, handleTrailPost } from "./trail.js";
+import { HttpError } from "./http.js";
+import { handleAuth, handleUsers, requireUser } from "./auth.js";
+import { handleEngagements, handleInternal, loadEngagementMap, purgeExpired } from "./engagements.js";
+import { ensureAppSchema } from "./schema.js";
 
 const MAX_QUESTION = 300;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
@@ -159,18 +170,44 @@ export async function askGemini(env, question, ctx, fetchImpl = fetch, now = Dat
 }
 
 export async function handleAsk(request, env, fetchImpl = fetch) {
-  let question;
+  let body;
   try {
-    question = String((await request.json()).question || "").trim();
+    body = await request.json();
   } catch {
     return json({ answer: "รูปแบบคำขอไม่ถูกต้อง" }, 400);
   }
+  const question = String(body.question || "").trim();
   if (!question) return json({ answer: "กรุณาพิมพ์คำถาม" }, 400);
   if (question.length > MAX_QUESTION) return json({ answer: `คำถามยาวเกิน ${MAX_QUESTION} ตัวอักษร` }, 400);
 
-  const res = await env.ASSETS.fetch(new Request(new URL("/data/conflict_map.json", request.url)));
-  if (!res.ok) return json({ answer: "ไม่พบผลการตรวจ (conflict_map.json)" }, 500);
-  const ctx = buildContext(await res.json());
+  let map;
+  if (body.engagement) {
+    // An engagement's own results, for its members, and only while its data is synthetic.
+    if (!env.AUDIT_DB) return json({ answer: "ยังไม่ได้ผูกฐานข้อมูล" }, 503);
+    await ensureAppSchema(env);
+    let user;
+    try {
+      user = await requireUser(request, env);
+    } catch (e) {
+      return json({ answer: e.message }, e.status || 401);
+    }
+    const id = String(body.engagement);
+    const row = await env.AUDIT_DB.prepare(
+      "SELECT e.synthetic FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?2 WHERE e.id = ?1",
+    )
+      .bind(id, user.id)
+      .first();
+    if (!row) return json({ answer: "คุณไม่ได้อยู่ในทีมของ Engagement นี้" }, 403);
+    if (!row.synthetic) return json({ answer: "ปิดการถาม AI สำหรับข้อมูลจริง จนกว่าจะเปลี่ยนผู้ให้บริการ AI ตามสัญญาข้อมูล" }, 403);
+    if (!/^[a-f0-9]{12}$/.test(String(body.run || ""))) return json({ answer: "ต้องระบุ run" }, 400);
+    map = await loadEngagementMap(env, id, String(body.run));
+    if (!map) return json({ answer: "ไม่พบผลการตรวจ" }, 404);
+  } else {
+    const res = await env.ASSETS.fetch(new Request(new URL("/data/conflict_map.json", request.url)));
+    if (!res.ok) return json({ answer: "ไม่พบผลการตรวจ (conflict_map.json)" }, 500);
+    map = await res.json();
+  }
+  const ctx = buildContext(map);
 
   if (!env.GEMINI_API_KEY) return json(offlineAnswer(question, ctx));
 
@@ -187,6 +224,22 @@ export async function handleAsk(request, env, fetchImpl = fetch) {
   }
 }
 
+// Signed-in routes change state only with this header. A cross-site page cannot add it without a
+// CORS preflight, which this Worker never approves (on top of the SameSite=Strict cookie).
+const needsCsrfHeader = (request, path) =>
+  request.method !== "GET" && /^\/api\/(auth|users|engagements)/.test(path) && request.headers.get("x-ac-csrf") !== "1";
+
+async function route(request, env, path) {
+  if (/^\/api\/(auth|users|engagements|internal)/.test(path) && !env.AUDIT_DB)
+    return json({ error: "ยังไม่ได้ผูกฐานข้อมูล (D1 binding AUDIT_DB)" }, 503);
+  if (needsCsrfHeader(request, path)) return json({ error: "คำขอไม่ถูกต้อง (CSRF)" }, 403);
+  if (path.startsWith("/api/auth/")) return handleAuth(request, env, path);
+  if (path === "/api/users" || path.startsWith("/api/users/")) return handleUsers(request, env, path);
+  if (path === "/api/engagements" || path.startsWith("/api/engagements/")) return handleEngagements(request, env, path);
+  if (path.startsWith("/api/internal/")) return handleInternal(request, env, path);
+  return null;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -199,7 +252,23 @@ export default {
       if (request.method === "POST") return handleTrailPost(request, env);
       return json({ error: "ใช้ GET หรือ POST" }, 405);
     }
-    if (url.pathname.startsWith("/api/")) return json({ answer: "ไม่มีบริการนี้" }, 404);
+    if (url.pathname.startsWith("/api/")) {
+      try {
+        const res = await route(request, env, url.pathname);
+        if (res) return res;
+      } catch (e) {
+        if (e instanceof HttpError) return json({ error: e.message }, e.status);
+        console.error("api error", url.pathname, e?.stack || String(e));
+        return json({ error: "ระบบขัดข้อง กรุณาลองใหม่" }, 500);
+      }
+      return json({ answer: "ไม่มีบริการนี้", error: "ไม่มีบริการนี้" }, 404);
+    }
     return env.ASSETS.fetch(request);
+  },
+
+  // Daily (wrangler.jsonc "triggers"): delete raw files RETENTION_DAYS after an engagement closes.
+  async scheduled(event, env, ctx) {
+    if (!env.AUDIT_DB) return;
+    ctx.waitUntil(purgeExpired(env).then((r) => console.log("retention", JSON.stringify(r))));
   },
 };

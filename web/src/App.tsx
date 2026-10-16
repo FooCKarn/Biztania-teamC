@@ -1,113 +1,130 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ConflictMap } from "./types";
-import { useTrail } from "./decisions";
-import FlagsView from "./components/FlagsView";
-import PendingView from "./components/PendingView";
-import OverviewView from "./components/OverviewView";
-import AskBox from "./components/AskBox";
-import { exportCsv, exportTrailCsv } from "./export";
+import { useCallback, useEffect, useState } from "react";
+import Workspace from "./Workspace";
+import { DEMO, engagementSource, type Source } from "./source";
+import { api, type User, type EngagementDetail } from "./api";
+import Login, { ChangePassword } from "./pages/Login";
+import Engagements from "./pages/Engagements";
+import EngagementPage from "./pages/EngagementPage";
+import Users from "./pages/Users";
 
-type Tab = "flags" | "pending" | "overview";
-
-export default function App() {
-  const [data, setData] = useState<ConflictMap | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("flags");
-  const [focusTxn, setFocusTxn] = useState<string | null>(null);
-
+// Hash routes, so the static build works on any host:
+//   #/demo                 public demo (synthetic sample, no login)
+//   #/                     engagements of the signed-in user (or the login page)
+//   #/e/<id>               one engagement: files, runs, team, activity
+//   #/e/<id>/review        the review workspace on that engagement's latest results
+//   #/users                accounts (firm admin)
+//   #/account              change password
+function useHash() {
+  const [hash, setHash] = useState(location.hash.replace(/^#/, "") || "/");
   useEffect(() => {
-    fetch("data/conflict_map.json")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(setData)
-      .catch((e) => setError(String(e)));
+    const on = () => setHash(location.hash.replace(/^#/, "") || "/");
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
   }, []);
+  return hash;
+}
 
-  const trail = useTrail(data?.run_id ?? "none");
-  const { decisions } = trail;
-  const docs = useMemo(() => new Map((data?.documents ?? []).map((d) => [d.id, d])), [data]);
+type Me = { state: "loading" } | { state: "no-server" } | { state: "out"; setupNeeded: boolean } | { state: "in"; user: User };
 
+const Back = ({ to, label }: { to: string; label: string }) => (
+  <a className="back" href={to}>
+    ‹ {label}
+  </a>
+);
+
+function EngagementReview({ id }: { id: string }) {
+  const [src, setSrc] = useState<Source | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    api<EngagementDetail>(`api/engagements/${id}`)
+      .then((d) => {
+        if (!d.current_run) return setError("ยังไม่มีผลการตรวจ ให้อัปโหลดเอกสารแล้วกดประมวลผลก่อน");
+        setSrc(engagementSource(id, d.current_run, d.engagement));
+      })
+      .catch((e) => setError(e.message));
+  }, [id]);
   if (error)
     return (
-      <div className="empty">
-        โหลด conflict_map.json ไม่ได้ ({error}) ให้รัน pipeline ก่อน: <code>python -m auditconcierge samples/tg_company --out ../web/public/data</code>
+      <div className="shell">
+        <Back to={`#/e/${id}`} label="Engagement" />
+        <p className="empty">{error}</p>
       </div>
     );
-  if (!data) return <div className="empty">กำลังโหลด…</div>;
+  if (!src) return <div className="empty">กำลังโหลด…</div>;
+  return <Workspace source={src} back={<Back to={`#/e/${id}`} label="Engagement" />} />;
+}
 
-  const prepared = data.flags.filter((f) => decisions[f.id]).length;
-  const reviewed = data.flags.filter((f) => decisions[f.id]?.review).length;
-  const TABS: [Tab, string, number | null][] = [
-    ["flags", "ควรตรวจ", data.flags.length],
-    ["pending", "รอจับคู่", data.pending.length],
-    ["overview", "ภาพรวม", null],
-  ];
+export default function App() {
+  const hash = useHash();
+  const [me, setMe] = useState<Me>({ state: "loading" });
+  const refresh = useCallback(() => {
+    fetch("api/auth/me")
+      .then(async (r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        const b = await r.json();
+        setMe(b.user ? { state: "in", user: b.user } : { state: "out", setupNeeded: b.setup_needed });
+      })
+      .catch(() => setMe({ state: "no-server" }));
+  }, []);
+  useEffect(refresh, [refresh]);
 
-  return (
-    <div className="app">
-      <div className="synthetic" role="note">
-        ข้อมูลทั้งหมดในเดโมนี้เป็นข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง
+  // The public demo needs no account; old shared links (?ws=…) still open it.
+  if (hash === "/demo" || new URLSearchParams(location.search).has("ws")) return <Workspace source={DEMO} back={<Back to="#/" label="หน้าหลัก" />} />;
+  if (me.state === "loading") return <div className="empty">กำลังโหลด…</div>;
+  if (me.state === "no-server") return <Workspace source={DEMO} />; // static hosting: demo only
+  if (me.state === "out") return <Login setupNeeded={me.setupNeeded} onDone={refresh} />;
+
+  const user = me.user;
+  if (user.must_change)
+    return (
+      <div className="shell narrow">
+        <ChangePassword first onDone={refresh} />
       </div>
-      <header className="navbar">
-        <div className="brand">
-          <span className="app-icon" aria-hidden>
-            ✓
-          </span>
-          <div>
-            <h1>AI Audit Concierge</h1>
-            <p className="sub">
-              {data.engagement.client} · {data.coverage.files} ไฟล์ · {data.documents.length} เอกสาร · {data.transactions.length} ธุรกรรม
-            </p>
-          </div>
-        </div>
-        <nav className="segmented" role="tablist" aria-label="มุมมอง">
-          {TABS.map(([id, label, n]) => (
-            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
-              {label}
-              {n != null && <span className="count">{n}</span>}
-            </button>
-          ))}
-        </nav>
-        <div className="nav-actions">
-          <div className="progress" title="ลงนามผู้จัดทำ / ผู้สอบทาน">
-            <span>
-              จัดทำ <b>{prepared}</b>/{data.flags.length}
-            </span>
-            <span>
-              สอบทาน <b>{reviewed}</b>/{data.flags.length}
-            </span>
-          </div>
-          <button className="btn" onClick={() => exportCsv(data, decisions)}>
-            Export Excel
-          </button>
-          <button className="btn" disabled={!trail.events.length} onClick={() => exportTrailCsv(data.run_id, trail.events)}>
-            Audit Trail
-          </button>
-        </div>
-      </header>
-      <p className="principle">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
-
-      <main>
-        {tab === "flags" && (
-          <FlagsView data={data} docs={docs} trail={trail} focusTxn={focusTxn} />
+    );
+  const logout = async () => {
+    await api("api/auth/logout", { method: "POST" }).catch(() => undefined);
+    location.hash = "/";
+    refresh();
+  };
+  const bar = (
+    <div className="topbar">
+      <a className="brand-link" href="#/">
+        <span className="app-icon" aria-hidden>
+          ✓
+        </span>
+        AI Audit Concierge
+      </a>
+      <div className="row">
+        <span className="muted small">
+          {user.name} ({user.initials})
+        </span>
+        {user.firm_role === "admin" && (
+          <a className="btn" href="#/users">
+            ผู้ใช้
+          </a>
         )}
-        {tab === "pending" && <PendingView data={data} docs={docs} trail={trail} />}
-        {tab === "overview" && (
-          <OverviewView
-            data={data}
-            docs={docs}
-            openTxn={(id) => {
-              setFocusTxn(id);
-              setTab("flags");
-            }}
-          />
-        )}
-      </main>
+        <a className="btn" href="#/account">
+          รหัสผ่าน
+        </a>
+        <button className="btn" onClick={logout}>
+          ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  );
 
-      <AskBox />
-      <footer className="foot">
-        run {data.run_id} · schema {data.schema_version} · tolerance {data.engagement.tolerance_pct}% · materiality{" "}
-        {data.engagement.materiality_thb.toLocaleString("th-TH")} ฿
-      </footer>
+  const review = hash.match(/^\/e\/([a-f0-9]{12})\/review$/);
+  if (review) return <EngagementReview id={review[1]} />;
+  const eng = hash.match(/^\/e\/([a-f0-9]{12})$/);
+  let page;
+  if (eng) page = <EngagementPage id={eng[1]} me={user} />;
+  else if (hash === "/users" && user.firm_role === "admin") page = <Users me={user} />;
+  else if (hash === "/account") page = <ChangePassword onDone={() => (location.hash = "/")} />;
+  else page = <Engagements />;
+  return (
+    <div className="shell">
+      {bar}
+      {page}
     </div>
   );
 }
