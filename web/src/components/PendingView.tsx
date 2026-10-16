@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ConflictMap, Doc } from "../types";
-import { FIELD_LABEL, KIND_LABEL } from "../labels";
+import { fieldLabel, KIND_LABEL } from "../labels";
 
 const SHOW = ["date", "vendor_name", "description", "subtotal", "amount", "total"];
 
@@ -9,7 +9,7 @@ function Facts({ doc }: { doc: Doc }) {
     <dl className="facts">
       {SHOW.filter((k) => doc.fields[k]).map((k) => (
         <div key={k}>
-          <dt>{FIELD_LABEL[k] ?? k}</dt>
+          <dt>{fieldLabel(k)}</dt>
           <dd>{typeof doc.fields[k].value === "number" ? doc.fields[k].value!.toLocaleString("th-TH") : String(doc.fields[k].value)}</dd>
         </div>
       ))}

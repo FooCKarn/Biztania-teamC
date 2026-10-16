@@ -8,11 +8,11 @@ from collections import defaultdict
 from .matching import within
 
 BASE_SEVERITY = {"PARTY_MISMATCH": 5, "DUPLICATE": 5, "POLICY_BREACH": 4, "VALUE_MISMATCH": 4,
-                 "MISSING_LINK": 3, "DATE_ORDER": 3, "TEXT_CONFLICT": 2}
+                 "MISSING_LINK": 3, "DATE_ORDER": 3, "CONTRACT_BREACH": 3, "TEXT_CONFLICT": 2}
 TITLES = {
     "VALUE_MISMATCH": "ยอดเงินไม่ตรงกัน", "PARTY_MISMATCH": "คู่ค้า/บัญชีรับเงินไม่ตรง", "DATE_ORDER": "ลำดับวันที่ผิดปกติ",
     "MISSING_LINK": "ไม่พบเอกสารที่ควรมี", "POLICY_BREACH": "ไม่เป็นไปตามกฎของบริษัท", "DUPLICATE": "อาจซ้ำซ้อน",
-    "TEXT_CONFLICT": "เงื่อนไขในเอกสารไม่ตรงกัน",
+    "TEXT_CONFLICT": "เงื่อนไขในเอกสารไม่ตรงกัน", "CONTRACT_BREACH": "ไม่เป็นไปตามสัญญา",
 }
 QUESTIONS = {
     "VALUE_MISMATCH": ["ขอเอกสารแก้ไข PO หรือใบลดหนี้ที่อธิบายส่วนต่าง", "ส่วนต่างนี้ได้รับอนุมัติโดยใคร"],
@@ -22,6 +22,7 @@ QUESTIONS = {
     "POLICY_BREACH": ["มีหลักฐานการอนุมัติจาก Manager นอกระบบหรือไม่", "ผู้อนุมัติมีอำนาจอนุมัติวงเงินนี้หรือไม่"],
     "DUPLICATE": ["Invoice นี้ถูกบันทึกและจ่ายซ้ำหรือไม่", "ขอหลักฐานการคืนเงินหรือหักกลบ ถ้ามีการจ่ายซ้ำ"],
     "TEXT_CONFLICT": ["เงื่อนไขใดเป็นข้อตกลงที่ใช้จริง", "มีการแก้ไขสัญญาหรือข้อตกลงใหม่หรือไม่"],
+    "CONTRACT_BREACH": ["มีการแก้ไขหรือต่ออายุสัญญาหรือไม่", "ใครอนุมัติรายการที่ไม่เป็นไปตามสัญญา"],
 }
 
 
@@ -38,15 +39,15 @@ class Flagger:
     def __init__(self, cfg):
         self.cfg, self.flags, self.links = cfg, [], []
 
-    def add(self, typ, docs, summary, evidence, *, match="sure", at_stake=0.0, basis=None, txn=None):
+    def add(self, typ, docs, summary, evidence, *, match="sure", at_stake=0.0, basis=None, txn=None, title=None, questions=None):
         evidence = [e for e in evidence if e]
         sev = BASE_SEVERITY[typ] + (1 if at_stake >= self.cfg["materiality_thb"] else 0) - (1 if match == "likely" else 0)
         self.flags.append({
-            "id": f"F{len(self.flags) + 1:03d}", "type": typ, "title": TITLES[typ], "summary": summary,
+            "id": f"F{len(self.flags) + 1:03d}", "type": typ, "title": title or TITLES[typ], "summary": summary,
             "docs": docs, "transaction": txn, "evidence": evidence, "basis": basis or "rule",
             "match": match, "at_stake_thb": round(at_stake, 2), "severity": sev,
             "risk": "สูง" if sev >= 5 else "กลาง" if sev >= 3 else "ต่ำ",
-            "status": "ควรตรวจ", "questions": QUESTIONS[typ],
+            "status": "ควรตรวจ", "questions": questions or QUESTIONS[typ],
             "ocr": any(e["method"] == "ocr" for e in evidence),
         })
 
@@ -171,15 +172,9 @@ def run_rules(records, links, txns, book, cfg):
                            [ev(inv, "invoice_no"), ev(inv, "vendor_name"), ev(inv, "total")],
                            at_stake=inv.v("total", 0), txn=tid)
 
-    # ---- TEXT_CONFLICT: contract terms vs invoice terms (structured field, checked by code) ----
-    for c in (r for r in records if r.kind == "contract"):
-        for inv in (r for r in records if r.kind == "invoice" and r.vendor and r.vendor == c.vendor):
-            cd, idays = c.v("credit_days"), inv.v("credit_days")
-            if cd is not None and idays is not None and cd != idays:
-                tid = next((t["id"] for t in txns if inv.id in t["members"]), None)
-                fl.add("TEXT_CONFLICT", [c.id, inv.id], f"สัญญากำหนดเครดิต {cd} วัน แต่ {inv.id} ระบุ {idays} วัน",
-                       [ev(c, "credit_days", "เครดิตตามสัญญา"), ev(inv, "credit_days", "เครดิตใน Invoice")],
-                       at_stake=0, txn=tid)
+    # ---- contract terms vs invoices and payments (TEXT_CONFLICT, CONTRACT_BREACH, contract party) ----
+    from .contracts import run_contract_rules
+    run_contract_rules(fl, records, links, txns, book)
 
     fl.flags.sort(key=lambda f: (-f["severity"], -f["at_stake_thb"], f["id"]))
     return fl.flags, fl.links
