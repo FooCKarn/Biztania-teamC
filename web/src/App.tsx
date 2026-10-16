@@ -5,9 +5,11 @@ import FlagsView from "./components/FlagsView";
 import PendingView from "./components/PendingView";
 import OverviewView from "./components/OverviewView";
 import AskBox from "./components/AskBox";
-import { exportCsv } from "./export";
+import ReportView from "./report/ReportView";
+import { buildReport } from "./report/model";
+import { downloadWorkbook } from "./report/workbook";
 
-type Tab = "flags" | "pending" | "overview";
+type Tab = "flags" | "pending" | "overview" | "report";
 
 export default function App() {
   const [data, setData] = useState<ConflictMap | null>(null);
@@ -39,6 +41,7 @@ export default function App() {
     ["flags", "ควรตรวจ", data.flags.length],
     ["pending", "รอจับคู่", data.pending.length],
     ["overview", "ภาพรวม", null],
+    ["report", "รายงาน", null],
   ];
 
   return (
@@ -75,7 +78,7 @@ export default function App() {
               สอบทาน <b>{reviewed}</b>/{data.flags.length}
             </span>
           </div>
-          <button className="btn" onClick={() => exportCsv(data, decisions)}>
+          <button className="btn" onClick={() => downloadWorkbook(buildReport(data, decisions, "manager"), data)}>
             Export Excel
           </button>
         </div>
@@ -97,6 +100,7 @@ export default function App() {
             }}
           />
         )}
+        {tab === "report" && <ReportView data={data} decisions={decisions} />}
       </main>
 
       <AskBox />
