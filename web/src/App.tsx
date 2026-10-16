@@ -5,6 +5,7 @@ import FlagsView from "./components/FlagsView";
 import PendingView from "./components/PendingView";
 import OverviewView from "./components/OverviewView";
 import AskBox from "./components/AskBox";
+import { exportCsv } from "./export";
 
 type Tab = "flags" | "pending" | "overview";
 
@@ -32,36 +33,54 @@ export default function App() {
     );
   if (!data) return <div className="empty">กำลังโหลด…</div>;
 
-  const decided = data.flags.filter((f) => decisions[f.id]).length;
+  const prepared = data.flags.filter((f) => decisions[f.id]).length;
+  const reviewed = data.flags.filter((f) => decisions[f.id]?.review).length;
+  const TABS: [Tab, string, number | null][] = [
+    ["flags", "ควรตรวจ", data.flags.length],
+    ["pending", "รอจับคู่", data.pending.length],
+    ["overview", "ภาพรวม", null],
+  ];
 
   return (
     <div className="app">
       <div className="synthetic" role="note">
         ข้อมูลทั้งหมดในเดโมนี้เป็นข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง
       </div>
-      <header className="top">
-        <div>
-          <h1>AI Audit Concierge</h1>
-          <p className="sub">
-            {data.engagement.client} · ไฟล์ {data.coverage.files} · เอกสาร {data.documents.length} · ธุรกรรม{" "}
-            {data.transactions.length}
-          </p>
+      <header className="navbar">
+        <div className="brand">
+          <span className="app-icon" aria-hidden>
+            ✓
+          </span>
+          <div>
+            <h1>AI Audit Concierge</h1>
+            <p className="sub">
+              {data.engagement.client} · {data.coverage.files} ไฟล์ · {data.documents.length} เอกสาร · {data.transactions.length} ธุรกรรม
+            </p>
+          </div>
         </div>
-        <p className="principle">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
+        <nav className="segmented" role="tablist" aria-label="มุมมอง">
+          {TABS.map(([id, label, n]) => (
+            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
+              {label}
+              {n != null && <span className="count">{n}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="nav-actions">
+          <div className="progress" title="ลงนามผู้จัดทำ / ผู้สอบทาน">
+            <span>
+              จัดทำ <b>{prepared}</b>/{data.flags.length}
+            </span>
+            <span>
+              สอบทาน <b>{reviewed}</b>/{data.flags.length}
+            </span>
+          </div>
+          <button className="btn" onClick={() => exportCsv(data, decisions)}>
+            Export Excel
+          </button>
+        </div>
       </header>
-
-      <nav className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === "flags"} onClick={() => setTab("flags")}>
-          ควรตรวจ <span className="count">{data.flags.length}</span>
-          {decided > 0 && <span className="muted"> · ตัดสินแล้ว {decided}</span>}
-        </button>
-        <button role="tab" aria-selected={tab === "pending"} onClick={() => setTab("pending")}>
-          รอจับคู่ <span className="count">{data.pending.length}</span>
-        </button>
-        <button role="tab" aria-selected={tab === "overview"} onClick={() => setTab("overview")}>
-          ภาพรวม
-        </button>
-      </nav>
+      <p className="principle">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
 
       <main>
         {tab === "flags" && (

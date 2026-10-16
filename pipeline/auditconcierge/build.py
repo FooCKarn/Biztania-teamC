@@ -9,11 +9,12 @@ from pathlib import Path
 
 from .entities import VendorBook
 from .matching import link_all, resolve_vendors, transactions
+from .pages import locate, save_pages
 from .quotes import verify
 from .readers import read_engagement
 from .rules import run_rules
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"
 
 
 def load_remember(folder: Path, records):
@@ -44,12 +45,18 @@ def save_crops(folder: Path, records, out: Path):
 
 def build(folder: Path, out: Path | None = None) -> dict:
     records, skipped = read_engagement(folder)
+    boxes = save_pages(folder, records, out) if out else {}
     cfg = load_remember(folder, records)
     book = VendorBook([r for r in records if r.kind == "vendor"])
     resolve_vendors(records, book)
     links = link_all(records, cfg["tolerance_pct"])
     txns = transactions(records, links)
     flags, comparisons = run_rules(records, links, txns, book, cfg)
+    by_file = {r.file: r.file for r in records} | {r.id: r.file for r in records}
+    for f in flags:
+        for e in f["evidence"]:
+            if e["bbox"] is None and by_file.get(e["doc"]) in boxes:
+                e["bbox"] = locate(boxes[by_file[e["doc"]]], e["quote"])
     if out:
         save_crops(folder, records, out)
 

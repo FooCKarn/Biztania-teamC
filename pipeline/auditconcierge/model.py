@@ -10,7 +10,7 @@ class Field:
     verified: bool = False  # quote found verbatim in the source text
     method: str = "template"  # template | table | ocr
     clear: bool = True  # False = OCR/parse not confident: shown as "อ่านไม่ชัด", never used to raise a flag
-    bbox: list | None = None  # [left, top, width, height] in the scan image (OCR only)
+    bbox: list | None = None  # [left, top, width, height] in pixels of the scan, or of the PDF page image
 
 
 @dataclass
@@ -25,6 +25,7 @@ class Record:
     fields: dict = field(default_factory=dict)
     vendor: str | None = None  # resolved vendor_code
     vendor_how: str | None = None
+    page: dict | None = None  # {"image", "width", "height"}: page image for the web viewer (PDF/scan)
 
     def v(self, name, default=None):
         f = self.fields.get(name)

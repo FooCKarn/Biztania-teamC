@@ -1,4 +1,4 @@
-// Shape of pipeline/out conflict_map.json (schema_version 0.1).
+// Shape of pipeline/out conflict_map.json (schema_version 0.2).
 
 export type Risk = "สูง" | "กลาง" | "ต่ำ";
 export type MatchLevel = "sure" | "likely" | "pending" | "none";
@@ -27,6 +27,8 @@ export interface Doc {
   vendor_how: string | null;
   link: { parent: string | null; level: MatchLevel; why: string } | null;
   in_flags: boolean;
+  /** Page image for the document viewer (PDF/scan only); field and evidence bboxes are in its pixels. */
+  page?: { image: string; width: number; height: number } | null;
 }
 
 export interface Evidence {
@@ -122,8 +124,11 @@ export interface ConflictMap {
   };
 }
 
+/** Working-paper sign-off: the preparer gives the verdict and reason, a different person reviews. */
 export interface Decision {
   verdict: "issue" | "not_issue";
   reason: string;
   at: string;
+  by?: string;
+  review?: { by: string; at: string };
 }
