@@ -1,6 +1,6 @@
 {
  "schema_version": "0.2",
- "run_id": "5f31d5055e38",
+ "run_id": "2701b17c3cf3",
  "engagement": {
   "client": "บริษัท สยามออโต้พาร์ท จำกัด",
   "tolerance_pct": 1.0,
@@ -54,22 +54,27 @@
  "files": [
   {
    "file": "bank_statement_2026Q1.csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
+   "read": true
+  },
+  {
+   "file": "contract_bs.pdf",
+   "sha256": "aa494bc161c657f6eb2636d468f72d47f6db7dd0e3023443d480b36485929277",
    "read": true
   },
   {
    "file": "contract_tg.pdf",
-   "sha256": "6763117defb62d63c342107a1eea743c08567517a58ec6ff927de3e0f308a3e5",
+   "sha256": "4db34922dc1533ce1f08a387d5232ba5fe84b9daf95ebf3723dd31e26e2bd0b8",
    "read": true
   },
   {
    "file": "erp_po_export.csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "read": true
   },
   {
    "file": "goods_receipts.xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "read": true
   },
   {
@@ -99,27 +104,37 @@
   },
   {
    "file": "invoices/INV-TG-101.pdf",
-   "sha256": "e5f031d84b1bb3529ccfefd1d0822e0da70a7640f21dbcc6bc6ef2075d431efb",
+   "sha256": "6029706d4f9fbd7642dfcd87807e3ac8b3b972b57c74f50b976fa34ca99b6c60",
    "read": true
   },
   {
    "file": "invoices/INV-TG-102.pdf",
-   "sha256": "21dc1a3910ade1bb8db85ac271be8ded90cbbfcae379de4fc5376636a7dbefcc",
+   "sha256": "75f6dc7435a5a9d512c5d1269068c2120dd4acadaba0cdca7ad6d4be4c338a0c",
    "read": true
   },
   {
    "file": "invoices/INV-TG-103.pdf",
-   "sha256": "e504554720979795602784dc25cd6074359f3a8aab2f7a271e27960f25edbed8",
+   "sha256": "07920d0c91a11c9ac472cb8c13a26826d4a07279f75ae5c82f0e8aab1c41e6b1",
    "read": true
   },
   {
    "file": "invoices/INV-TG-105.pdf",
-   "sha256": "10ac83c015dc24d938c6c2ecb20d4df1c7c9df33366d4ecae6a2dad29005382c",
+   "sha256": "c66c9533a97db15f60e5099c60ca0120f9387307eb5f0a85ec3b69b68f7430ee",
    "read": true
   },
   {
    "file": "invoices/INV-TG-110.pdf",
-   "sha256": "af1307bc54345e58327409f2e9c68cc4d1be4405614ab12701b811266c859240",
+   "sha256": "94da12fd391780317aa5e46780c57e0c7735a127e7b0e1e37054d45b142a99ca",
+   "read": true
+  },
+  {
+   "file": "invoices/INV-TG-111.pdf",
+   "sha256": "85411f8f719d4cbc2c077962da4fb1334bfb7cbd6ac9cb35490163e55262bbf8",
+   "read": true
+  },
+  {
+   "file": "invoices/INV-TG-112.pdf",
+   "sha256": "ea4f21813fc5f6f354651930b448cb0605874087a9c92d3556cd3ba3317e5f96",
    "read": true
   },
   {
@@ -139,7 +154,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -212,7 +227,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -285,7 +300,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -358,7 +373,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -431,7 +446,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -504,7 +519,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -577,7 +592,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -650,7 +665,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -723,7 +738,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -785,7 +800,7 @@
    "kind": "payment",
    "file": "bank_statement_2026Q1.csv",
    "format": "csv",
-   "sha256": "86ed2c47ac9e59d1a3a6e9dd391be6e4251ef78c2b906174ffbeecfbbd323ac6",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
    "fields": {
     "date": {
      "name": "date",
@@ -854,11 +869,287 @@
    "in_flags": false
   },
   {
+   "id": "BANK-2026-02-14-INV-TG-111",
+   "kind": "payment",
+   "file": "bank_statement_2026Q1.csv",
+   "format": "csv",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
+   "fields": {
+    "date": {
+     "name": "date",
+     "value": "2026-02-14",
+     "quote": "2026-02-14,TRF INV-TG-111 TG COMPANY,69550.00,xxx-x-xx789-0",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "description": {
+     "name": "description",
+     "value": "TRF INV-TG-111 TG COMPANY",
+     "quote": "2026-02-14,TRF INV-TG-111 TG COMPANY,69550.00,xxx-x-xx789-0",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "amount": {
+     "name": "amount",
+     "value": 69550.0,
+     "quote": "2026-02-14,TRF INV-TG-111 TG COMPANY,69550.00,xxx-x-xx789-0",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "account": {
+     "name": "account",
+     "value": "xxx-x-xx789-0",
+     "quote": "2026-02-14,TRF INV-TG-111 TG COMPANY,69550.00,xxx-x-xx789-0",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "invoice_ref": {
+     "name": "invoice_ref",
+     "value": "INV-TG-111",
+     "quote": "2026-02-14,TRF INV-TG-111 TG COMPANY,69550.00,xxx-x-xx789-0",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    }
+   },
+   "vendor": "V001",
+   "vendor_how": "ชื่อตรงกับ Vendor master",
+   "page": null,
+   "link": {
+    "parent": "INV-TG-111",
+    "level": "sure",
+    "why": "รายการโอนระบุ INV-TG-111"
+   },
+   "in_flags": false
+  },
+  {
+   "id": "BANK-2026-03-26-INV-TG-112",
+   "kind": "payment",
+   "file": "bank_statement_2026Q1.csv",
+   "format": "csv",
+   "sha256": "57308e4fe794be145af02bdc4adca961a6bec58f873f037bbb1995822778d3b9",
+   "fields": {
+    "date": {
+     "name": "date",
+     "value": "2026-03-26",
+     "quote": "2026-03-26,TRF INV-TG-112 TG COMPANY,34240.00,xxx-x-xx789-0",
+     "locator": "แถว 13",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "description": {
+     "name": "description",
+     "value": "TRF INV-TG-112 TG COMPANY",
+     "quote": "2026-03-26,TRF INV-TG-112 TG COMPANY,34240.00,xxx-x-xx789-0",
+     "locator": "แถว 13",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "amount": {
+     "name": "amount",
+     "value": 34240.0,
+     "quote": "2026-03-26,TRF INV-TG-112 TG COMPANY,34240.00,xxx-x-xx789-0",
+     "locator": "แถว 13",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "account": {
+     "name": "account",
+     "value": "xxx-x-xx789-0",
+     "quote": "2026-03-26,TRF INV-TG-112 TG COMPANY,34240.00,xxx-x-xx789-0",
+     "locator": "แถว 13",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "invoice_ref": {
+     "name": "invoice_ref",
+     "value": "INV-TG-112",
+     "quote": "2026-03-26,TRF INV-TG-112 TG COMPANY,34240.00,xxx-x-xx789-0",
+     "locator": "แถว 13",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    }
+   },
+   "vendor": "V001",
+   "vendor_how": "ชื่อตรงกับ Vendor master",
+   "page": null,
+   "link": {
+    "parent": "INV-TG-112",
+    "level": "sure",
+    "why": "รายการโอนระบุ INV-TG-112"
+   },
+   "in_flags": true
+  },
+  {
+   "id": "CONTRACT-BS",
+   "kind": "contract",
+   "file": "contract_bs.pdf",
+   "format": "pdf",
+   "sha256": "aa494bc161c657f6eb2636d468f72d47f6db7dd0e3023443d480b36485929277",
+   "fields": {
+    "contract_no": {
+     "name": "contract_no",
+     "value": "CONTRACT-BS",
+     "quote": "สัญญาซื้อขายเหล็ก เลขที่ CONTRACT-BS",
+     "locator": "หน้า 1 บรรทัด 1",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      88,
+      329,
+      29
+     ],
+     "crop": null
+    },
+    "vendor_name": {
+     "name": "vendor_name",
+     "value": "บริษัท บางกอกสตีล แอนด์ เมทัล จำกัด",
+     "quote": "และ บริษัท บางกอกสตีล แอนด์ เมทัล จำกัด (ผู้ขาย)",
+     "locator": "หน้า 1 บรรทัด 3",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      178,
+      396,
+      29
+     ],
+     "crop": null
+    },
+    "tax_id": {
+     "name": "tax_id",
+     "value": "0105552000022",
+     "quote": "เลขประจำตัวผู้เสียภาษีของผู้ขาย 0105552000022",
+     "locator": "หน้า 1 บรรทัด 4",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      223,
+      386,
+      29
+     ],
+     "crop": null
+    },
+    "start_date": {
+     "name": "start_date",
+     "value": "2026-01-01",
+     "quote": "ข้อ 2 สัญญามีผลตั้งแต่วันที่ 2026-01-01 ถึงวันที่ 2026-03-20",
+     "locator": "หน้า 1 บรรทัด 5",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      268,
+      465,
+      29
+     ],
+     "crop": null
+    },
+    "end_date": {
+     "name": "end_date",
+     "value": "2026-03-20",
+     "quote": "ข้อ 2 สัญญามีผลตั้งแต่วันที่ 2026-01-01 ถึงวันที่ 2026-03-20",
+     "locator": "หน้า 1 บรรทัด 5",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      268,
+      465,
+      29
+     ],
+     "crop": null
+    },
+    "credit_days": {
+     "name": "credit_days",
+     "value": 30,
+     "quote": "ข้อ 5 ผู้ซื้อตกลงชำระเงินภายในกำหนดเครดิต 30 วัน นับจากวันที่ในใบกำกับภาษี",
+     "locator": "หน้า 1 บรรทัด 6",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      313,
+      620,
+      29
+     ],
+     "crop": null
+    },
+    "ceiling": {
+     "name": "ceiling",
+     "value": 80000.0,
+     "quote": "ข้อ 7 วงเงินรวมตลอดอายุสัญญาไม่เกิน 80,000.00 บาท (ไม่รวมภาษีมูลค่าเพิ่ม)",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      606,
+      29
+     ],
+     "crop": null
+    }
+   },
+   "vendor": "V002",
+   "vendor_how": "เลขประจำตัวผู้เสียภาษีตรงกับ Vendor master",
+   "page": {
+    "image": "pages/contract_bs.png",
+    "width": 893,
+    "height": 447
+   },
+   "link": null,
+   "in_flags": true
+  },
+  {
    "id": "CONTRACT-TG",
    "kind": "contract",
    "file": "contract_tg.pdf",
    "format": "pdf",
-   "sha256": "6763117defb62d63c342107a1eea743c08567517a58ec6ff927de3e0f308a3e5",
+   "sha256": "4db34922dc1533ce1f08a387d5232ba5fe84b9daf95ebf3723dd31e26e2bd0b8",
    "fields": {
     "contract_no": {
      "name": "contract_no",
@@ -892,10 +1183,10 @@
      ],
      "crop": null
     },
-    "credit_days": {
-     "name": "credit_days",
-     "value": 60,
-     "quote": "ข้อ 5 ผู้ซื้อตกลงชำระเงินภายในกำหนดเครดิต 60 วัน นับจากวันที่ในใบกำกับภาษี",
+    "tax_id": {
+     "name": "tax_id",
+     "value": "0105551000011",
+     "quote": "เลขประจำตัวผู้เสียภาษีของผู้ขาย 0105551000011",
      "locator": "หน้า 1 บรรทัด 3",
      "verified": true,
      "method": "template",
@@ -903,18 +1194,194 @@
      "bbox": [
       74,
       178,
+      385,
+      29
+     ],
+     "crop": null
+    },
+    "start_date": {
+     "name": "start_date",
+     "value": "2026-01-01",
+     "quote": "ข้อ 2 สัญญามีผลตั้งแต่วันที่ 2026-01-01 ถึงวันที่ 2026-12-31",
+     "locator": "หน้า 1 บรรทัด 4",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      223,
+      465,
+      29
+     ],
+     "crop": null
+    },
+    "end_date": {
+     "name": "end_date",
+     "value": "2026-12-31",
+     "quote": "ข้อ 2 สัญญามีผลตั้งแต่วันที่ 2026-01-01 ถึงวันที่ 2026-12-31",
+     "locator": "หน้า 1 บรรทัด 4",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      223,
+      465,
+      29
+     ],
+     "crop": null
+    },
+    "credit_days": {
+     "name": "credit_days",
+     "value": 60,
+     "quote": "ข้อ 5 ผู้ซื้อตกลงชำระเงินภายในกำหนดเครดิต 60 วัน นับจากวันที่ในใบกำกับภาษี",
+     "locator": "หน้า 1 บรรทัด 5",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      268,
       620,
+      29
+     ],
+     "crop": null
+    },
+    "ceiling": {
+     "name": "ceiling",
+     "value": 600000.0,
+     "quote": "ข้อ 7 วงเงินรวมตลอดอายุสัญญาไม่เกิน 600,000.00 บาท (ไม่รวมภาษีมูลค่าเพิ่ม)",
+     "locator": "หน้า 1 บรรทัด 14",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      673,
+      616,
+      29
+     ],
+     "crop": null
+    },
+    "price:อะไหล่ระบบเบรก": {
+     "name": "price:อะไหล่ระบบเบรก",
+     "value": 2000.0,
+     "quote": "6.1 อะไหล่ระบบเบรก ราคาต่อหน่วย 2,000.00 บาท ต่อชุด",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      447,
+      29
+     ],
+     "crop": null
+    },
+    "price:อะไหล่ช่วงล่าง": {
+     "name": "price:อะไหล่ช่วงล่าง",
+     "value": 3000.0,
+     "quote": "6.2 อะไหล่ช่วงล่าง ราคาต่อหน่วย 3,000.00 บาท ต่อชุด",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      428,
+      29
+     ],
+     "crop": null
+    },
+    "price:น้ำมันเครื่อง": {
+     "name": "price:น้ำมันเครื่อง",
+     "value": 250.0,
+     "quote": "6.3 น้ำมันเครื่อง ราคาต่อหน่วย 250.00 บาท ต่อลิตร",
+     "locator": "หน้า 1 บรรทัด 9",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      448,
+      402,
+      29
+     ],
+     "crop": null
+    },
+    "price:กรองอากาศ": {
+     "name": "price:กรองอากาศ",
+     "value": 350.0,
+     "quote": "6.4 กรองอากาศ ราคาต่อหน่วย 350.00 บาท ต่อชิ้น",
+     "locator": "หน้า 1 บรรทัด 10",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      493,
+      393,
+      29
+     ],
+     "crop": null
+    },
+    "price:ยางรถยนต์": {
+     "name": "price:ยางรถยนต์",
+     "value": 2500.0,
+     "quote": "6.5 ยางรถยนต์ ราคาต่อหน่วย 2,500.00 บาท ต่อเส้น",
+     "locator": "หน้า 1 บรรทัด 11",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      538,
+      404,
+      29
+     ],
+     "crop": null
+    },
+    "price:หัวเทียน": {
+     "name": "price:หัวเทียน",
+     "value": 120.0,
+     "quote": "6.6 หัวเทียน ราคาต่อหน่วย 120.00 บาท ต่อชิ้น",
+     "locator": "หน้า 1 บรรทัด 12",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      583,
+      363,
+      29
+     ],
+     "crop": null
+    },
+    "price:ไส้กรองน้ำมัน": {
+     "name": "price:ไส้กรองน้ำมัน",
+     "value": 160.0,
+     "quote": "6.7 ไส้กรองน้ำมัน ราคาต่อหน่วย 160.00 บาท ต่อชิ้น",
+     "locator": "หน้า 1 บรรทัด 13",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      628,
+      406,
       29
      ],
      "crop": null
     }
    },
    "vendor": "V001",
-   "vendor_how": "ชื่อตรงกับ Vendor master",
+   "vendor_how": "เลขประจำตัวผู้เสียภาษีตรงกับ Vendor master",
    "page": {
     "image": "pages/contract_tg.png",
     "width": 893,
-    "height": 312
+    "height": 762
    },
    "link": null,
    "in_flags": true
@@ -924,7 +1391,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1026,7 +1493,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1128,7 +1595,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1230,7 +1697,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1332,7 +1799,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1434,7 +1901,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1536,7 +2003,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1638,7 +2105,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1740,7 +2207,7 @@
    "kind": "po",
    "file": "erp_po_export.csv",
    "format": "erp_csv",
-   "sha256": "5fe444c7fbca6651452bdbd3806fa5b027d0cc9e1806eb72cacdc4aff98dad02",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
    "fields": {
     "po_no": {
      "name": "po_no",
@@ -1838,11 +2305,215 @@
    "in_flags": false
   },
   {
+   "id": "PO-2026-010",
+   "kind": "po",
+   "file": "erp_po_export.csv",
+   "format": "erp_csv",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
+   "fields": {
+    "po_no": {
+     "name": "po_no",
+     "value": "PO-2026-010",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "date": {
+     "name": "date",
+     "value": "2026-01-12",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "vendor_code": {
+     "name": "vendor_code",
+     "value": "V001",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "vendor_name": {
+     "name": "vendor_name",
+     "value": "TG COMPANY CO.,LTD.",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "description": {
+     "name": "description",
+     "value": "หัวเทียน",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "amount": {
+     "name": "amount",
+     "value": 65000.0,
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "approved_by": {
+     "name": "approved_by",
+     "value": "วิภา ศรีสุข",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "approver_role": {
+     "name": "approver_role",
+     "value": "Manager",
+     "quote": "PO-2026-010,2026-01-12,V001,\"TG COMPANY CO.,LTD.\",หัวเทียน,65000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    }
+   },
+   "vendor": "V001",
+   "vendor_how": "รหัส vendor ใน ERP",
+   "page": null,
+   "link": null,
+   "in_flags": false
+  },
+  {
+   "id": "PO-2026-011",
+   "kind": "po",
+   "file": "erp_po_export.csv",
+   "format": "erp_csv",
+   "sha256": "3de75f6cb56f5b22c04de7e3a563f48bac5b7ae2760efce26d50580e97d41d88",
+   "fields": {
+    "po_no": {
+     "name": "po_no",
+     "value": "PO-2026-011",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "date": {
+     "name": "date",
+     "value": "2026-01-05",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "vendor_code": {
+     "name": "vendor_code",
+     "value": "V001",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "vendor_name": {
+     "name": "vendor_name",
+     "value": "TG COMPANY CO.,LTD.",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "description": {
+     "name": "description",
+     "value": "ไส้กรองน้ำมัน",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "amount": {
+     "name": "amount",
+     "value": 32000.0,
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "approved_by": {
+     "name": "approved_by",
+     "value": "วิภา ศรีสุข",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "approver_role": {
+     "name": "approver_role",
+     "value": "Manager",
+     "quote": "PO-2026-011,2026-01-05,V001,\"TG COMPANY CO.,LTD.\",ไส้กรองน้ำมัน,32000.00,วิภา ศรีสุข,Manager",
+     "locator": "แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    }
+   },
+   "vendor": "V001",
+   "vendor_how": "รหัส vendor ใน ERP",
+   "page": null,
+   "link": null,
+   "in_flags": false
+  },
+  {
    "id": "GR-2026-001",
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -1904,7 +2575,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -1966,7 +2637,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2028,7 +2699,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2090,7 +2761,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2152,7 +2823,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2214,7 +2885,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2276,7 +2947,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2338,7 +3009,7 @@
    "kind": "gr",
    "file": "goods_receipts.xlsx",
    "format": "xlsx",
-   "sha256": "588b089c8e17b0bf660288e31ff08295fa5e873f951449b6a91c0f0043591b1c",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
    "fields": {
     "gr_no": {
      "name": "gr_no",
@@ -2392,6 +3063,130 @@
     "parent": "PO-2026-009",
     "level": "sure",
     "why": "ใบรับของอ้างถึง PO-2026-009"
+   },
+   "in_flags": false
+  },
+  {
+   "id": "GR-2026-010",
+   "kind": "gr",
+   "file": "goods_receipts.xlsx",
+   "format": "xlsx",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
+   "fields": {
+    "gr_no": {
+     "name": "gr_no",
+     "value": "GR-2026-010",
+     "quote": "GR-2026-010 | 2026-01-15 | PO-2026-010 | 65000",
+     "locator": "ชีต Goods Receipts แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "date": {
+     "name": "date",
+     "value": "2026-01-15",
+     "quote": "GR-2026-010 | 2026-01-15 | PO-2026-010 | 65000",
+     "locator": "ชีต Goods Receipts แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "po_ref": {
+     "name": "po_ref",
+     "value": "PO-2026-010",
+     "quote": "GR-2026-010 | 2026-01-15 | PO-2026-010 | 65000",
+     "locator": "ชีต Goods Receipts แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "amount": {
+     "name": "amount",
+     "value": 65000.0,
+     "quote": "GR-2026-010 | 2026-01-15 | PO-2026-010 | 65000",
+     "locator": "ชีต Goods Receipts แถว 11",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    }
+   },
+   "vendor": null,
+   "vendor_how": null,
+   "page": null,
+   "link": {
+    "parent": "PO-2026-010",
+    "level": "sure",
+    "why": "ใบรับของอ้างถึง PO-2026-010"
+   },
+   "in_flags": false
+  },
+  {
+   "id": "GR-2026-011",
+   "kind": "gr",
+   "file": "goods_receipts.xlsx",
+   "format": "xlsx",
+   "sha256": "b256cccbfe9f5d6a645f69c83fb3cdf52594a3a50c87df7371d8123840b1f19c",
+   "fields": {
+    "gr_no": {
+     "name": "gr_no",
+     "value": "GR-2026-011",
+     "quote": "GR-2026-011 | 2026-01-08 | PO-2026-011 | 32000",
+     "locator": "ชีต Goods Receipts แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "date": {
+     "name": "date",
+     "value": "2026-01-08",
+     "quote": "GR-2026-011 | 2026-01-08 | PO-2026-011 | 32000",
+     "locator": "ชีต Goods Receipts แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "po_ref": {
+     "name": "po_ref",
+     "value": "PO-2026-011",
+     "quote": "GR-2026-011 | 2026-01-08 | PO-2026-011 | 32000",
+     "locator": "ชีต Goods Receipts แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    },
+    "amount": {
+     "name": "amount",
+     "value": 32000.0,
+     "quote": "GR-2026-011 | 2026-01-08 | PO-2026-011 | 32000",
+     "locator": "ชีต Goods Receipts แถว 12",
+     "verified": true,
+     "method": "table",
+     "clear": true,
+     "bbox": null,
+     "crop": null
+    }
+   },
+   "vendor": null,
+   "vendor_how": null,
+   "page": null,
+   "link": {
+    "parent": "PO-2026-011",
+    "level": "sure",
+    "why": "ใบรับของอ้างถึง PO-2026-011"
    },
    "in_flags": false
   },
@@ -2977,7 +3772,7 @@
     "level": "likely",
     "why": "Invoice ไม่ได้อ้าง PO แต่มี PO ของ vendor เดียวกันยอดใกล้กันเพียงใบเดียว (PO-2026-009)"
    },
-   "in_flags": false
+   "in_flags": true
   },
   {
    "id": "INV-NS-301",
@@ -3118,7 +3913,7 @@
    "kind": "invoice",
    "file": "invoices/INV-TG-101.pdf",
    "format": "pdf",
-   "sha256": "e5f031d84b1bb3529ccfefd1d0822e0da70a7640f21dbcc6bc6ef2075d431efb",
+   "sha256": "6029706d4f9fbd7642dfcd87807e3ac8b3b972b57c74f50b976fa34ca99b6c60",
    "fields": {
     "invoice_no": {
      "name": "invoice_no",
@@ -3204,13 +3999,13 @@
      "name": "subtotal",
      "value": 80000.0,
      "quote": "รวมเงิน 80,000.00 บาท",
-     "locator": "หน้า 1 บรรทัด 8",
+     "locator": "หน้า 1 บรรทัด 9",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      403,
+      448,
       184,
       29
      ],
@@ -3220,13 +4015,13 @@
      "name": "vat",
      "value": 5600.0,
      "quote": "ภาษีมูลค่าเพิ่ม 7% 5,600.00 บาท",
-     "locator": "หน้า 1 บรรทัด 9",
+     "locator": "หน้า 1 บรรทัด 10",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      448,
+      493,
       256,
       29
      ],
@@ -3236,13 +4031,13 @@
      "name": "total",
      "value": 85600.0,
      "quote": "ยอดรวมทั้งสิ้น 85,600.00 บาท",
-     "locator": "หน้า 1 บรรทัด 10",
+     "locator": "หน้า 1 บรรทัด 11",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      493,
+      538,
       234,
       29
      ],
@@ -3252,14 +4047,62 @@
      "name": "credit_days",
      "value": 60,
      "quote": "ครบกำหนดชำระ 60 วัน",
-     "locator": "หน้า 1 บรรทัด 11",
+     "locator": "หน้า 1 บรรทัด 12",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      538,
+      583,
       186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "อะไหล่ระบบเบรก",
+     "quote": "รายการ: อะไหล่ระบบเบรก จำนวน 40 ชุด ราคาต่อหน่วย 2,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      553,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 40.0,
+     "quote": "รายการ: อะไหล่ระบบเบรก จำนวน 40 ชุด ราคาต่อหน่วย 2,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      553,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 2000.0,
+     "quote": "รายการ: อะไหล่ระบบเบรก จำนวน 40 ชุด ราคาต่อหน่วย 2,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      553,
       29
      ],
      "crop": null
@@ -3270,7 +4113,7 @@
    "page": {
     "image": "pages/INV-TG-101.png",
     "width": 893,
-    "height": 627
+    "height": 672
    },
    "link": {
     "parent": "PO-2026-001",
@@ -3284,7 +4127,7 @@
    "kind": "invoice",
    "file": "invoices/INV-TG-102.pdf",
    "format": "pdf",
-   "sha256": "21dc1a3910ade1bb8db85ac271be8ded90cbbfcae379de4fc5376636a7dbefcc",
+   "sha256": "75f6dc7435a5a9d512c5d1269068c2120dd4acadaba0cdca7ad6d4be4c338a0c",
    "fields": {
     "invoice_no": {
      "name": "invoice_no",
@@ -3370,13 +4213,13 @@
      "name": "subtotal",
      "value": 150000.0,
      "quote": "รวมเงิน 150,000.00 บาท",
-     "locator": "หน้า 1 บรรทัด 8",
+     "locator": "หน้า 1 บรรทัด 9",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      403,
+      448,
       194,
       29
      ],
@@ -3386,13 +4229,13 @@
      "name": "vat",
      "value": 10500.0,
      "quote": "ภาษีมูลค่าเพิ่ม 7% 10,500.00 บาท",
-     "locator": "หน้า 1 บรรทัด 9",
+     "locator": "หน้า 1 บรรทัด 10",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      448,
+      493,
       266,
       29
      ],
@@ -3402,13 +4245,13 @@
      "name": "total",
      "value": 160500.0,
      "quote": "ยอดรวมทั้งสิ้น 160,500.00 บาท",
-     "locator": "หน้า 1 บรรทัด 10",
+     "locator": "หน้า 1 บรรทัด 11",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      493,
+      538,
       244,
       29
      ],
@@ -3418,14 +4261,62 @@
      "name": "credit_days",
      "value": 30,
      "quote": "ครบกำหนดชำระ 30 วัน",
-     "locator": "หน้า 1 บรรทัด 11",
+     "locator": "หน้า 1 บรรทัด 12",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      538,
+      583,
       186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "อะไหล่ช่วงล่าง",
+     "quote": "รายการ: อะไหล่ช่วงล่าง จำนวน 50 ชุด ราคาต่อหน่วย 3,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      533,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 50.0,
+     "quote": "รายการ: อะไหล่ช่วงล่าง จำนวน 50 ชุด ราคาต่อหน่วย 3,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      533,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 3000.0,
+     "quote": "รายการ: อะไหล่ช่วงล่าง จำนวน 50 ชุด ราคาต่อหน่วย 3,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      533,
       29
      ],
      "crop": null
@@ -3436,7 +4327,7 @@
    "page": {
     "image": "pages/INV-TG-102.png",
     "width": 893,
-    "height": 627
+    "height": 672
    },
    "link": {
     "parent": "PO-2026-002",
@@ -3450,7 +4341,7 @@
    "kind": "invoice",
    "file": "invoices/INV-TG-103.pdf",
    "format": "pdf",
-   "sha256": "e504554720979795602784dc25cd6074359f3a8aab2f7a271e27960f25edbed8",
+   "sha256": "07920d0c91a11c9ac472cb8c13a26826d4a07279f75ae5c82f0e8aab1c41e6b1",
    "fields": {
     "invoice_no": {
      "name": "invoice_no",
@@ -3536,13 +4427,13 @@
      "name": "subtotal",
      "value": 50000.0,
      "quote": "รวมเงิน 50,000.00 บาท",
-     "locator": "หน้า 1 บรรทัด 8",
+     "locator": "หน้า 1 บรรทัด 9",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      403,
+      448,
       184,
       29
      ],
@@ -3552,13 +4443,13 @@
      "name": "vat",
      "value": 3500.0,
      "quote": "ภาษีมูลค่าเพิ่ม 7% 3,500.00 บาท",
-     "locator": "หน้า 1 บรรทัด 9",
+     "locator": "หน้า 1 บรรทัด 10",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      448,
+      493,
       256,
       29
      ],
@@ -3568,13 +4459,13 @@
      "name": "total",
      "value": 53500.0,
      "quote": "ยอดรวมทั้งสิ้น 53,500.00 บาท",
-     "locator": "หน้า 1 บรรทัด 10",
+     "locator": "หน้า 1 บรรทัด 11",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      493,
+      538,
       234,
       29
      ],
@@ -3584,14 +4475,62 @@
      "name": "credit_days",
      "value": 60,
      "quote": "ครบกำหนดชำระ 60 วัน",
-     "locator": "หน้า 1 บรรทัด 11",
+     "locator": "หน้า 1 บรรทัด 12",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      538,
+      583,
       186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "น้ำมันเครื่อง",
+     "quote": "รายการ: น้ำมันเครื่อง จำนวน 200 ลิตร ราคาต่อหน่วย 250.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      517,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 200.0,
+     "quote": "รายการ: น้ำมันเครื่อง จำนวน 200 ลิตร ราคาต่อหน่วย 250.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      517,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 250.0,
+     "quote": "รายการ: น้ำมันเครื่อง จำนวน 200 ลิตร ราคาต่อหน่วย 250.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      517,
       29
      ],
      "crop": null
@@ -3602,7 +4541,7 @@
    "page": {
     "image": "pages/INV-TG-103.png",
     "width": 893,
-    "height": 627
+    "height": 672
    },
    "link": {
     "parent": "PO-2026-003",
@@ -3616,7 +4555,7 @@
    "kind": "invoice",
    "file": "invoices/INV-TG-105.pdf",
    "format": "pdf",
-   "sha256": "10ac83c015dc24d938c6c2ecb20d4df1c7c9df33366d4ecae6a2dad29005382c",
+   "sha256": "c66c9533a97db15f60e5099c60ca0120f9387307eb5f0a85ec3b69b68f7430ee",
    "fields": {
     "invoice_no": {
      "name": "invoice_no",
@@ -3702,13 +4641,13 @@
      "name": "subtotal",
      "value": 70000.0,
      "quote": "รวมเงิน 70,000.00 บาท",
-     "locator": "หน้า 1 บรรทัด 8",
+     "locator": "หน้า 1 บรรทัด 9",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      403,
+      448,
       184,
       29
      ],
@@ -3718,13 +4657,13 @@
      "name": "vat",
      "value": 4900.0,
      "quote": "ภาษีมูลค่าเพิ่ม 7% 4,900.00 บาท",
-     "locator": "หน้า 1 บรรทัด 9",
+     "locator": "หน้า 1 บรรทัด 10",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      448,
+      493,
       256,
       29
      ],
@@ -3734,13 +4673,13 @@
      "name": "total",
      "value": 74900.0,
      "quote": "ยอดรวมทั้งสิ้น 74,900.00 บาท",
-     "locator": "หน้า 1 บรรทัด 10",
+     "locator": "หน้า 1 บรรทัด 11",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      493,
+      538,
       234,
       29
      ],
@@ -3750,14 +4689,62 @@
      "name": "credit_days",
      "value": 60,
      "quote": "ครบกำหนดชำระ 60 วัน",
-     "locator": "หน้า 1 บรรทัด 11",
+     "locator": "หน้า 1 บรรทัด 12",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      538,
+      583,
       186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "กรองอากาศ",
+     "quote": "รายการ: กรองอากาศ จำนวน 200 ชิ้น ราคาต่อหน่วย 350.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      509,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 200.0,
+     "quote": "รายการ: กรองอากาศ จำนวน 200 ชิ้น ราคาต่อหน่วย 350.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      509,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 350.0,
+     "quote": "รายการ: กรองอากาศ จำนวน 200 ชิ้น ราคาต่อหน่วย 350.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      509,
       29
      ],
      "crop": null
@@ -3768,7 +4755,7 @@
    "page": {
     "image": "pages/INV-TG-105.png",
     "width": 893,
-    "height": 627
+    "height": 672
    },
    "link": {
     "parent": "PO-2026-005",
@@ -3782,7 +4769,7 @@
    "kind": "invoice",
    "file": "invoices/INV-TG-110.pdf",
    "format": "pdf",
-   "sha256": "af1307bc54345e58327409f2e9c68cc4d1be4405614ab12701b811266c859240",
+   "sha256": "94da12fd391780317aa5e46780c57e0c7735a127e7b0e1e37054d45b142a99ca",
    "fields": {
     "invoice_no": {
      "name": "invoice_no",
@@ -3852,13 +4839,13 @@
      "name": "subtotal",
      "value": 60000.0,
      "quote": "รวมเงิน 60,000.00 บาท",
-     "locator": "หน้า 1 บรรทัด 7",
+     "locator": "หน้า 1 บรรทัด 8",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      358,
+      403,
       184,
       29
      ],
@@ -3868,13 +4855,13 @@
      "name": "vat",
      "value": 4200.0,
      "quote": "ภาษีมูลค่าเพิ่ม 7% 4,200.00 บาท",
-     "locator": "หน้า 1 บรรทัด 8",
+     "locator": "หน้า 1 บรรทัด 9",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      403,
+      448,
       256,
       29
      ],
@@ -3884,13 +4871,13 @@
      "name": "total",
      "value": 64200.0,
      "quote": "ยอดรวมทั้งสิ้น 64,200.00 บาท",
-     "locator": "หน้า 1 บรรทัด 9",
+     "locator": "หน้า 1 บรรทัด 10",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      448,
+      493,
       234,
       29
      ],
@@ -3900,14 +4887,62 @@
      "name": "credit_days",
      "value": 60,
      "quote": "ครบกำหนดชำระ 60 วัน",
-     "locator": "หน้า 1 บรรทัด 10",
+     "locator": "หน้า 1 บรรทัด 11",
      "verified": true,
      "method": "template",
      "clear": true,
      "bbox": [
       74,
-      493,
+      538,
       186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "ยางรถยนต์",
+     "quote": "รายการ: ยางรถยนต์ จำนวน 24 เส้น ราคาต่อหน่วย 2,500.00 บาท",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      510,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 24.0,
+     "quote": "รายการ: ยางรถยนต์ จำนวน 24 เส้น ราคาต่อหน่วย 2,500.00 บาท",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      510,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 2500.0,
+     "quote": "รายการ: ยางรถยนต์ จำนวน 24 เส้น ราคาต่อหน่วย 2,500.00 บาท",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      510,
       29
      ],
      "crop": null
@@ -3918,7 +4953,7 @@
    "page": {
     "image": "pages/INV-TG-110.png",
     "width": 893,
-    "height": 582
+    "height": 627
    },
    "link": {
     "parent": null,
@@ -3926,6 +4961,434 @@
     "why": "Invoice ไม่ได้อ้าง PO และมี PO ที่เข้าเกณฑ์ 2 ใบ"
    },
    "in_flags": false
+  },
+  {
+   "id": "INV-TG-111",
+   "kind": "invoice",
+   "file": "invoices/INV-TG-111.pdf",
+   "format": "pdf",
+   "sha256": "85411f8f719d4cbc2c077962da4fb1334bfb7cbd6ac9cb35490163e55262bbf8",
+   "fields": {
+    "invoice_no": {
+     "name": "invoice_no",
+     "value": "INV-TG-111",
+     "quote": "เลขที่ INV-TG-111",
+     "locator": "หน้า 1 บรรทัด 2",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      133,
+      140,
+      29
+     ],
+     "crop": null
+    },
+    "date": {
+     "name": "date",
+     "value": "2026-01-16",
+     "quote": "วันที่ 2026-01-16",
+     "locator": "หน้า 1 บรรทัด 3",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      178,
+      132,
+      29
+     ],
+     "crop": null
+    },
+    "vendor_name": {
+     "name": "vendor_name",
+     "value": "บริษัท ทีจี คอมพานี จำกัด",
+     "quote": "ผู้ขาย: บริษัท ทีจี คอมพานี จำกัด",
+     "locator": "หน้า 1 บรรทัด 4",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      223,
+      252,
+      29
+     ],
+     "crop": null
+    },
+    "tax_id": {
+     "name": "tax_id",
+     "value": "0105551000011",
+     "quote": "เลขประจำตัวผู้เสียภาษี 0105551000011",
+     "locator": "หน้า 1 บรรทัด 5",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      268,
+      309,
+      29
+     ],
+     "crop": null
+    },
+    "po_ref": {
+     "name": "po_ref",
+     "value": "PO-2026-010",
+     "quote": "อ้างอิงใบสั่งซื้อ PO-2026-010",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      226,
+      29
+     ],
+     "crop": null
+    },
+    "subtotal": {
+     "name": "subtotal",
+     "value": 65000.0,
+     "quote": "รวมเงิน 65,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 9",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      448,
+      184,
+      29
+     ],
+     "crop": null
+    },
+    "vat": {
+     "name": "vat",
+     "value": 4550.0,
+     "quote": "ภาษีมูลค่าเพิ่ม 7% 4,550.00 บาท",
+     "locator": "หน้า 1 บรรทัด 10",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      493,
+      256,
+      29
+     ],
+     "crop": null
+    },
+    "total": {
+     "name": "total",
+     "value": 69550.0,
+     "quote": "ยอดรวมทั้งสิ้น 69,550.00 บาท",
+     "locator": "หน้า 1 บรรทัด 11",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      538,
+      234,
+      29
+     ],
+     "crop": null
+    },
+    "credit_days": {
+     "name": "credit_days",
+     "value": 60,
+     "quote": "ครบกำหนดชำระ 60 วัน",
+     "locator": "หน้า 1 บรรทัด 12",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      583,
+      186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "หัวเทียน",
+     "quote": "รายการ: หัวเทียน จำนวน 500 ชิ้น ราคาต่อหน่วย 130.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      478,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 500.0,
+     "quote": "รายการ: หัวเทียน จำนวน 500 ชิ้น ราคาต่อหน่วย 130.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      478,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 130.0,
+     "quote": "รายการ: หัวเทียน จำนวน 500 ชิ้น ราคาต่อหน่วย 130.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      478,
+      29
+     ],
+     "crop": null
+    }
+   },
+   "vendor": "V001",
+   "vendor_how": "เลขประจำตัวผู้เสียภาษีตรงกับ Vendor master",
+   "page": {
+    "image": "pages/INV-TG-111.png",
+    "width": 893,
+    "height": 672
+   },
+   "link": {
+    "parent": "PO-2026-010",
+    "level": "sure",
+    "why": "Invoice อ้างถึง PO-2026-010"
+   },
+   "in_flags": true
+  },
+  {
+   "id": "INV-TG-112",
+   "kind": "invoice",
+   "file": "invoices/INV-TG-112.pdf",
+   "format": "pdf",
+   "sha256": "ea4f21813fc5f6f354651930b448cb0605874087a9c92d3556cd3ba3317e5f96",
+   "fields": {
+    "invoice_no": {
+     "name": "invoice_no",
+     "value": "INV-TG-112",
+     "quote": "เลขที่ INV-TG-112",
+     "locator": "หน้า 1 บรรทัด 2",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      133,
+      142,
+      29
+     ],
+     "crop": null
+    },
+    "date": {
+     "name": "date",
+     "value": "2026-01-09",
+     "quote": "วันที่ 2026-01-09",
+     "locator": "หน้า 1 บรรทัด 3",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      178,
+      132,
+      29
+     ],
+     "crop": null
+    },
+    "vendor_name": {
+     "name": "vendor_name",
+     "value": "บริษัท ทีจี คอมพานี จำกัด",
+     "quote": "ผู้ขาย: บริษัท ทีจี คอมพานี จำกัด",
+     "locator": "หน้า 1 บรรทัด 4",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      223,
+      252,
+      29
+     ],
+     "crop": null
+    },
+    "tax_id": {
+     "name": "tax_id",
+     "value": "0105551000011",
+     "quote": "เลขประจำตัวผู้เสียภาษี 0105551000011",
+     "locator": "หน้า 1 บรรทัด 5",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      268,
+      309,
+      29
+     ],
+     "crop": null
+    },
+    "po_ref": {
+     "name": "po_ref",
+     "value": "PO-2026-011",
+     "quote": "อ้างอิงใบสั่งซื้อ PO-2026-011",
+     "locator": "หน้า 1 บรรทัด 7",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      358,
+      225,
+      29
+     ],
+     "crop": null
+    },
+    "subtotal": {
+     "name": "subtotal",
+     "value": 32000.0,
+     "quote": "รวมเงิน 32,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 9",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      448,
+      184,
+      29
+     ],
+     "crop": null
+    },
+    "vat": {
+     "name": "vat",
+     "value": 2240.0,
+     "quote": "ภาษีมูลค่าเพิ่ม 7% 2,240.00 บาท",
+     "locator": "หน้า 1 บรรทัด 10",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      493,
+      256,
+      29
+     ],
+     "crop": null
+    },
+    "total": {
+     "name": "total",
+     "value": 34240.0,
+     "quote": "ยอดรวมทั้งสิ้น 34,240.00 บาท",
+     "locator": "หน้า 1 บรรทัด 11",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      538,
+      234,
+      29
+     ],
+     "crop": null
+    },
+    "credit_days": {
+     "name": "credit_days",
+     "value": 60,
+     "quote": "ครบกำหนดชำระ 60 วัน",
+     "locator": "หน้า 1 บรรทัด 12",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      583,
+      186,
+      29
+     ],
+     "crop": null
+    },
+    "item": {
+     "name": "item",
+     "value": "ไส้กรองน้ำมัน",
+     "quote": "รายการ: ไส้กรองน้ำมัน จำนวน 200 ชิ้น ราคาต่อหน่วย 160.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      522,
+      29
+     ],
+     "crop": null
+    },
+    "quantity": {
+     "name": "quantity",
+     "value": 200.0,
+     "quote": "รายการ: ไส้กรองน้ำมัน จำนวน 200 ชิ้น ราคาต่อหน่วย 160.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      522,
+      29
+     ],
+     "crop": null
+    },
+    "unit_price": {
+     "name": "unit_price",
+     "value": 160.0,
+     "quote": "รายการ: ไส้กรองน้ำมัน จำนวน 200 ชิ้น ราคาต่อหน่วย 160.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "verified": true,
+     "method": "template",
+     "clear": true,
+     "bbox": [
+      74,
+      403,
+      522,
+      29
+     ],
+     "crop": null
+    }
+   },
+   "vendor": "V001",
+   "vendor_how": "เลขประจำตัวผู้เสียภาษีตรงกับ Vendor master",
+   "page": {
+    "image": "pages/INV-TG-112.png",
+    "width": 893,
+    "height": 672
+   },
+   "link": {
+    "parent": "PO-2026-011",
+    "level": "sure",
+    "why": "Invoice อ้างถึง PO-2026-011"
+   },
+   "in_flags": true
   },
   {
    "id": "POLICY-PROC",
@@ -4097,7 +5560,7 @@
    "vendor_how": "vendor master",
    "page": null,
    "link": null,
-   "in_flags": false
+   "in_flags": true
   },
   {
    "id": "VENDOR-V003",
@@ -4284,7 +5747,7 @@
    "flags": [
     "F001",
     "F003",
-    "F007"
+    "F012"
    ],
    "pending": false
   },
@@ -4358,7 +5821,8 @@
     }
    ],
    "flags": [
-    "F004"
+    "F004",
+    "F009"
    ],
    "pending": false
   },
@@ -4527,11 +5991,156 @@
      "status": "agrees"
     }
    ],
-   "flags": [],
+   "flags": [
+    "F008"
+   ],
+   "pending": false
+  },
+  {
+   "id": "T-PO-2026-010",
+   "members": [
+    "PO-2026-010",
+    "GR-2026-010",
+    "INV-TG-111",
+    "BANK-2026-02-14-INV-TG-111"
+   ],
+   "vendor": "V001",
+   "match": "sure",
+   "links": [
+    {
+     "transaction": "T-PO-2026-010",
+     "a": "PO-2026-010",
+     "b": "GR-2026-010",
+     "field": "มูลค่า PO ↔ ใบรับของ",
+     "status": "agrees"
+    },
+    {
+     "transaction": "T-PO-2026-010",
+     "a": "PO-2026-010",
+     "b": "INV-TG-111",
+     "field": "ยอดก่อน VAT PO ↔ Invoice",
+     "status": "agrees"
+    },
+    {
+     "transaction": "T-PO-2026-010",
+     "a": "INV-TG-111",
+     "b": "BANK-2026-02-14-INV-TG-111",
+     "field": "ยอดรวม Invoice ↔ เงินที่โอน",
+     "status": "agrees"
+    }
+   ],
+   "flags": [
+    "F011"
+   ],
+   "pending": false
+  },
+  {
+   "id": "T-PO-2026-011",
+   "members": [
+    "PO-2026-011",
+    "GR-2026-011",
+    "INV-TG-112",
+    "BANK-2026-03-26-INV-TG-112"
+   ],
+   "vendor": "V001",
+   "match": "sure",
+   "links": [
+    {
+     "transaction": "T-PO-2026-011",
+     "a": "PO-2026-011",
+     "b": "GR-2026-011",
+     "field": "มูลค่า PO ↔ ใบรับของ",
+     "status": "agrees"
+    },
+    {
+     "transaction": "T-PO-2026-011",
+     "a": "PO-2026-011",
+     "b": "INV-TG-112",
+     "field": "ยอดก่อน VAT PO ↔ Invoice",
+     "status": "agrees"
+    },
+    {
+     "transaction": "T-PO-2026-011",
+     "a": "INV-TG-112",
+     "b": "BANK-2026-03-26-INV-TG-112",
+     "field": "ยอดรวม Invoice ↔ เงินที่โอน",
+     "status": "agrees"
+    }
+   ],
+   "flags": [
+    "F010"
+   ],
    "pending": false
   }
  ],
  "flags": [
+  {
+   "id": "F007",
+   "type": "PARTY_MISMATCH",
+   "title": "ชื่อคู่สัญญาไม่ตรงกับ Vendor master",
+   "summary": "CONTRACT-BS ทำกับ บริษัท บางกอกสตีล แอนด์ เมทัล จำกัด แต่เลขผู้เสียภาษี 0105552000022 เป็นของ บริษัท บางกอกสตีล จำกัด ใน Vendor master",
+   "docs": [
+    "CONTRACT-BS",
+    "VENDOR-V002"
+   ],
+   "transaction": null,
+   "evidence": [
+    {
+     "doc": "CONTRACT-BS",
+     "file": "contract_bs.pdf",
+     "format": "pdf",
+     "field": "คู่สัญญา",
+     "value": "บริษัท บางกอกสตีล แอนด์ เมทัล จำกัด",
+     "quote": "และ บริษัท บางกอกสตีล แอนด์ เมทัล จำกัด (ผู้ขาย)",
+     "locator": "หน้า 1 บรรทัด 3",
+     "method": "template",
+     "bbox": [
+      74,
+      178,
+      396,
+      29
+     ]
+    },
+    {
+     "doc": "CONTRACT-BS",
+     "file": "contract_bs.pdf",
+     "format": "pdf",
+     "field": "เลขผู้เสียภาษีในสัญญา",
+     "value": "0105552000022",
+     "quote": "เลขประจำตัวผู้เสียภาษีของผู้ขาย 0105552000022",
+     "locator": "หน้า 1 บรรทัด 4",
+     "method": "template",
+     "bbox": [
+      74,
+      223,
+      386,
+      29
+     ]
+    },
+    {
+     "doc": "VENDOR-V002",
+     "file": "vendor_master.csv",
+     "format": "csv",
+     "field": "ชื่อใน Vendor master",
+     "value": "บริษัท บางกอกสตีล จำกัด",
+     "quote": "V002,บริษัท บางกอกสตีล จำกัด,\"BANGKOK STEEL CO.,LTD.\",0105552000022,xxx-x-xx333-4",
+     "locator": "แถว 3",
+     "method": "table",
+     "bbox": null
+    }
+   ],
+   "basis": "สัญญา:party",
+   "match": "sure",
+   "at_stake_thb": 110000.0,
+   "severity": 6,
+   "risk": "สูง",
+   "status": "ควรตรวจ",
+   "questions": [
+    "คู่สัญญาและ vendor ที่รับเงินเป็นนิติบุคคลเดียวกันหรือไม่ ขอหนังสือรับรองบริษัท",
+    "มีการเปลี่ยนชื่อบริษัทหรือโอนสิทธิตามสัญญาหรือไม่"
+   ],
+   "ocr": false
+  },
   {
    "id": "F005",
    "type": "PARTY_MISMATCH",
@@ -4808,11 +6417,11 @@
      "field": "subtotal",
      "value": 150000.0,
      "quote": "รวมเงิน 150,000.00 บาท",
-     "locator": "หน้า 1 บรรทัด 8",
+     "locator": "หน้า 1 บรรทัด 9",
      "method": "template",
      "bbox": [
       74,
-      403,
+      448,
       194,
       29
      ]
@@ -4953,7 +6562,276 @@
    "ocr": false
   },
   {
-   "id": "F007",
+   "id": "F009",
+   "type": "CONTRACT_BREACH",
+   "title": "ยอดซื้อสะสมเกินวงเงินสัญญา",
+   "summary": "ยอด Invoice สะสม (ก่อน VAT) 110,000 ฿ เกินวงเงินสัญญา 80,000 ฿ ตั้งแต่ INV-BS-201 (3 ใบ)",
+   "docs": [
+    "INV-BS-201",
+    "CONTRACT-BS",
+    "INV-BS-210"
+   ],
+   "transaction": "T-PO-2026-004",
+   "evidence": [
+    {
+     "doc": "CONTRACT-BS",
+     "file": "contract_bs.pdf",
+     "format": "pdf",
+     "field": "วงเงินตามสัญญา",
+     "value": 80000.0,
+     "quote": "ข้อ 7 วงเงินรวมตลอดอายุสัญญาไม่เกิน 80,000.00 บาท (ไม่รวมภาษีมูลค่าเพิ่ม)",
+     "locator": "หน้า 1 บรรทัด 7",
+     "method": "template",
+     "bbox": [
+      74,
+      358,
+      606,
+      29
+     ]
+    },
+    {
+     "doc": "INV-BS-205",
+     "file": "invoices/INV-BS-205.pdf",
+     "format": "pdf",
+     "field": "ยอดก่อน VAT INV-BS-205",
+     "value": 45000.0,
+     "quote": "รวมเงิน 45,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "method": "template",
+     "bbox": [
+      74,
+      403,
+      184,
+      29
+     ]
+    },
+    {
+     "doc": "INV-BS-201",
+     "file": "invoices/INV-BS-201.pdf",
+     "format": "pdf",
+     "field": "ยอดก่อน VAT INV-BS-201",
+     "value": 40000.0,
+     "quote": "รวมเงิน 40,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "method": "template",
+     "bbox": [
+      74,
+      403,
+      184,
+      29
+     ]
+    },
+    {
+     "doc": "INV-BS-210",
+     "file": "invoices/INV-BS-210.pdf",
+     "format": "pdf",
+     "field": "ยอดก่อน VAT INV-BS-210",
+     "value": 25000.0,
+     "quote": "รวมเงิน 25,000.00 บาท",
+     "locator": "หน้า 1 บรรทัด 7",
+     "method": "template",
+     "bbox": [
+      74,
+      358,
+      184,
+      29
+     ]
+    }
+   ],
+   "basis": "สัญญา:ceiling",
+   "match": "sure",
+   "at_stake_thb": 30000.0,
+   "severity": 4,
+   "risk": "กลาง",
+   "status": "ควรตรวจ",
+   "questions": [
+    "มีการขยายวงเงินสัญญาหรือไม่ ขอเอกสารแก้ไขสัญญา",
+    "ยอดที่เกินวงเงินได้รับอนุมัติโดยใคร"
+   ],
+   "ocr": false
+  },
+  {
+   "id": "F008",
+   "type": "CONTRACT_BREACH",
+   "title": "Invoice อยู่นอกอายุสัญญา",
+   "summary": "INV-BS-210 ลงวันที่ 2026-03-22 หลังสัญญาสิ้นสุด 2026-03-20",
+   "docs": [
+    "INV-BS-210",
+    "CONTRACT-BS"
+   ],
+   "transaction": "T-PO-2026-009",
+   "evidence": [
+    {
+     "doc": "INV-BS-210",
+     "file": "invoices/INV-BS-210.pdf",
+     "format": "pdf",
+     "field": "วันที่ Invoice",
+     "value": "2026-03-22",
+     "quote": "วันที่ 2026-03-22",
+     "locator": "หน้า 1 บรรทัด 3",
+     "method": "template",
+     "bbox": [
+      74,
+      178,
+      132,
+      29
+     ]
+    },
+    {
+     "doc": "CONTRACT-BS",
+     "file": "contract_bs.pdf",
+     "format": "pdf",
+     "field": "วันสิ้นสุดสัญญา",
+     "value": "2026-03-20",
+     "quote": "ข้อ 2 สัญญามีผลตั้งแต่วันที่ 2026-01-01 ถึงวันที่ 2026-03-20",
+     "locator": "หน้า 1 บรรทัด 5",
+     "method": "template",
+     "bbox": [
+      74,
+      268,
+      465,
+      29
+     ]
+    }
+   ],
+   "basis": "สัญญา:period",
+   "match": "sure",
+   "at_stake_thb": 25000.0,
+   "severity": 4,
+   "risk": "กลาง",
+   "status": "ควรตรวจ",
+   "questions": [
+    "มีการต่ออายุสัญญาหรือทำสัญญาใหม่หรือไม่",
+    "การซื้อหลังสัญญาหมดอายุผ่านการอนุมัติตามขั้นตอนใด"
+   ],
+   "ocr": false
+  },
+  {
+   "id": "F011",
+   "type": "CONTRACT_BREACH",
+   "title": "ราคาต่อหน่วยไม่ตรงกับสัญญา",
+   "summary": "INV-TG-111 คิดหัวเทียน หน่วยละ 130.00 ฿ แต่สัญญากำหนด 120.00 ฿ (500 หน่วย ต่าง +5,000 ฿)",
+   "docs": [
+    "INV-TG-111",
+    "CONTRACT-TG"
+   ],
+   "transaction": "T-PO-2026-010",
+   "evidence": [
+    {
+     "doc": "INV-TG-111",
+     "file": "invoices/INV-TG-111.pdf",
+     "format": "pdf",
+     "field": "ราคาต่อหน่วย (หัวเทียน) ใน Invoice",
+     "value": 130.0,
+     "quote": "รายการ: หัวเทียน จำนวน 500 ชิ้น ราคาต่อหน่วย 130.00 บาท",
+     "locator": "หน้า 1 บรรทัด 8",
+     "method": "template",
+     "bbox": [
+      74,
+      403,
+      478,
+      29
+     ]
+    },
+    {
+     "doc": "CONTRACT-TG",
+     "file": "contract_tg.pdf",
+     "format": "pdf",
+     "field": "ราคาต่อหน่วย (หัวเทียน) ตามสัญญา",
+     "value": 120.0,
+     "quote": "6.6 หัวเทียน ราคาต่อหน่วย 120.00 บาท ต่อชิ้น",
+     "locator": "หน้า 1 บรรทัด 12",
+     "method": "template",
+     "bbox": [
+      74,
+      583,
+      363,
+      29
+     ]
+    }
+   ],
+   "basis": "สัญญา:price",
+   "match": "sure",
+   "at_stake_thb": 5000.0,
+   "severity": 3,
+   "risk": "กลาง",
+   "status": "ควรตรวจ",
+   "questions": [
+    "ราคาที่เรียกเก็บเปลี่ยนจากสัญญาเพราะอะไร มีบันทึกแก้ไขราคาหรือไม่",
+    "ใครอนุมัติ PO ที่ราคาสูงกว่าสัญญา"
+   ],
+   "ocr": false
+  },
+  {
+   "id": "F010",
+   "type": "CONTRACT_BREACH",
+   "title": "จ่ายเงินเกินกำหนดเครดิตตามสัญญา",
+   "summary": "โอนจ่าย INV-TG-112 วันที่ 2026-03-26 หลังวันที่ Invoice 76 วัน เกินเครดิต 60 วันตามสัญญา",
+   "docs": [
+    "INV-TG-112",
+    "CONTRACT-TG",
+    "BANK-2026-03-26-INV-TG-112"
+   ],
+   "transaction": "T-PO-2026-011",
+   "evidence": [
+    {
+     "doc": "INV-TG-112",
+     "file": "invoices/INV-TG-112.pdf",
+     "format": "pdf",
+     "field": "วันที่ Invoice",
+     "value": "2026-01-09",
+     "quote": "วันที่ 2026-01-09",
+     "locator": "หน้า 1 บรรทัด 3",
+     "method": "template",
+     "bbox": [
+      74,
+      178,
+      132,
+      29
+     ]
+    },
+    {
+     "doc": "CONTRACT-TG",
+     "file": "contract_tg.pdf",
+     "format": "pdf",
+     "field": "เครดิตตามสัญญา",
+     "value": 60,
+     "quote": "ข้อ 5 ผู้ซื้อตกลงชำระเงินภายในกำหนดเครดิต 60 วัน นับจากวันที่ในใบกำกับภาษี",
+     "locator": "หน้า 1 บรรทัด 5",
+     "method": "template",
+     "bbox": [
+      74,
+      268,
+      620,
+      29
+     ]
+    },
+    {
+     "doc": "BANK-2026-03-26-INV-TG-112",
+     "file": "bank_statement_2026Q1.csv",
+     "format": "csv",
+     "field": "วันที่โอน",
+     "value": "2026-03-26",
+     "quote": "2026-03-26,TRF INV-TG-112 TG COMPANY,34240.00,xxx-x-xx789-0",
+     "locator": "แถว 13",
+     "method": "table",
+     "bbox": null
+    }
+   ],
+   "basis": "สัญญา:late",
+   "match": "sure",
+   "at_stake_thb": 0,
+   "severity": 3,
+   "risk": "กลาง",
+   "status": "ควรตรวจ",
+   "questions": [
+    "มีดอกเบี้ยหรือค่าปรับจากการจ่ายล่าช้าที่ควรบันทึกหรือไม่",
+    "เหตุใดจึงจ่ายช้ากว่ากำหนด"
+   ],
+   "ocr": false
+  },
+  {
+   "id": "F012",
    "type": "TEXT_CONFLICT",
    "title": "เงื่อนไขในเอกสารไม่ตรงกัน",
    "summary": "สัญญากำหนดเครดิต 60 วัน แต่ INV-TG-102 ระบุ 30 วัน",
@@ -4970,11 +6848,11 @@
      "field": "เครดิตตามสัญญา",
      "value": 60,
      "quote": "ข้อ 5 ผู้ซื้อตกลงชำระเงินภายในกำหนดเครดิต 60 วัน นับจากวันที่ในใบกำกับภาษี",
-     "locator": "หน้า 1 บรรทัด 3",
+     "locator": "หน้า 1 บรรทัด 5",
      "method": "template",
      "bbox": [
       74,
-      178,
+      268,
       620,
       29
      ]
@@ -4986,11 +6864,11 @@
      "field": "เครดิตใน Invoice",
      "value": 30,
      "quote": "ครบกำหนดชำระ 30 วัน",
-     "locator": "หน้า 1 บรรทัด 11",
+     "locator": "หน้า 1 บรรทัด 12",
      "method": "template",
      "bbox": [
       74,
-      538,
+      583,
       186,
       29
      ]
@@ -5021,7 +6899,7 @@
   }
  ],
  "coverage": {
-  "files": 16,
+  "files": 19,
   "unreadable_files": [],
   "unclear_fields": [
    {

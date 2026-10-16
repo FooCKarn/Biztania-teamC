@@ -35,12 +35,21 @@ INVOICE_PATTERNS = {
     "vat": (r"ภาษีมูลค่าเพิ่ม\s*7%\s*([\d,]+\.\d{2})", amount),
     "total": (r"ยอดรวมทั้งสิ้น\s*([\d,]+\.\d{2})", amount),
     "credit_days": (r"ครบกำหนดชำระ\s*(\d+)\s*วัน", int),
+    "item": (r"รายการ\s*:\s*(.+?)\s*จำนวน", str),
+    "quantity": (r"จำนวน\s*([\d,]+)\s*\S+\s*ราคาต่อหน่วย", amount),
+    "unit_price": (r"ราคาต่อหน่วย\s*([\d,]+\.\d{2})", amount),
 }
 CONTRACT_PATTERNS = {
     "contract_no": (r"เลขที่\s*(\S+)", str),
     "vendor_name": (r"และ\s*(.+?)\s*\(ผู้ขาย\)", str),
+    "tax_id": (r"ผู้เสียภาษี(?:ของผู้ขาย)?\s*(\d{13})", str),
+    "start_date": (r"ตั้งแต่วันที่\s*(\d{4}-\d{2}-\d{2})", str),
+    "end_date": (r"ถึงวันที่\s*(\d{4}-\d{2}-\d{2})", str),
     "credit_days": (r"เครดิต\s*(\d+)\s*วัน", int),
+    "ceiling": (r"วงเงิน\S*\s*(?:\S+\s*)?ไม่เกิน\s*([\d,]+\.\d{2})\s*บาท", amount),
 }
+# One contract price-list line, e.g. "6.3 น้ำมันเครื่อง ราคาต่อหน่วย 250.00 บาท ต่อลิตร"
+PRICE_LINE = re.compile(r"^\s*\d+\.\d+\s+(.+?)\s+ราคาต่อหน่วย\s*([\d,]+\.\d{2})\s*บาท")
 
 
 def _apply_template(lines, patterns, method):
@@ -111,6 +120,11 @@ def _text_record(path: Path, rel: str, fmt: str):
     invoice_hits = sum(k in flat for k in ("ใบกำกับภาษี", "ใบแจ้งหนี้", "ยอดรวมทั้งสิ้น", "ภาษีมูลค่าเพิ่ม"))
     if "สัญญา" in title:
         fields = _apply_template(lines, CONTRACT_PATTERNS, method)
+        for line, loc, clear, bbox in lines:  # price list: one field per item, "price:<item>"
+            m = PRICE_LINE.match(line)
+            if m:
+                name = f"price:{m.group(1).strip()}"
+                fields[name] = Field(name, amount(m.group(2)), line.strip(), loc, method=method, clear=clear, bbox=bbox)
         kind, key = "contract", "contract_no"
     elif invoice_hits >= 2:  # keyword vote, so one OCR misread in the title does not hide an invoice
         fields = _apply_template(lines, INVOICE_PATTERNS, method)
