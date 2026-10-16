@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import type { Decision } from "../types";
+import type { Trail, TrailAction } from "../decisions";
 
 interface Props {
   flagId: string;
-  decision?: Decision;
-  decide: (id: string, d: Decision | null) => void;
+  trail: Trail;
 }
 
 const INITIALS_KEY = "ac-initials";
 const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+const ACTION_LABEL: Record<string, string> = {
+  prepare: "ลงนามผู้จัดทำ",
+  review: "ลงนามสอบทาน",
+  unreview: "ยกเลิกการสอบทาน",
+  reopen: "เปิดแก้ไข",
+  pair: "ยืนยันคู่",
+};
+const VERDICT_LABEL: Record<string, string> = { issue: "เป็นประเด็น", not_issue: "ไม่เป็นประเด็น" };
 
 function loadInitials() {
   try {
@@ -19,13 +27,21 @@ function loadInitials() {
 }
 
 // Professional judgment stays with the auditor. Like a working paper: the preparer signs with a
-// verdict and a written reason, then a different person signs it off as reviewed.
-export default function DecisionBox({ flagId, decision, decide }: Props) {
+// verdict and a written reason, then a different person signs it off as reviewed. Every step,
+// including edits, is appended to the Audit Trail; nothing is overwritten.
+export default function DecisionBox({ flagId, trail }: Props) {
+  const decision: Decision | undefined = trail.decisions[flagId];
   const [reason, setReason] = useState("");
   const [initials, setInitials] = useState(loadInitials);
-  useEffect(() => setReason(decision?.reason ?? ""), [flagId, decision]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setReason(decision?.reason ?? "");
+    setError(null);
+  }, [flagId, decision]);
   const who = initials.trim().toUpperCase();
-  const ok = reason.trim().length >= 5 && who.length >= 2;
+  const ok = reason.trim().length >= 5 && who.length >= 2 && !busy && trail.mode !== "loading";
+  const history = trail.events.filter((e) => e.target === flagId);
 
   const remember = (v: string) => {
     setInitials(v);
@@ -35,9 +51,13 @@ export default function DecisionBox({ flagId, decision, decide }: Props) {
       /* storage blocked: initials last for this page view */
     }
   };
-  const prepare = (verdict: Decision["verdict"]) =>
-    decide(flagId, { verdict, reason: reason.trim(), at: new Date().toISOString(), by: who });
-  const review = () => decision && decide(flagId, { ...decision, review: { by: who, at: new Date().toISOString() } });
+  const run = async (a: TrailAction) => {
+    setBusy(true);
+    setError(await trail.act(a));
+    setBusy(false);
+  };
+  const prepare = (verdict: Decision["verdict"]) => run({ action: "prepare", target: flagId, value: verdict, reason: reason.trim(), actor: who });
+  const needWho = () => (who.length >= 2 ? true : (setError("ใส่ชื่อย่อก่อน"), false));
   const samePerson = !!decision?.by && decision.by === who;
 
   return (
@@ -57,15 +77,18 @@ export default function DecisionBox({ flagId, decision, decide }: Props) {
             <strong>ผู้จัดทำ (Prepared)</strong>
             {decision ? (
               <p>
-                <span className={"pill " + (decision.verdict === "issue" ? "bad" : "ok")}>
-                  {decision.verdict === "issue" ? "เป็นประเด็น" : "ไม่เป็นประเด็น"}
-                </span>{" "}
+                <span className={"pill " + (decision.verdict === "issue" ? "bad" : "ok")}>{VERDICT_LABEL[decision.verdict]}</span>{" "}
                 {decision.reason}
                 <span className="muted small">
                   {" "}
                   · {decision.by ?? "-"} · {when(decision.at)}
                 </span>{" "}
-                <button className="link" onClick={() => decide(flagId, null)}>
+                <button
+                  className="link"
+                  disabled={busy}
+                  onClick={() => needWho() && run({ action: "reopen", target: flagId, actor: who })}
+                  title="ประวัติเดิมยังอยู่ใน Audit Trail"
+                >
                   แก้ไข
                 </button>
               </p>
@@ -76,6 +99,7 @@ export default function DecisionBox({ flagId, decision, decide }: Props) {
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   rows={2}
+                  maxLength={500}
                   aria-label="เหตุผล"
                   placeholder="เหตุผล (จำเป็น) เช่น ได้รับหนังสือแจ้งเปลี่ยนบัญชีจาก vendor ลงวันที่ …"
                 />
@@ -86,7 +110,7 @@ export default function DecisionBox({ flagId, decision, decide }: Props) {
                   <button className="btn" disabled={!ok} onClick={() => prepare("not_issue")}>
                     ไม่เป็นประเด็น
                   </button>
-                  {!ok && <span className="muted small">ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร</span>}
+                  {!ok && !busy && <span className="muted small">ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร</span>}
                 </div>
               </>
             )}
@@ -106,13 +130,17 @@ export default function DecisionBox({ flagId, decision, decide }: Props) {
                   {" "}
                   · {decision.review.by} · {when(decision.review.at)}
                 </span>{" "}
-                <button className="link" onClick={() => decide(flagId, { ...decision, review: undefined })}>
+                <button className="link" disabled={busy} onClick={() => needWho() && run({ action: "unreview", target: flagId, actor: who })}>
                   ยกเลิก
                 </button>
               </p>
             ) : decision ? (
               <div className="row">
-                <button className="btn filled" disabled={who.length < 2 || samePerson} onClick={review}>
+                <button
+                  className="btn filled"
+                  disabled={who.length < 2 || samePerson || busy}
+                  onClick={() => run({ action: "review", target: flagId, actor: who })}
+                >
                   ลงนามสอบทาน
                 </button>
                 {samePerson && <span className="muted small">ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ</span>}
@@ -122,7 +150,44 @@ export default function DecisionBox({ flagId, decision, decide }: Props) {
             )}
           </div>
         </div>
-        <p className="muted small">เดโม: บันทึกไว้ในเบราว์เซอร์นี้เท่านั้น ระบบจริงจะเก็บเป็น Audit Trail</p>
+        {error && (
+          <p className="small error" role="alert">
+            {error}
+          </p>
+        )}
+
+        {history.length > 0 && (
+          <details className="trail">
+            <summary>ประวัติ Audit Trail ({history.length})</summary>
+            <ol>
+              {history.map((e) => (
+                <li key={e.seq}>
+                  <span className="muted small">
+                    #{e.seq} · {when(e.at)} · {e.actor}
+                  </span>{" "}
+                  {ACTION_LABEL[e.action] ?? e.action}
+                  {e.value && e.action === "prepare" && ` · ${VERDICT_LABEL[e.value] ?? e.value}`}
+                  {e.reason && ` · ${e.reason}`}
+                  {e.hash && (
+                    <span className="muted small mono" title={`หลักฐาน: ${e.evidence.map((x) => `${x.doc}${x.locator ? ` (${x.locator})` : ""}`).join(", ")}`}>
+                      {" "}
+                      · {e.hash.slice(0, 8)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+        <p className="muted small">
+          {trail.mode === "server"
+            ? `บันทึกเป็น Audit Trail บน server (เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้) · ${
+                trail.chainOk ? "สายแฮชครบ ไม่ถูกแก้ไข" : "สายแฮชไม่ตรง ควรตรวจว่ามีการแก้ข้อมูล"
+              } · workspace ${trail.workspace}`
+            : trail.mode === "local"
+              ? "เดโม: ยังไม่ได้เชื่อมฐานข้อมูล จึงบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น"
+              : "กำลังโหลด Audit Trail…"}
+        </p>
       </div>
     </section>
   );

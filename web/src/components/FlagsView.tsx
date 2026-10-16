@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ConflictMap, Decision, Doc, Flag } from "../types";
+import type { ConflictMap, Doc, Flag } from "../types";
+import type { Trail } from "../decisions";
 import { FIELD_LABEL, MATCH_LABEL, RISK_ORDER, TYPE_LABEL, baht } from "../labels";
 import TxnChain from "./TxnChain";
 import EvidencePanel from "./EvidencePanel";
@@ -9,15 +10,15 @@ import DocViewer, { type Mark } from "./DocViewer";
 interface Props {
   data: ConflictMap;
   docs: Map<string, Doc>;
-  decisions: Record<string, Decision>;
-  decide: (id: string, d: Decision | null) => void;
+  trail: Trail;
   focusTxn: string | null;
 }
 
 const byRisk = (a: Flag, b: Flag) => b.severity - a.severity || (b.at_stake_thb ?? 0) - (a.at_stake_thb ?? 0);
 const RISK_KEY: Record<string, string> = { สูง: "high", กลาง: "mid", ต่ำ: "low" };
 
-export default function FlagsView({ data, docs, decisions, decide, focusTxn }: Props) {
+export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
+  const { decisions } = trail;
   const [risk, setRisk] = useState<string>("all");
   const [type, setType] = useState<string>("all");
   const [state, setState] = useState<string>("open");
@@ -242,7 +243,7 @@ export default function FlagsView({ data, docs, decisions, decide, focusTxn }: P
                 ))}
               </ul>
             </section>
-            <DecisionBox flagId={flag.id} decision={decisions[flag.id]} decide={decide} />
+            <DecisionBox flagId={flag.id} trail={trail} />
           </>
         )}
       </section>

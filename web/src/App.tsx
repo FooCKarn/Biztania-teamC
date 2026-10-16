@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ConflictMap } from "./types";
-import { useDecisions } from "./decisions";
+import { useTrail } from "./decisions";
 import FlagsView from "./components/FlagsView";
 import PendingView from "./components/PendingView";
 import OverviewView from "./components/OverviewView";
 import AskBox from "./components/AskBox";
-import { exportCsv } from "./export";
+import { exportCsv, exportTrailCsv } from "./export";
 
 type Tab = "flags" | "pending" | "overview";
 
@@ -22,7 +22,8 @@ export default function App() {
       .catch((e) => setError(String(e)));
   }, []);
 
-  const { decisions, decide } = useDecisions(data?.run_id ?? "none");
+  const trail = useTrail(data?.run_id ?? "none");
+  const { decisions } = trail;
   const docs = useMemo(() => new Map((data?.documents ?? []).map((d) => [d.id, d])), [data]);
 
   if (error)
@@ -78,15 +79,18 @@ export default function App() {
           <button className="btn" onClick={() => exportCsv(data, decisions)}>
             Export Excel
           </button>
+          <button className="btn" disabled={!trail.events.length} onClick={() => exportTrailCsv(data.run_id, trail.events)}>
+            Audit Trail
+          </button>
         </div>
       </header>
       <p className="principle">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
 
       <main>
         {tab === "flags" && (
-          <FlagsView data={data} docs={docs} decisions={decisions} decide={decide} focusTxn={focusTxn} />
+          <FlagsView data={data} docs={docs} trail={trail} focusTxn={focusTxn} />
         )}
-        {tab === "pending" && <PendingView data={data} docs={docs} runId={data.run_id} />}
+        {tab === "pending" && <PendingView data={data} docs={docs} trail={trail} />}
         {tab === "overview" && (
           <OverviewView
             data={data}

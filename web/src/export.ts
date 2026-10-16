@@ -1,4 +1,4 @@
-import type { ConflictMap, Decision } from "./types";
+import type { ConflictMap, Decision, TrailEvent } from "./types";
 import { TYPE_LABEL } from "./labels";
 
 // Working papers live in Excel: one row per flag with the auditor's sign-off, UTF-8 with BOM so
@@ -12,11 +12,23 @@ export function exportCsv(data: ConflictMap, decisions: Record<string, Decision>
       d ? (d.verdict === "issue" ? "เป็นประเด็น" : "ไม่เป็นประเด็น") : "ยังไม่ลงนาม", d?.reason ?? "", d?.by ?? "", d?.at ?? "",
       d?.review?.by ?? "", d?.review?.at ?? ""];
   });
+  download([head, ...rows], `working-paper-${data.run_id}.csv`);
+}
+
+// The full append-only log, one row per event, for the engagement file.
+export function exportTrailCsv(runId: string, events: TrailEvent[]) {
+  const head = ["ลำดับ", "เวลา (UTC)", "ผู้ลงนาม", "การกระทำ", "รายการ", "ผล", "เหตุผล", "หลักฐาน", "แฮชก่อนหน้า", "แฮช"];
+  const rows = events.map((e) => [e.seq, e.at, e.actor, e.action, e.target, e.value ?? "", e.reason ?? "",
+    e.evidence.map((x) => [x.doc, x.file, x.locator, x.sha256].filter(Boolean).join(" ")).join("; "), e.prev_hash, e.hash]);
+  download([head, ...rows], `audit-trail-${runId}.csv`);
+}
+
+function download(table: (string | number)[][], name: string) {
   const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-  const csv = "﻿" + [head, ...rows].map((r) => r.map(cell).join(",")).join("\r\n");
+  const csv = "﻿" + table.map((r) => r.map(cell).join(",")).join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = `working-paper-${data.run_id}.csv`;
+  a.download = name;
   a.click();
   URL.revokeObjectURL(a.href);
 }

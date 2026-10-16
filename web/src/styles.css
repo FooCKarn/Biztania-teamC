@@ -345,3 +345,8 @@ blockquote {
   .evidence-table .src { display: none; }
   .src-inline { display: block; overflow-wrap: anywhere; }
 }
+
+/* Audit Trail */
+.error { color: var(--bad); }
+.trail summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.trail ol { margin: 6px 0 0; padding-left: 18px; font-size: 13px; display: grid; gap: 4px; }

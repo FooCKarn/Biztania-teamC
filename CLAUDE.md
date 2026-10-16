@@ -15,7 +15,8 @@ The human-readable summary is in [`README.md`](README.md).
   The plan is a pilot with one small audit firm on one engagement before commercial rollout.
 - **MVP rules:** code (not the LLM) decides conflicts; every value needs a verified source quote;
   unclear OCR never raises a flag; ambiguous pairs go to "รอจับคู่" unchecked; bank accounts are
-  tokenised at ingestion and only shown masked. `pipeline/samples/tg_company/expected.json` is the
+  tokenised at ingestion and only shown masked. Sign-offs and decisions go to an append-only, hash-chained
+  Audit Trail in D1 (`worker/src/trail.js`); the server stamps time and evidence refs. `pipeline/samples/tg_company/expected.json` is the
   answer key the tests score against.
 
 ## Core principles (keep these consistent in any material or prototype)
