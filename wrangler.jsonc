@@ -17,7 +17,10 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    "GEMINI_MODEL": "gemma-4-26b-a4b-it",
+    // Tried in order; on quota/token-limit/unavailable errors the Worker moves to the next.
+    // Free tier (AI Studio, 2026-10): Gemma 4 30 RPM / 16K TPM / 14.4K RPD;
+    // 3.5 & 3.1 Flash-Lite 15 RPM / 250K TPM / 500 RPD; 3.8 Flash & 2.5 Flash 5 RPM / 20 RPD.
+    "GEMINI_MODELS": "gemma-4-26b-a4b-it,gemma-4-31b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash,gemini-2.5-flash",
     "DAILY_LIMIT_PER_IP": "20",
     "DAILY_LIMIT_TOTAL": "300"
   },
@@ -25,7 +28,7 @@
   // Lower limits so a preview link cannot drain the demo's free Gemini quota.
   "previews": {
     "vars": {
-      "GEMINI_MODEL": "gemma-4-26b-a4b-it",
+      "GEMINI_MODELS": "gemma-4-26b-a4b-it,gemma-4-31b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash,gemini-2.5-flash",
       "DAILY_LIMIT_PER_IP": "5",
       "DAILY_LIMIT_TOTAL": "50"
     }
