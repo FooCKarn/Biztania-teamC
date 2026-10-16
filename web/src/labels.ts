@@ -29,6 +29,7 @@ export const TYPE_LABEL: Record<string, string> = {
   POLICY_BREACH: "ขัดกฎบริษัท",
   DUPLICATE: "อาจซ้ำ",
   TEXT_CONFLICT: "เงื่อนไขไม่ตรงกัน",
+  CONTRACT_BREACH: "ไม่เป็นไปตามสัญญา",
 };
 
 export const FIELD_LABEL: Record<string, string> = {
@@ -51,7 +52,17 @@ export const FIELD_LABEL: Record<string, string> = {
   approved_by: "ผู้อนุมัติ",
   approver_role: "ตำแหน่งผู้อนุมัติ",
   account: "บัญชี (ปิดบังบางส่วน)",
+  item: "รายการสินค้า",
+  quantity: "จำนวน",
+  unit_price: "ราคาต่อหน่วย",
+  start_date: "วันเริ่มสัญญา",
+  end_date: "วันสิ้นสุดสัญญา",
+  ceiling: "วงเงินสัญญา",
 };
+
+// Contract price-list fields are named "price:<item>".
+export const fieldLabel = (k: string) =>
+  FIELD_LABEL[k] ?? (k.startsWith("price:") ? `ราคาต่อหน่วยตามสัญญา (${k.slice(6)})` : k);
 
 export const baht = (n: number | null | undefined) =>
   n == null ? "-" : n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " ฿";
