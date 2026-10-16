@@ -120,3 +120,13 @@ def test_mask_line_only_touches_account_like_numbers():
     assert mask_line("บัญชี 9876543210") == "บัญชี xxxxxx3210"
     for keep in ("เลขประจำตัวผู้เสียภาษี 0105551000011", "วันที่ 2026-02-12", "ยอดรวม 1,234,567.00", "PO-2026-002"):
         assert mask_line(keep) == keep
+
+
+def test_contract_price_list_needs_item_and_price_on_one_line():
+    lines = lines_of(["สัญญาซื้อขาย เลขที่ CT-9", "6.1 ผ้าเบรก ราคาต่อหน่วย 1,200.00 บาท", "6.2 น้ำมันเครื่อง ราคาต่อหน่วย 250.00 บาท"])
+    ans = lambda p: {"kind": "contract", "fields": {"contract_no": {"line": 1, "raw": "CT-9", "quote": "เลขที่ CT-9"}},
+                     "price_list": [{"item": "ผ้าเบรก", "line": 2, "raw": "1,200.00", "quote": "ผ้าเบรก ราคาต่อหน่วย 1,200.00"},
+                                    {"item": "หัวเทียน", "line": 3, "raw": "250.00", "quote": "ราคาต่อหน่วย 250.00"}]}
+    _, fields = LLMExtractor("k", "gemini-a", post=FakeGemini(ans)).extract(lines, "llm")
+    assert fields["price:ผ้าเบรก"].value == 1200.0 and fields["price:ผ้าเบรก"].clear
+    assert not fields["price:หัวเทียน"].verified and not fields["price:หัวเทียน"].clear

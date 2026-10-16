@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Doc } from "../types";
-import { FIELD_LABEL, KIND_LABEL } from "../labels";
+import { fieldLabel, KIND_LABEL } from "../labels";
 
 /** One value to tick on the source: a box on a page image, or a row (and cell) in a table file. */
 export interface Mark {
@@ -186,7 +186,7 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
           <tbody>
             {Object.values(doc.fields).map((f) => (
               <tr key={f.name} className={f.clear ? "" : "unclear"}>
-                <th>{FIELD_LABEL[f.name] ?? f.name}</th>
+                <th>{fieldLabel(f.name)}</th>
                 <td>
                   {String(f.value)}
                   {!f.clear && <span className="pill warn">? อ่านไม่ชัด ไม่นำไปใช้ตรวจ</span>}

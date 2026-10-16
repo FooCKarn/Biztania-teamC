@@ -5,6 +5,7 @@ import re
 
 from auditconcierge.extract_llm import KINDS
 from auditconcierge.normalize import squash
+from auditconcierge.readers import PRICE_LINE
 
 POLICY_NO = r"เลขที่\s*(\S+)"
 
@@ -31,7 +32,9 @@ def answer(prompt):
         rx = re.compile(pat or POLICY_NO)
         fields[name] = next(({"line": n, "raw": m.group(1).strip(), "quote": m.group(0)}
                              for n, t in lines if (m := rx.search(t))), None)
-    return {"kind": kind, "fields": fields}
+    prices = [{"item": m.group(1).strip(), "line": n, "raw": m.group(2), "quote": m.group(0)}
+              for n, t in lines if (m := PRICE_LINE.match(t))]
+    return {"kind": kind, "fields": fields, "price_list": prices}
 
 
 class FakeGemini:

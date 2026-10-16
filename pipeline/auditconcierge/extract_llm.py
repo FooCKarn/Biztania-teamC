@@ -47,7 +47,15 @@ DESCRIPTIONS = {
     "vat": "จำนวนภาษีมูลค่าเพิ่ม (VAT amount)",
     "total": "ยอดรวมทั้งสิ้นรวม VAT (grand total including VAT)",
     "credit_days": "จำนวนวันเครดิต/ครบกำหนดชำระ (payment term in days)",
+    "item": "ชื่อสินค้าในรายการ (item name)",
+    "quantity": "จำนวนหน่วยที่ซื้อ (quantity)",
+    "unit_price": "ราคาต่อหน่วย (unit price)",
+    "start_date": "วันเริ่มต้นสัญญา (contract start date)",
+    "end_date": "วันสิ้นสุดสัญญา (contract end date)",
+    "ceiling": "วงเงินสูงสุดของสัญญา (contract value ceiling)",
 }
+PRICE_LIST = ('contract also has "price_list": a list of {"item": the item name copied exactly, "line": n, '
+              '"raw": that item\'s unit price copied exactly, "quote": ...} for every item in the contract price list')
 SYSTEM = """You read one audit document and point at where each field is written. You never decide anything.
 Lines are numbered "n| text". For every field return either null (not written in the document) or
 {"line": n, "raw": the exact characters of the value copied from that line, "quote": a short exact
@@ -212,7 +220,7 @@ class LLMExtractor:
         wanted = {k: list(p) for k, p in KINDS.items()}
         spec = "\n".join(f"- {kind}: " + ", ".join(f"{f} = {DESCRIPTIONS.get(f, f)}" for f in fields)
                          for kind, fields in wanted.items())
-        prompt = (f"Fields by document kind (return only the fields of the kind you choose):\n{spec}\n\n"
+        prompt = (f"Fields by document kind (return only the fields of the kind you choose):\n{spec}\n{PRICE_LIST}\n\n"
                   "DOCUMENT:\n" + "\n".join(f"{n}| {t}" for n, t in enumerate(masked, 1)))
         got = self.ask(prompt)
         if got is None:
@@ -229,7 +237,23 @@ class LLMExtractor:
             if not isinstance(ans, dict) or not str(ans.get("raw") or "").strip():
                 continue
             fields[name] = self._check(name, conv, ans, lines, masked, method)
+        if kind == "contract":
+            fields |= self._price_list(out.get("price_list"), lines, masked, method)
         return kind, fields
+
+    @classmethod
+    def _price_list(cls, answers, lines, masked, method):
+        """Contract price list → "price:<item>" fields; the item name must be in the same line as the price."""
+        out = {}
+        for ans in answers if isinstance(answers, list) else []:
+            item = norm(str(ans.get("item") or "")).strip() if isinstance(ans, dict) else ""
+            if not item or not str(ans.get("raw") or "").strip():
+                continue
+            f = cls._check(f"price:{item}", amount, ans, lines, masked, method)
+            if f.verified and squash(item) not in squash(f.quote):
+                f.verified, f.clear = False, False  # price found, but not on the item's line
+            out[f.name] = f
+        return out
 
     @staticmethod
     def _check(name, conv, ans, lines, masked, method):
