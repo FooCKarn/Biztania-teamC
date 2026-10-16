@@ -120,7 +120,7 @@ export default function TxnChain({ txn, docs, flags, highlight, selectedDoc, onS
               role={onSelect ? "button" : undefined}
               aria-label={`${KIND_LABEL[d.kind]} ${id}`}
             >
-              <rect width={W} height={H} rx={8} />
+              <rect width={W} height={H} rx={10} />
               <text x={10} y={18} className="n-kind">
                 {KIND_LABEL[d.kind]}
                 {d.format === "scan" ? " · สแกน" : ""}
