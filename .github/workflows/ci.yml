@@ -34,3 +34,5 @@ jobs:
       - name: Worker tests
         working-directory: worker
         run: npm test
+      - name: Deploy config builds the web app and bundles the Worker (no upload)
+        run: npm ci --prefix worker && worker/node_modules/.bin/wrangler deploy --dry-run
