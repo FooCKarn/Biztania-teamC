@@ -1,5 +1,7 @@
 // Accounts and sessions.
-//  - Passwords: PBKDF2-SHA256 (100,000 rounds, the Workers maximum) with a per-user salt.
+//  - Passwords: PBKDF2-SHA256 with a per-user salt. 100,000 rounds (the Workers maximum) by default;
+//    PASSWORD_ITERATIONS can lower it if the Free plan's 10 ms CPU limit rejects logins. Each hash
+//    keeps its own round count, so changing the setting never locks anyone out.
 //  - Sessions: a random 32-byte token in an HttpOnly, Secure, SameSite=Strict cookie; only its
 //    SHA-256 is stored, so a copy of the database cannot be used to log in.
 //  - No self sign-up. The first account (a firm admin) is created with the SETUP_TOKEN secret;
@@ -22,9 +24,12 @@ async function pbkdf2(password, saltHex, iter = PBKDF2_ITER) {
   return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, key, 256));
 }
 
-export async function hashPassword(password) {
+const iterations = (env) => Math.min(PBKDF2_ITER, Math.max(10_000, Number(env?.PASSWORD_ITERATIONS) || PBKDF2_ITER));
+
+export async function hashPassword(password, env) {
   const salt = randomId(16);
-  return { pw_salt: salt, pw_hash: await pbkdf2(password, salt), pw_iter: PBKDF2_ITER };
+  const iter = iterations(env);
+  return { pw_salt: salt, pw_hash: await pbkdf2(password, salt, iter), pw_iter: iter };
 }
 
 function checkPassword(pw) {
@@ -117,7 +122,7 @@ function cleanNewUser(body) {
 }
 
 async function insertUser(env, u, firmRole, pw, mustChange) {
-  const row = { id: randomId(8), ...u, firm_role: firmRole, ...(await hashPassword(pw)), must_change: mustChange ? 1 : 0, disabled: 0, created_at: nowIso() };
+  const row = { id: randomId(8), ...u, firm_role: firmRole, ...(await hashPassword(pw, env)), must_change: mustChange ? 1 : 0, disabled: 0, created_at: nowIso() };
   try {
     await env.AUDIT_DB.prepare(
       "INSERT INTO users (id, email, name, initials, firm_role, pw_salt, pw_hash, pw_iter, must_change, disabled, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
@@ -163,7 +168,7 @@ export async function handleAuth(request, env, path) {
       throw new HttpError(429, "ลองเข้าสู่ระบบผิดหลายครั้ง กรุณารอ 15 นาที");
     const u = await db.prepare("SELECT * FROM users WHERE email = ?1").bind(email).first();
     // Hash even when the user does not exist, so timing does not reveal which e-mails have accounts.
-    const hash = await pbkdf2(String(body.password || ""), u?.pw_salt ?? "00".repeat(16), u?.pw_iter ?? PBKDF2_ITER);
+    const hash = await pbkdf2(String(body.password || ""), u?.pw_salt ?? "00".repeat(16), u?.pw_iter ?? iterations(env));
     if (!u || u.disabled || !sameString(hash, u.pw_hash)) {
       await failCount(env, `ip:${ip}`, 1);
       await failCount(env, `em:${email}`, 1);
@@ -186,7 +191,7 @@ export async function handleAuth(request, env, path) {
     const err = checkPassword(body.next);
     if (err) throw new HttpError(400, err);
     if (body.next === body.current) throw new HttpError(400, "รหัสผ่านใหม่ต้องไม่ซ้ำรหัสเดิม");
-    const h = await hashPassword(body.next);
+    const h = await hashPassword(body.next, env);
     await db.batch([
       db.prepare("UPDATE users SET pw_salt = ?1, pw_hash = ?2, pw_iter = ?3, must_change = 0 WHERE id = ?4").bind(h.pw_salt, h.pw_hash, h.pw_iter, u.id),
       db.prepare("DELETE FROM sessions WHERE user_id = ?1").bind(u.id), // sign out everywhere else
@@ -227,7 +232,7 @@ export async function handleUsers(request, env, path) {
   if (!target) throw new HttpError(404, "ไม่พบผู้ใช้");
   if (op === "reset") {
     const pw = tempPassword();
-    const h = await hashPassword(pw);
+    const h = await hashPassword(pw, env);
     await db.batch([
       db.prepare("UPDATE users SET pw_salt = ?1, pw_hash = ?2, pw_iter = ?3, must_change = 1 WHERE id = ?4").bind(h.pw_salt, h.pw_hash, h.pw_iter, id),
       db.prepare("DELETE FROM sessions WHERE user_id = ?1").bind(id),

@@ -57,8 +57,8 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
         </div>
       )}
       <header className="navbar">
-        {back}
         <div className="brand">
+          {back}
           <span className="app-icon" aria-hidden>
             ✓
           </span>

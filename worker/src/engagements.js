@@ -166,7 +166,7 @@ const runJson = (r) => ({
   files: JSON.parse(r.file_ids).length,
 });
 
-async function dispatch(env, request, run, files, e) {
+async function dispatch(env, run, files, e) {
   const body = JSON.stringify({
     run: run.id,
     files: files.map((f) => ({ id: f.id, name: f.name, sha256: f.sha256 })),
@@ -364,7 +364,7 @@ export async function handleEngagements(request, env, path) {
       .run();
     await log(env, id, user.initials, "run", { run: run.id, files: files.length });
     try {
-      await dispatch(env, request, run, files, e);
+      await dispatch(env, run, files, e);
     } catch (x) {
       await db.prepare("UPDATE runs SET status = 'failed', finished_at = ?1, error = ?2 WHERE id = ?3").bind(nowIso(), "ติดต่อเครื่องประมวลผลไม่ได้", run.id).run();
       console.error("pipeline dispatch failed", String(x));
