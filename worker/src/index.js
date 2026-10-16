@@ -83,30 +83,76 @@ export async function takeQuota(env, ip, today) {
   return true;
 }
 
-export async function askGemini(env, question, ctx, fetchImpl = fetch) {
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+// Ordered model list, e.g. "gemma-4-26b-a4b-it,gemini-3.5-flash-lite". GEMINI_MODEL (single) still works.
+export function modelChain(env) {
+  const list = String(env.GEMINI_MODELS || env.GEMINI_MODEL || "gemini-2.5-flash")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
+  return [...new Set(list)];
+}
+
+const COOLDOWN_MS = 60_000;
+const cooling = new Map(); // model → time until which it is skipped after a 429/5xx (per Worker instance)
+
+class ModelError extends Error {
+  constructor(model, status, fatal = false) {
+    super(`${model} ${status}`);
+    this.status = status;
+    this.fatal = fatal; // bad key: every model would fail the same way
+  }
+}
+
+async function callModel(env, model, question, ctx, fetchImpl) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const r = await fetchImpl(url, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+    signal: AbortSignal.timeout(Number(env.MODEL_TIMEOUT_MS || 20000)),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: `CONTEXT:\n${JSON.stringify(ctx)}\n\nคำถาม: ${question}` }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 800, responseMimeType: "application/json" },
+      // Gemma models on the Gemini API are not documented to support JSON mode, so for them
+      // the JSON shape comes from the prompt alone and is parsed leniently below.
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 800,
+        ...(model.startsWith("gemma") ? {} : { responseMimeType: "application/json" }),
+      },
     }),
   });
-  if (!r.ok) throw new Error(`gemini ${r.status}`);
+  if (!r.ok) throw new ModelError(model, r.status, r.status === 401 || r.status === 403);
   const body = await r.json();
-  const text = body?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+  const parts = body?.candidates?.[0]?.content?.parts || [];
+  const text = parts.filter((p) => !p.thought).map((p) => p.text || "").join("").trim(); // never show thinking
+  if (!text) throw new ModelError(model, `empty (${body?.candidates?.[0]?.finishReason || "no candidate"})`);
   let out;
   try {
-    out = JSON.parse(text);
+    out = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? text); // tolerate ```json fences or a lead-in sentence
   } catch {
     out = { answer: text, cited: [] };
   }
   const known = new Set(ctx.flags.map((f) => f.id));
   const cited = (Array.isArray(out.cited) ? out.cited : []).filter((id) => known.has(id)); // drop invented ids
-  return { configured: true, answer: String(out.answer || "ไม่พบคำตอบในผลการตรวจนี้"), cited };
+  return { configured: true, answer: String(out.answer || "ไม่พบคำตอบในผลการตรวจนี้"), cited, model };
+}
+
+// Try each model in order. Quota (429), token-limit (400), unknown model (404), server errors,
+// timeouts and empty answers move on to the next model; a rejected key stops at once.
+export async function askGemini(env, question, ctx, fetchImpl = fetch, now = Date.now()) {
+  const chain = modelChain(env);
+  const ready = chain.filter((m) => !(cooling.get(m) > now));
+  const tried = [];
+  for (const model of ready.length ? ready : chain) {
+    try {
+      return await callModel(env, model, question, ctx, fetchImpl);
+    } catch (e) {
+      tried.push(e.message);
+      if (e.fatal) break;
+      if (e.status === 429 || e.status >= 500) cooling.set(model, now + COOLDOWN_MS);
+    }
+  }
+  throw new Error(`all models failed: ${tried.join("; ")}`);
 }
 
 export async function handleAsk(request, env, fetchImpl = fetch) {

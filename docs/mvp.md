@@ -73,6 +73,7 @@ npx wrangler deploy                       # build เว็บ (web/dist) ให
 - ถ้าเชื่อม repo กับ Cloudflare (Workers Builds): ตั้ง Root directory เป็น `/` และ Deploy command เป็น `npx wrangler deploy` ไม่ต้องใส่ Build command เพราะ `wrangler.jsonc` สั่ง build ให้แล้ว
 - **ห้ามอัปโหลดโฟลเดอร์ `web/` ตรงๆ** (เช่นลากไฟล์ขึ้น dashboard) เพราะเป็นซอร์สที่ยังไม่ build เบราว์เซอร์จะเปิด `.tsx` ไม่ได้และขึ้นจอขาว ถ้าจะอัปโหลดเอง ให้ใช้ `web/dist` หลังรัน `npm run build` ใน `web/`
 
+- โมเดลถามตอบตั้งไว้ที่ `GEMINI_MODELS` ใน `wrangler.jsonc` เป็นรายชื่อเรียงลำดับ คั่นด้วยจุลภาค ตอนนี้เริ่มที่ Gemma 4 26B → Gemma 4 31B → Gemini 3.5/3.1 Flash-Lite → Gemini 3.8 Flash → Gemini 2.5 Flash ถ้าโมเดลไหนโควตาเต็ม (429), เกินขนาด token, ไม่มีให้ใช้ (404), ล่ม หรือช้าเกิน 20 วินาที Worker จะลองตัวถัดไปเอง และพักโมเดลที่เต็มไว้ 1 นาที ใช้ key เดิมทั้งหมด คำตอบจะบอกว่าตอบโดยโมเดลไหน
 - จำกัดการถามต่อ IP ต่อวัน (`DAILY_LIMIT_PER_IP`, ค่าเริ่มต้น 20) และรวมทั้งวัน (`DAILY_LIMIT_TOTAL`, 300) ใน `wrangler.jsonc` ที่ root
 - ถ้าต้องการให้ limit แม่นทุก instance ให้ผูก KV namespace ชื่อ `RATE` (ฟรี) ไม่ผูกก็ใช้ได้แต่จะนับแยกตาม instance
 - หรือเผยแพร่เฉพาะ `web/dist` บน GitHub Pages / Cloudflare Pages ก็ได้ (ไม่มีช่องถามตอบ)

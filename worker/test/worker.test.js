@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import worker, { buildContext, handleAsk, takeQuota } from "../src/index.js";
+import worker, { askGemini, buildContext, handleAsk, modelChain, takeQuota } from "../src/index.js";
 
 const MAP = JSON.parse(readFileSync(new URL("../../web/public/data/conflict_map.json", import.meta.url)));
 
@@ -81,4 +81,83 @@ test("Gemini failure falls back to keyword answer with 502", async () => {
   const body = await r.json();
   assert.equal(r.status, 502);
   assert.match(body.answer, /^บริการ AI ขัดข้อง/);
+});
+
+test("Gemma: no JSON mode in the request, thinking parts dropped, fenced JSON parsed", async () => {
+  let sent;
+  const fakeFetch = async (url, init) => {
+    sent = { url, body: JSON.parse(init.body) };
+    return Response.json({
+      candidates: [
+        {
+          content: {
+            parts: [
+              { text: "internal reasoning F005", thought: true },
+              { text: 'คำตอบ:\n```json\n{"answer": "ควรตรวจ F005", "cited": ["F005"]}\n```' },
+            ],
+          },
+        },
+      ],
+    });
+  };
+  const env = { ASSETS: assets, GEMINI_API_KEY: "k", GEMINI_MODEL: "gemma-4-26b-a4b-it", DAILY_LIMIT_PER_IP: "5", DAILY_LIMIT_TOTAL: "50" };
+  const body = await (await handleAsk(ask("บัญชีปลายทาง", "5.5.5.5"), env, fakeFetch)).json();
+  assert.match(sent.url, /models\/gemma-4-26b-a4b-it:generateContent$/);
+  assert.equal(sent.body.generationConfig.responseMimeType, undefined);
+  assert.ok(sent.body.systemInstruction);
+  assert.equal(body.answer, "ควรตรวจ F005");
+  assert.deepEqual(body.cited, ["F005"]);
+});
+
+const okReply = (answer) =>
+  Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ answer, cited: [] }) }] } }] });
+const modelOf = (url) => url.match(/models\/([^:]+):/)[1];
+
+test("model chain: comma list, trimmed, de-duplicated; falls back to GEMINI_MODEL", () => {
+  assert.deepEqual(modelChain({ GEMINI_MODELS: " a, b ,a,," }), ["a", "b"]);
+  assert.deepEqual(modelChain({ GEMINI_MODEL: "solo" }), ["solo"]);
+});
+
+test("fallback: 429, token-limit 400, 404 and empty answers move to the next model", async () => {
+  const calls = [];
+  const fakeFetch = async (url) => {
+    const m = modelOf(url);
+    calls.push(m);
+    if (m === "fb-quota") return new Response("quota", { status: 429 });
+    if (m === "fb-tokens") return new Response("input token count exceeds", { status: 400 });
+    if (m === "fb-missing") return new Response("not found", { status: 404 });
+    if (m === "fb-empty") return Response.json({ candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [] } }] });
+    return okReply(`from ${m}`);
+  };
+  const env = { GEMINI_API_KEY: "k", GEMINI_MODELS: "fb-quota,fb-tokens,fb-missing,fb-empty,fb-good,fb-never" };
+  const out = await askGemini(env, "q", buildContext(MAP), fakeFetch);
+  assert.deepEqual(calls, ["fb-quota", "fb-tokens", "fb-missing", "fb-empty", "fb-good"]);
+  assert.equal(out.model, "fb-good");
+  assert.equal(out.answer, "from fb-good");
+});
+
+test("a model that hit its quota is skipped for a minute, then tried again", async () => {
+  const calls = [];
+  let quotaFull = true;
+  const fakeFetch = async (url) => {
+    const m = modelOf(url);
+    calls.push(m);
+    return m === "cd-first" && quotaFull ? new Response("quota", { status: 429 }) : okReply(m);
+  };
+  const env = { GEMINI_API_KEY: "k", GEMINI_MODELS: "cd-first,cd-second" };
+  const t0 = 1_000_000;
+  await askGemini(env, "q", buildContext(MAP), fakeFetch, t0);
+  await askGemini(env, "q", buildContext(MAP), fakeFetch, t0 + 30_000);
+  quotaFull = false;
+  const later = await askGemini(env, "q", buildContext(MAP), fakeFetch, t0 + 61_000);
+  assert.deepEqual(calls, ["cd-first", "cd-second", "cd-second", "cd-first"]);
+  assert.equal(later.model, "cd-first");
+});
+
+test("a rejected key stops the chain instead of trying every model", async () => {
+  const calls = [];
+  const fakeFetch = async (url) => (calls.push(modelOf(url)), new Response("bad key", { status: 403 }));
+  const env = { GEMINI_API_KEY: "bad", GEMINI_MODELS: "key-a,key-b,key-c" };
+  await assert.rejects(askGemini(env, "q", buildContext(MAP), fakeFetch), /all models failed/);
+  assert.deepEqual(calls, ["key-a"]);
 });

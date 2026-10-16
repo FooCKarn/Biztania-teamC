@@ -4,6 +4,7 @@ interface Answer {
   answer: string;
   cited?: string[];
   configured?: boolean;
+  model?: string;
 }
 
 // Q&A goes through the Worker (/api/ask). The Gemini key lives only in the Worker;
@@ -52,6 +53,7 @@ export default function AskBox() {
         <div className="answer">
           <p>{res.answer}</p>
           {res.cited && res.cited.length > 0 && <p className="muted small">อ้างอิง: {res.cited.join(", ")}</p>}
+          {res.model && <p className="muted small">ตอบโดย {res.model}</p>}
         </div>
       )}
       <p className="muted small">คำตอบสร้างจากผลในหน้านี้เท่านั้น และเป็นข้อเสนอให้ตรวจ ไม่ใช่ข้อสรุป</p>
