@@ -28,6 +28,11 @@ Auditor จึงใช้เวลาส่วนใหญ่ไปกับ **
 > **สำคัญ:** AI Audit Concierge **ไม่ได้ชี้ว่าบริษัททุจริต** หรือรายการใดผิดแน่นอน
 > แต่ช่วย Highlight รายการที่ผิดปกติหรือควรตรวจเพิ่ม Professional Judgment ยังอยู่ที่ Auditor
 
+### MVP
+
+มีเดโมแผนที่เอกสารขัดแย้ง (pipeline Python + เว็บ React/TSX + Cloudflare Worker) บนข้อมูลสมมติ
+วิธีรันและข้อจำกัดอยู่ที่ [docs/mvp.md](docs/mvp.md)
+
 ### Before / After
 
 - **Before:** ERP → Download Data → Excel → Reconcile → Search → Analyze → Document

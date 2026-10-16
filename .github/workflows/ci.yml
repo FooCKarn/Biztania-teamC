@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pipeline:
+    # Pinned: OCR output (and so the scan test) depends on the Tesseract version (5.3.4 on 24.04).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Tesseract (Thai + English)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-tha
+      - run: pip install -r pipeline/requirements.txt
+      - name: Pipeline tests (planted conflicts found, no false flags, no raw bank accounts)
+        working-directory: pipeline
+        run: python -m pytest -q
+
+  web-and-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - name: Worker tests
+        working-directory: worker
+        run: npm test

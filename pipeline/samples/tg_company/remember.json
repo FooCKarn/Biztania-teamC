@@ -1,0 +1,21 @@
+{
+  "client": "บริษัท สยามออโต้พาร์ท จำกัด",
+  "tolerance_pct": 1.0,
+  "materiality_thb": 10000,
+  "rules": [
+    {
+      "id": "R1",
+      "kind": "approval_threshold",
+      "threshold_thb": 100000,
+      "required_role": "Manager",
+      "source_doc": "policy_procurement.pdf",
+      "source_quote": "การสั่งซื้อที่มียอดเกิน 100,000 บาท ต้องได้รับอนุมัติจาก Manager"
+    },
+    {
+      "id": "R2",
+      "kind": "registered_account",
+      "source_doc": "policy_procurement.pdf",
+      "source_quote": "ทุกการจ่ายเงินต้องโอนเข้าบัญชีที่ลงทะเบียนไว้ใน Vendor master เท่านั้น"
+    }
+  ]
+}

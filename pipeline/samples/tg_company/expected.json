@@ -1,0 +1,71 @@
+{
+  "flags": [
+    {
+      "type": "POLICY_BREACH",
+      "docs": [
+        "PO-2026-002"
+      ],
+      "why": "120,000 ฿ อนุมัติโดย Purchasing Officer แต่กฎกำหนด Manager"
+    },
+    {
+      "type": "VALUE_MISMATCH",
+      "docs": [
+        "PO-2026-002",
+        "INV-TG-102"
+      ],
+      "why": "PO 120,000 ฿ แต่ Invoice 150,000 ฿"
+    },
+    {
+      "type": "TEXT_CONFLICT",
+      "docs": [
+        "CONTRACT-TG",
+        "INV-TG-102"
+      ],
+      "why": "สัญญาเครดิต 60 วัน แต่ Invoice 30 วัน"
+    },
+    {
+      "type": "DATE_ORDER",
+      "docs": [
+        "INV-BS-201",
+        "BANK-2026-03-10-INV-BS-201"
+      ],
+      "why": "จ่ายเงิน 10 มี.ค. ก่อนวันที่ Invoice 18 มี.ค."
+    },
+    {
+      "type": "PARTY_MISMATCH",
+      "docs": [
+        "INV-TG-105",
+        "BANK-2026-03-15-INV-TG-105"
+      ],
+      "why": "โอนเข้าบัญชีที่ไม่ใช่บัญชีใน Vendor master"
+    },
+    {
+      "type": "DUPLICATE",
+      "docs": [
+        "INV-BS-205"
+      ],
+      "why": "Invoice เลขเดียวกันมี 2 ไฟล์และจ่าย 2 ครั้ง"
+    },
+    {
+      "type": "MISSING_LINK",
+      "docs": [
+        "INV-NS-301"
+      ],
+      "why": "ไม่มี PO และใบรับของอ้างถึง"
+    }
+  ],
+  "pending_match": [
+    "INV-TG-110"
+  ],
+  "inferred_match": [
+    [
+      "INV-BS-210",
+      "PO-2026-009"
+    ]
+  ],
+  "clean": [
+    "PO-2026-001",
+    "PO-2026-003"
+  ],
+  "note": "PO-2026-003 / INV-TG-103 ต่างกันแค่ VAT 3,500 ฿ ต้องไม่ถูก flag"
+}

@@ -1,0 +1,10 @@
+po_no,po_date,vendor_code,vendor_name,description,amount_excl_vat,approved_by,approver_role
+PO-2026-001,2026-02-02,V001,"TG COMPANY CO.,LTD.",อะไหล่ระบบเบรก,80000.00,วิภา ศรีสุข,Manager
+PO-2026-002,2026-02-05,V001,"TG COMPANY CO.,LTD.",อะไหล่ช่วงล่าง,120000.00,สมชาย ใจดี,Purchasing Officer
+PO-2026-003,2026-02-10,V001,"TG COMPANY CO.,LTD.",น้ำมันเครื่อง,50000.00,วิภา ศรีสุข,Manager
+PO-2026-004,2026-03-01,V002,"BANGKOK STEEL CO.,LTD.",เหล็กแผ่น,40000.00,วิภา ศรีสุข,Manager
+PO-2026-005,2026-03-03,V001,"TG COMPANY CO.,LTD.",กรองอากาศ,70000.00,วิภา ศรีสุข,Manager
+PO-2026-006,2026-03-05,V002,"BANGKOK STEEL CO.,LTD.",เหล็กเส้น,45000.00,วิภา ศรีสุข,Manager
+PO-2026-007,2026-03-10,V001,"TG COMPANY CO.,LTD.",ยางรถยนต์,60000.00,วิภา ศรีสุข,Manager
+PO-2026-008,2026-03-11,V001,"TG COMPANY CO.,LTD.",ยางอะไหล่,59500.00,วิภา ศรีสุข,Manager
+PO-2026-009,2026-03-15,V002,"BANGKOK STEEL CO.,LTD.",สลักเกลียว,25000.00,วิภา ศรีสุข,Manager
