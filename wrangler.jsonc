@@ -20,6 +20,15 @@
     "GEMINI_MODEL": "gemini-2.5-flash",
     "DAILY_LIMIT_PER_IP": "20",
     "DAILY_LIMIT_TOTAL": "300"
+  },
+  // PR preview builds (Workers Builds runs `wrangler preview` on non-production branches).
+  // Lower limits so a preview link cannot drain the demo's free Gemini quota.
+  "previews": {
+    "vars": {
+      "GEMINI_MODEL": "gemini-2.5-flash",
+      "DAILY_LIMIT_PER_IP": "5",
+      "DAILY_LIMIT_TOTAL": "50"
+    }
   }
   // Optional, for limits that hold across Worker instances (KV free tier):
   // "kv_namespaces": [{ "binding": "RATE", "id": "<namespace id>" }]
