@@ -1,4 +1,4 @@
-# AI Audit Concierge — by MoGate
+# AI Audit Concierge 
 
 > ผู้ช่วย AI สำหรับ Auditor ที่ช่วยค้นหา เชื่อมโยง และวิเคราะห์ข้อมูลข้ามแหล่ง
 > โดยที่ **Auditor ยังคงเป็นผู้ตัดสินใจเสมอ** (Human in the loop)
