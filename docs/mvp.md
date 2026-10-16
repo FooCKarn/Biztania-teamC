@@ -56,7 +56,7 @@ cd ../web && npm install && npm run dev               # http://localhost:5173
 
 # 3) Worker (ถามตอบ) — อีกหน้าต่างหนึ่ง
 cd ../worker && npm install && npm test
-npm --prefix ../web run build && npx wrangler dev    # http://localhost:8787 (ทั้งเว็บและ /api/ask)
+npm run dev                                           # http://localhost:8787 (build เว็บให้เอง แล้วเสิร์ฟทั้งเว็บและ /api/ask)
 ```
 
 ถ้าไม่ได้ตั้ง `GEMINI_API_KEY` ช่องถามตอบยังใช้ได้ โดยตอบด้วยการค้นคำจากรายการที่ควรตรวจแทน
@@ -64,13 +64,16 @@ npm --prefix ../web run build && npx wrangler dev    # http://localhost:8787 (�
 ## เดโมฟรี (Cloudflare Workers free plan)
 
 ```bash
-cd worker
+# รันที่ root ของ repo (ไฟล์ตั้งค่าคือ wrangler.jsonc ที่ root, ชื่อ Worker: auditpal)
 npx wrangler login
 npx wrangler secret put GEMINI_API_KEY    # key จาก Google AI Studio (free tier) เก็บไว้ที่ Worker เท่านั้น
-npm run deploy                            # build เว็บ แล้ว deploy ทั้งเว็บและ API เป็น Worker เดียว
+npx wrangler deploy                       # build เว็บ (web/dist) ให้เองก่อน แล้ว deploy ทั้งเว็บและ API เป็น Worker เดียว
 ```
 
-- จำกัดการถามต่อ IP ต่อวัน (`DAILY_LIMIT_PER_IP`, ค่าเริ่มต้น 20) และรวมทั้งวัน (`DAILY_LIMIT_TOTAL`, 300) ใน `wrangler.jsonc`
+- ถ้าเชื่อม repo กับ Cloudflare (Workers Builds): ตั้ง Root directory เป็น `/` และ Deploy command เป็น `npx wrangler deploy` ไม่ต้องใส่ Build command เพราะ `wrangler.jsonc` สั่ง build ให้แล้ว
+- **ห้ามอัปโหลดโฟลเดอร์ `web/` ตรงๆ** (เช่นลากไฟล์ขึ้น dashboard) เพราะเป็นซอร์สที่ยังไม่ build เบราว์เซอร์จะเปิด `.tsx` ไม่ได้และขึ้นจอขาว ถ้าจะอัปโหลดเอง ให้ใช้ `web/dist` หลังรัน `npm run build` ใน `web/`
+
+- จำกัดการถามต่อ IP ต่อวัน (`DAILY_LIMIT_PER_IP`, ค่าเริ่มต้น 20) และรวมทั้งวัน (`DAILY_LIMIT_TOTAL`, 300) ใน `wrangler.jsonc` ที่ root
 - ถ้าต้องการให้ limit แม่นทุก instance ให้ผูก KV namespace ชื่อ `RATE` (ฟรี) ไม่ผูกก็ใช้ได้แต่จะนับแยกตาม instance
 - หรือเผยแพร่เฉพาะ `web/dist` บน GitHub Pages / Cloudflare Pages ก็ได้ (ไม่มีช่องถามตอบ)
 

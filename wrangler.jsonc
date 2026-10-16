@@ -1,0 +1,35 @@
+{
+  // One Worker serves the built web app (web/dist) and /api/ask. Free plan.
+  // Deploy from the repo root: `npx wrangler deploy` (or connect the repo in Cloudflare
+  // Workers Builds with root directory "/" and deploy command `npx wrangler deploy`).
+  // The build step below runs first, so the browser always gets compiled JS, never
+  // web/src/*.tsx (serving the unbuilt web/ folder is what gives a blank white page).
+  // Secret: `npx wrangler secret put GEMINI_API_KEY` (never commit it, never send it to the browser).
+  "name": "auditpal",
+  "main": "worker/src/index.js",
+  "compatibility_date": "2026-09-01",
+  "build": {
+    "command": "npm ci --prefix web && npm run build --prefix web"
+  },
+  "assets": {
+    "directory": "web/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "GEMINI_MODEL": "gemini-2.5-flash",
+    "DAILY_LIMIT_PER_IP": "20",
+    "DAILY_LIMIT_TOTAL": "300"
+  },
+  // PR preview builds (Workers Builds runs `wrangler preview` on non-production branches).
+  // Lower limits so a preview link cannot drain the demo's free Gemini quota.
+  "previews": {
+    "vars": {
+      "GEMINI_MODEL": "gemini-2.5-flash",
+      "DAILY_LIMIT_PER_IP": "5",
+      "DAILY_LIMIT_TOTAL": "50"
+    }
+  }
+  // Optional, for limits that hold across Worker instances (KV free tier):
+  // "kv_namespaces": [{ "binding": "RATE", "id": "<namespace id>" }]
+}
