@@ -10,8 +10,13 @@ The human-readable summary is in [`README.md`](README.md).
 - **Team name:** MoGate. Members: Sudpidchaya Khonsak, Tiptanya Khunchana.
 - **Product:** *AI Audit Concierge* — a B2B SaaS assistant for financial auditors that gathers,
   links and analyses audit evidence across many data sources and flags anomalies with evidence.
-- **Current stage:** business concept / pitch. There is no code yet. The plan is a pilot with one
-  small audit firm on one engagement before commercial rollout.
+- **Current stage:** business concept / pitch plus a conflict-map MVP on synthetic data
+  (`pipeline/` Python, `web/` React + TSX, `worker/` Cloudflare Worker JS; see `docs/mvp.md`).
+  The plan is a pilot with one small audit firm on one engagement before commercial rollout.
+- **MVP rules:** code (not the LLM) decides conflicts; every value needs a verified source quote;
+  unclear OCR never raises a flag; ambiguous pairs go to "รอจับคู่" unchecked; bank accounts are
+  tokenised at ingestion and only shown masked. `pipeline/samples/tg_company/expected.json` is the
+  answer key the tests score against.
 
 ## Core principles (keep these consistent in any material or prototype)
 

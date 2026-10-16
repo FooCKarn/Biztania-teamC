@@ -1,0 +1,14 @@
+{
+  "name": "audit-concierge-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "npm --prefix ../web run build && wrangler deploy",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}
