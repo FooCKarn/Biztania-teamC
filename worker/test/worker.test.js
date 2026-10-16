@@ -82,3 +82,29 @@ test("Gemini failure falls back to keyword answer with 502", async () => {
   assert.equal(r.status, 502);
   assert.match(body.answer, /^บริการ AI ขัดข้อง/);
 });
+
+test("Gemma: no JSON mode in the request, thinking parts dropped, fenced JSON parsed", async () => {
+  let sent;
+  const fakeFetch = async (url, init) => {
+    sent = { url, body: JSON.parse(init.body) };
+    return Response.json({
+      candidates: [
+        {
+          content: {
+            parts: [
+              { text: "internal reasoning F005", thought: true },
+              { text: 'คำตอบ:\n```json\n{"answer": "ควรตรวจ F005", "cited": ["F005"]}\n```' },
+            ],
+          },
+        },
+      ],
+    });
+  };
+  const env = { ASSETS: assets, GEMINI_API_KEY: "k", GEMINI_MODEL: "gemma-4-26b-a4b-it", DAILY_LIMIT_PER_IP: "5", DAILY_LIMIT_TOTAL: "50" };
+  const body = await (await handleAsk(ask("บัญชีปลายทาง", "5.5.5.5"), env, fakeFetch)).json();
+  assert.match(sent.url, /models\/gemma-4-26b-a4b-it:generateContent$/);
+  assert.equal(sent.body.generationConfig.responseMimeType, undefined);
+  assert.ok(sent.body.systemInstruction);
+  assert.equal(body.answer, "ควรตรวจ F005");
+  assert.deepEqual(body.cited, ["F005"]);
+});

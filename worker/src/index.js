@@ -92,15 +92,22 @@ export async function askGemini(env, question, ctx, fetchImpl = fetch) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: `CONTEXT:\n${JSON.stringify(ctx)}\n\nคำถาม: ${question}` }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 800, responseMimeType: "application/json" },
+      // Gemma models on the Gemini API are not documented to support JSON mode, so for them
+      // the JSON shape comes from the prompt alone and is parsed leniently below.
+      generationConfig: {
+        temperature: 0.1,
+        maxOutputTokens: 800,
+        ...(model.startsWith("gemma") ? {} : { responseMimeType: "application/json" }),
+      },
     }),
   });
   if (!r.ok) throw new Error(`gemini ${r.status}`);
   const body = await r.json();
-  const text = body?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+  const parts = body?.candidates?.[0]?.content?.parts || [];
+  const text = parts.filter((p) => !p.thought).map((p) => p.text || "").join("").trim(); // never show thinking
   let out;
   try {
-    out = JSON.parse(text);
+    out = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? text); // tolerate ```json fences or a lead-in sentence
   } catch {
     out = { answer: text, cited: [] };
   }
