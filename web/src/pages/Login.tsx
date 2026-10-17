@@ -57,17 +57,13 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
   };
 
   return (
-    <div className="shell narrow">
+    <div className="login-split">
+      <div className="login-side">
       <div className="login-lang">
         <ThemeToggle />
         <LangToggle />
       </div>
-      <div className="login-head">
-        <h1>
-          <Logo className="logo-big" />
-        </h1>
-        <p className="muted">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
-      </div>
+      <p className="muted login-tag">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
       {demoMode && (
         <div className="group-body form">
           <h3>{t("ลองใช้งาน (ไม่ต้องเข้าสู่ระบบ)", "Try it out (no sign-in)")}</h3>
@@ -145,6 +141,10 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
           </a>
         </p>
       )}
+      </div>
+      <div className="login-art" aria-hidden="true">
+        <Logo className="logo-hero" />
+      </div>
     </div>
   );
 }
