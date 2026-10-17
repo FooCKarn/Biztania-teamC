@@ -38,7 +38,7 @@ const APP_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS members (
     engagement_id TEXT NOT NULL,
     user_id       TEXT NOT NULL,
-    role          TEXT NOT NULL CHECK (role IN ('preparer', 'reviewer', 'manager')),
+    role          TEXT NOT NULL CHECK (role IN ('auditor')),
     added_by      TEXT NOT NULL,
     added_at      TEXT NOT NULL,
     PRIMARY KEY (engagement_id, user_id)

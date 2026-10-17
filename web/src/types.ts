@@ -134,13 +134,18 @@ export interface SkippedCheck {
   reason: string;
 }
 
-/** Working-paper sign-off: the preparer gives the verdict and reason, a different person reviews. */
+/** Working-paper sign-off: whoever checked the item gives the verdict and reason. */
 export interface Decision {
   verdict: "issue" | "not_issue";
   reason: string;
   at: string;
   by?: string;
-  review?: { by: string; at: string };
+}
+
+/** The one engagement-level sign-off, recorded once after every flag has been checked. */
+export interface Signoff {
+  by: string;
+  at: string;
 }
 
 /** One append-only Audit Trail entry (from /api/trail; the server sets at, evidence and the hashes). */
@@ -149,8 +154,8 @@ export interface TrailEvent {
   seq: number;
   at: string;
   actor: string;
-  action: "prepare" | "review" | "unreview" | "reopen" | "pair";
-  /** Flag id (e.g. F001) or `pair:<doc id>`. */
+  action: "check" | "reopen" | "pair" | "signoff" | "unsignoff";
+  /** Flag id (e.g. F001), `pair:<doc id>`, or the fixed engagement-level sign-off target. */
   target: string;
   value: string | null;
   reason: string | null;

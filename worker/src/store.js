@@ -6,12 +6,25 @@
 // not decrypt. Without the FILES_KEY secret the store refuses to work rather than store plain text.
 //
 // Large files are split into ~1 MB rows (D1 limits a row to 2 MB).
+//
+// Plaintext is gzip-compressed before it is encrypted (compressing ciphertext does nothing, since
+// encrypted bytes look random) and gunzipped again after decryption. Applied the same way on every
+// put and get, so no extra metadata is needed to know a blob was compressed.
 
 import { HttpError, nowIso } from "./http.js";
 import { filesDb } from "./schema.js";
 
 const CHUNK = 1_000_000;
 const enc = new TextEncoder();
+
+async function gzip(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function gunzip(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
 
 export const isConfigured = (env) => typeof env.FILES_KEY === "string" && env.FILES_KEY.length >= 32;
 
@@ -41,8 +54,9 @@ const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 export async function putBlob(env, engagementId, key, bytes, contentType) {
   if (!key.startsWith(`eng/${engagementId}/`)) throw new Error("blob key outside its engagement");
   const iv = crypto.getRandomValues(new Uint8Array(12));
+  const compressed = await gzip(bytes);
   const ct = new Uint8Array(
-    await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc.encode(key) }, await engagementKey(env, engagementId), bytes),
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc.encode(key) }, await engagementKey(env, engagementId), compressed),
   );
   const db = filesDb(env);
   const chunks = Math.max(1, Math.ceil(ct.length / CHUNK));
@@ -70,12 +84,12 @@ export async function getBlob(env, engagementId, key) {
     ct.set(p, off);
     off += p.length;
   }
-  const plain = await crypto.subtle.decrypt(
+  const compressed = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: unb64(meta.iv), additionalData: enc.encode(key) },
     await engagementKey(env, engagementId),
     ct,
   );
-  return { bytes: new Uint8Array(plain), contentType: meta.content_type };
+  return { bytes: await gunzip(new Uint8Array(compressed)), contentType: meta.content_type };
 }
 
 export async function deleteBlob(env, key) {

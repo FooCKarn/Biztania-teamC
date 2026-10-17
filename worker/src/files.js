@@ -19,7 +19,6 @@ import { requireUser } from "./auth.js";
 const MB = 1024 * 1024;
 // D1 free plan: 500 MB per database; paid: 10 GB. STORAGE_QUOTA_MB sets what the meter shows as full.
 const quotaBytes = (env) => Math.max(1, Number(env.STORAGE_QUOTA_MB || 500)) * MB;
-const WORK = new Set(["preparer", "reviewer", "manager"]);
 
 export const extOf = (name) => {
   const m = String(name).toLowerCase().match(/\.([a-z0-9]{1,8})$/);
@@ -104,7 +103,7 @@ export async function handleFiles(request, env, path) {
       status: e.status,
       purged: !!e.purged_at,
       my_role: e.role,
-      can_delete: e.status === "open" && WORK.has(e.role),
+      can_delete: e.status === "open",
     })),
     files: files.map((f) => ({
       id: f.id,

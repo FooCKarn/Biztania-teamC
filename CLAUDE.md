@@ -15,19 +15,25 @@ The human-readable summary is in [`README.md`](README.md).
   The plan is a pilot with one small audit firm on one engagement before commercial rollout.
 - **MVP rules:** code (not the LLM) decides conflicts; every value needs a verified source quote;
   unclear OCR never raises a flag; ambiguous pairs go to "รอจับคู่" unchecked; bank accounts are
-  tokenised at ingestion and only shown masked. Sign-offs and decisions go to an append-only, hash-chained
-  Audit Trail in D1 (`worker/src/trail.js`); the server stamps time and evidence refs. `pipeline/samples/tg_company/expected.json` is the
+  tokenised at ingestion and only shown masked. Decisions go to an append-only, hash-chained
+  Audit Trail in D1 (`worker/src/trail.js`); the server stamps time and evidence refs. One role (Auditor):
+  each flagged item gets a single "check" (verdict + reason, by whoever on the team did it, no separate
+  preparer/reviewer pass); once every item is checked, the engagement is signed off once (`SignoffBar`
+  in the web app) confirming the full review is done — the client-facing report only shows issues from a
+  signed-off run. `pipeline/samples/tg_company/expected.json` is the
   answer key the tests score against; FN/FP cross-check (`auditconcierge/crosscheck.py`, seeded-error tests on
   `samples/frozen_foods.py`) lists every skipped check in `coverage.skipped_checks` (no flag ≠ no problem).
-- **Engagements (uploads):** login with per-engagement roles preparer / reviewer / manager (the signer is the account);
-  every API checks team membership; files are AES-GCM encrypted per engagement in D1 `auditpal-files`; the Python
+- **Engagements (uploads):** login; every engagement has a team of Auditors with equal access (upload,
+  process, check, sign off, manage the team, settings, close) — the signer on every Audit Trail entry is
+  the signed-in account, never a typed name; every API checks team membership; files up to 100 MB are
+  gzip-compressed then AES-GCM encrypted per engagement in D1 `auditpal-files`; the Python
   pipeline runs on a stateless Render container called with HMAC (`pipeline/auditconcierge/server.py`); raw files and
   page images are deleted `RETENTION_DAYS` (90) after closing, the working paper and trail stay. `ALLOW_REAL_DATA`
   stays false (synthetic only) until the AI provider is switched. Deploy steps: `docs/deploy-pipeline.md`.
   File manager `#/files` (`worker/src/files.js`, `web/src/pages/Files.tsx`): storage meter against `STORAGE_QUOTA_MB` (500), files of the user's
   engagements filtered by extension, manual download/delete only; other engagements' usage is one number; page images are never listed for deletion.
-  Demo for outside users: an admin button on the users page creates shared accounts `{preparer,reviewer,manager}@demo.example.com`
-  (no password change, passwords shown once, never in the repo); with the Worker var `DEMO_MODE=true` (on by default, also in `wrangler.jsonc`; `false` turns it off, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement only (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
+  Demo for outside users: an admin button on the users page creates a shared account `auditor@demo.example.com`
+  (no password change, password shown once, never in the repo); with the Worker var `DEMO_MODE=true` (on by default, also in `wrangler.jsonc`; `false` turns it off, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement only (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
 
 ## Core principles (keep these consistent in any material or prototype)
 

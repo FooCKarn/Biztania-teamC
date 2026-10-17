@@ -114,9 +114,8 @@ export function reportBody(report: Report, data: ConflictMap): string {
         { header: tr("ชื่อ", "Name"), width: 4000 },
       ],
       [
-        [tr("จัดทำโดย", "Prepared by"), report.preparers.join(", ")],
-        [tr("สอบทานโดย", "Reviewed by"), report.reviewers.join(", ")],
-        [tr("อนุมัติ (Manager)", "Approved (Manager)"), ""],
+        [tr("ตรวจสอบโดย", "Checked by"), report.checkedBy.join(", ")],
+        [tr("ลงนามยืนยันผลโดย", "Signed off by"), report.signoff ? `${report.signoff.by} · ${when(report.signoff.at)}` : ""],
       ],
       { headerCol: true },
     ),
@@ -133,7 +132,7 @@ export function reportBody(report: Report, data: ConflictMap): string {
     ...(client
       ? []
       : [
-          [tr("สอบทานแล้ว", "Reviewed"), ...report.byRisk.map((r) => String(r.reviewed)), String(t.reviewed)],
+          [tr("ตรวจสอบแล้ว", "Checked"), ...report.byRisk.map((r) => String(r.checked)), String(t.checked)],
           [tr("สรุปว่าเป็นประเด็น", "Concluded as issue"), ...report.byRisk.map((r) => String(r.issues)), String(t.issues)],
         ]),
     [tr("ยอดที่เกี่ยวข้อง", "Amount at stake"), ...report.byRisk.map((r) => baht(r.atStake)), baht(report.byRisk.reduce((s, r) => s + r.atStake, 0))],
@@ -143,15 +142,15 @@ export function reportBody(report: Report, data: ConflictMap): string {
     out.push(
       muted(
         tr(
-          `จัดทำแล้ว ${t.prepared}/${t.flags} · สอบทานแล้ว ${t.reviewed}/${t.flags} · ไม่เป็นประเด็น ${t.notIssues} · รอจับคู่ ${t.pending} (ยังไม่นำไปตรวจ)`,
-          `Prepared ${t.prepared}/${t.flags} · Reviewed ${t.reviewed}/${t.flags} · Not an issue ${t.notIssues} · Unmatched ${t.pending} (not yet checked)`,
+          `ตรวจสอบแล้ว ${t.checked}/${t.flags} · ไม่เป็นประเด็น ${t.notIssues} · รอจับคู่ ${t.pending} (ยังไม่นำไปตรวจ)`,
+          `Checked ${t.checked}/${t.flags} · Not an issue ${t.notIssues} · Unmatched ${t.pending} (not yet checked)`,
         ),
       ),
     );
 
   out.push(h(client ? tr("ประเด็นและเอกสารอ้างอิง", "Issues and supporting documents") : tr("รายการที่ควรตรวจ", "Items to check"), 2));
   if (report.flags.length === 0)
-    out.push(muted(client ? tr("ยังไม่มีรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น", "No items signed off by the reviewer as issues yet") : tr("ไม่มีรายการที่ควรตรวจ", "No items to check")));
+    out.push(muted(client ? tr("ยังไม่มีรายการจากผลที่ลงนามยืนยันแล้วว่าเป็นประเด็น", "No items from a signed-off run are issues yet") : tr("ไม่มีรายการที่ควรตรวจ", "No items to check")));
   for (const r of report.flags) {
     out.push(
       para(
@@ -193,8 +192,7 @@ export function reportBody(report: Report, data: ConflictMap): string {
           ],
           [
             [tr("ผลการพิจารณา", "Conclusion"), `${r.decision ? r.verdictLabel : r.stateLabel}${r.decision?.reason ? ` · ${r.decision.reason}` : ""}`],
-            [tr("ผู้จัดทำ", "Preparer"), r.decision ? `${r.decision.by ?? "-"} · ${when(r.decision.at)}` : "-"],
-            [tr("ผู้สอบทาน", "Reviewer"), r.decision?.review ? `${r.decision.review.by} · ${when(r.decision.review.at)}` : "-"],
+            [tr("ตรวจสอบโดย", "Checked by"), r.decision ? `${r.decision.by ?? "-"} · ${when(r.decision.at)}` : "-"],
           ],
           { headerCol: true, noHeader: true },
         ),

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type Role, type RunProgress, type User } from "../api";
+import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type RunProgress, type User } from "../api";
 import { bi, locale, t } from "../i18n";
 import Loading from "../components/Loading";
 
@@ -77,7 +77,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [add, setAdd] = useState<{ user: string; role: Role }>({ user: "", role: "preparer" });
+  const [add, setAdd] = useState<{ user: string }>({ user: "" });
   const [settings, setSettings] = useState<{ t: string; m: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -104,11 +104,12 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   }, [running, busy, load]);
 
   const role = d?.engagement.my_role;
-  const manager = role === "manager";
+  // Every team member has the same access (single Auditor role), so "I'm on the team" is the only gate.
+  const member = !!role;
   const open = d?.engagement.status === "open";
   useEffect(() => {
-    if (manager) api<{ users: User[] }>("api/users").then((r) => setUsers(r.users)).catch(() => undefined);
-  }, [manager]);
+    if (member) api<{ users: User[] }>("api/users").then((r) => setUsers(r.users)).catch(() => undefined);
+  }, [member]);
 
   const act = async (fn: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -275,12 +276,9 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                       {t("เลือกไฟล์", "choose files")}
                     </button>
                   </p>
-                  <p className="muted small">
-                    {t(
-                      "PDF, สแกน (PNG/JPG/TIFF), CSV, XLSX ไม่เกิน 10 MB ต่อไฟล์ · กฎของบริษัทใส่เป็น remember.json · ไฟล์ถูกเข้ารหัสแยกต่อ Engagement",
-                      "PDF, scans (PNG/JPG/TIFF), CSV, XLSX up to 10 MB each · Company rules go in remember.json · Files are encrypted per engagement",
-                    )}
-                  </p>
+                  <p className="muted small">{t("PDF, สแกน (PNG/JPG/TIFF), CSV, XLSX ไม่เกิน 100 MB ต่อไฟล์", "PDF, scans (PNG/JPG/TIFF), CSV, XLSX up to 100 MB each")}</p>
+                  <p className="muted small">{t("กฎของบริษัทใส่เป็น remember.json", "Company rules go in remember.json")}</p>
+                  <p className="muted small">{t("ไฟล์ถูกเข้ารหัสแยกต่อ Engagement", "Files are encrypted per engagement")}</p>
                   <input ref={input} type="file" multiple accept={ACCEPT} hidden onChange={(ev) => upload(ev.target.files)} />
                 </div>
               )}
@@ -394,26 +392,9 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                         <strong>{m.initials}</strong> {m.name}
                         {m.id === me.id && <span className="muted small"> ({t("คุณ", "you")})</span>}
                       </td>
+                      <td className="muted small">{ROLE_LABEL[m.role]}</td>
                       <td>
-                        {manager && open ? (
-                          <select
-                            value={m.role}
-                            disabled={busy}
-                            aria-label={t(`บทบาทของ ${m.name}`, `Role of ${m.name}`)}
-                            onChange={(ev) => act(() => api(`api/engagements/${id}/members`, { body: { user_id: m.id, role: ev.target.value } }))}
-                          >
-                            {Object.entries(ROLE_LABEL).map(([k, v]) => (
-                              <option key={k} value={k}>
-                                {v}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          ROLE_LABEL[m.role]
-                        )}
-                      </td>
-                      <td>
-                        {manager && open && m.id !== me.id && (
+                        {member && open && m.id !== me.id && (
                           <button className="link destructive small" disabled={busy} onClick={() => act(() => api(`api/engagements/${id}/members/${m.id}/remove`, { method: "POST" }))}>
                             {t("นำออก", "Remove")}
                           </button>
@@ -423,7 +404,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                   ))}
                 </tbody>
               </table>
-              {manager && open && (
+              {member && open && (
                 <div className="row add-member">
                   <select value={add.user} onChange={(ev) => setAdd({ ...add, user: ev.target.value })} aria-label={t("ผู้ใช้", "User")}>
                     <option value="">{t("เพิ่มคนในทีม…", "Add a team member…")}</option>
@@ -435,18 +416,11 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                         </option>
                       ))}
                   </select>
-                  <select value={add.role} onChange={(ev) => setAdd({ ...add, role: ev.target.value as Role })} aria-label={t("บทบาท", "Role")}>
-                    {Object.entries(ROLE_LABEL).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
                   <button
                     className="btn"
                     disabled={!add.user || busy}
                     onClick={() => act(async () => {
-                      await api(`api/engagements/${id}/members`, { body: { user_id: add.user, role: add.role } });
+                      await api(`api/engagements/${id}/members`, { body: { user_id: add.user } });
                       setAdd({ ...add, user: "" });
                     })}
                   >
@@ -455,17 +429,14 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                 </div>
               )}
               <p className="muted small">
-                {t(
-                  "ผู้จัดทำ: อัปโหลด ประมวลผล ลงนามผู้จัดทำ · ผู้สอบทาน: ลงนามสอบทาน (ต้องไม่ใช่คนที่จัดทำรายการนั้น) · Manager: ทุกอย่าง รวมถึงทีมและปิดงาน",
-                  "Preparer: upload, process, sign as preparer · Reviewer: sign off reviews (not on items they prepared) · Manager: everything, including the team and closing",
-                )}
+                {t("ทุกคนในทีมเป็นผู้สอบบัญชี (Auditor) ที่เข้าถึง Engagement นี้ได้เท่ากัน: อัปโหลด ประมวลผล ตรวจสอบรายการ ลงนามยืนยันผล จัดการทีม ตั้งค่า และปิดงาน", "Everyone on the team is an Auditor with the same access to this engagement: upload, process, check items, sign off, manage the team, settings and closing")}
               </p>
             </div>
           </section>
 
-          {manager && open && (
+          {member && open && (
             <section className="group">
-              <h3 className="group-title">{t("ตั้งค่าและปิดงาน (Manager)", "Settings and closing (manager)")}</h3>
+              <h3 className="group-title">{t("ตั้งค่าและปิดงาน", "Settings and closing")}</h3>
               <div className="group-body stack">
                 <div className="row">
                   <label className="form-field">

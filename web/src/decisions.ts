@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Decision, TrailEvent } from "./types";
+import type { Decision, Signoff, TrailEvent } from "./types";
 import type { Source } from "./source";
 import { t } from "./i18n";
 
 // The auditor's sign-offs and pair confirmations as an append-only Audit Trail.
 // With the Worker's D1 store bound, /api/trail is the record and the server stamps time and evidence.
 // Without it (e.g. `npm run dev` alone or static hosting) the same log is kept in this browser.
-// In an engagement the signer is the signed-in account (the server ignores any typed name) and
-// what each person may sign depends on their role in that engagement.
+// In an engagement the signer is the signed-in account (the server ignores any typed name). Every
+// item just needs one "check"; once every item is checked, the whole run is signed off once.
+
+/** Fixed target for the one engagement-level sign-off; never collides with a flag id. */
+export const SIGNOFF_TARGET = "__engagement__";
 
 export type TrailAction =
-  | { action: "prepare"; target: string; value: Decision["verdict"]; reason: string; actor: string }
-  | { action: "review" | "unreview" | "reopen"; target: string; actor: string; reason?: string }
-  | { action: "pair"; target: string; value: string; actor: string };
+  | { action: "check"; target: string; value: Decision["verdict"]; reason: string; actor: string }
+  | { action: "reopen"; target: string; actor: string; reason?: string }
+  | { action: "pair"; target: string; value: string; actor: string }
+  | { action: "signoff" | "unsignoff"; target: typeof SIGNOFF_TARGET; actor: string };
 
 export interface Trail {
   mode: "loading" | "server" | "local";
@@ -20,6 +24,7 @@ export interface Trail {
   events: TrailEvent[];
   decisions: Record<string, Decision>;
   pairs: Record<string, string>;
+  signoff: Signoff | null;
   chainOk: boolean | null;
   /** Engagements: the signed-in user's initials and role; the demo uses typed initials instead. */
   actor?: string;
@@ -30,7 +35,7 @@ export interface Trail {
 }
 
 // Each browser gets its own workspace so demo visitors do not see each other's sign-offs;
-// open the page with ?ws=<name> to share one trail (e.g. preparer and reviewer on two laptops).
+// open the page with ?ws=<name> to share one trail across devices.
 function workspaceId() {
   const fromUrl = new URLSearchParams(location.search).get("ws")?.toLowerCase() ?? "";
   if (/^[a-z0-9-]{4,40}$/.test(fromUrl)) return fromUrl;
@@ -49,27 +54,32 @@ function workspaceId() {
 export function replay(events: TrailEvent[]) {
   const decisions: Record<string, Decision> = {};
   const pairs: Record<string, string> = {};
+  let signoff: Signoff | null = null;
   for (const e of events) {
     if (e.action === "pair") pairs[e.target.replace(/^pair:/, "")] = e.value ?? "";
-    else if (e.action === "prepare")
-      decisions[e.target] = { verdict: e.value as Decision["verdict"], reason: e.reason ?? "", at: e.at, by: e.actor };
-    else if (e.action === "review" && decisions[e.target]) decisions[e.target] = { ...decisions[e.target], review: { by: e.actor, at: e.at } };
-    else if (e.action === "unreview" && decisions[e.target]) decisions[e.target] = { ...decisions[e.target], review: undefined };
+    else if (e.action === "check") decisions[e.target] = { verdict: e.value as Decision["verdict"], reason: e.reason ?? "", at: e.at, by: e.actor };
     else if (e.action === "reopen") delete decisions[e.target];
+    else if (e.action === "signoff") signoff = { by: e.actor, at: e.at };
+    else if (e.action === "unsignoff") signoff = null;
   }
-  return { decisions, pairs };
+  return { decisions, pairs, signoff };
 }
 
 // Same state rules as the Worker, for the browser-only fallback.
-function localCheck(a: TrailAction, decisions: Record<string, Decision>): string | null {
+function localCheck(a: TrailAction, decisions: Record<string, Decision>, signoff: Signoff | null, totalFlags: number): string | null {
   const cur = decisions[a.target];
-  if (a.action === "prepare" && cur) return t("รายการนี้ลงนามผู้จัดทำแล้ว", "This item is already signed by the preparer");
-  if (a.action === "review" && !cur) return t("ต้องให้ผู้จัดทำลงนามก่อน", "The preparer must sign first");
-  if (a.action === "review" && cur.by === a.actor) return t("ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ", "The reviewer must not be the preparer");
+  if (a.action === "signoff") {
+    if (signoff) return t("ลงนามยืนยันผลแล้ว", "Already signed off");
+    if (Object.keys(decisions).length < totalFlags) return t("ยังตรวจสอบไม่ครบทุกจุด", "Not every item has been checked yet");
+    return null;
+  }
+  if (a.action === "unsignoff") return signoff ? null : t("ยังไม่ได้ลงนามยืนยันผล", "Not signed off yet");
+  if (signoff) return t("ลงนามยืนยันผลแล้ว ต้องยกเลิกการลงนามก่อนจึงจะแก้ไขรายการได้", "Already signed off; undo the sign-off before editing items");
+  if (a.action === "check" && cur) return t("รายการนี้ตรวจสอบแล้ว", "This item is already checked");
   return null;
 }
 
-export function useTrail(runId: string, source?: Source): Trail {
+export function useTrail(runId: string, source?: Source, totalFlags = 0): Trail {
   const eng = source?.engagement;
   const isEng = !!eng;
   const [demoWorkspace] = useState(workspaceId);
@@ -134,7 +144,8 @@ export function useTrail(runId: string, source?: Source): Trail {
         }
       }
       if (isEng) return t("ยังเชื่อมต่อ Audit Trail ไม่ได้ จึงยังไม่ได้บันทึก", "The Audit Trail is not reachable yet, nothing was saved");
-      const err = localCheck(a, replay(events).decisions);
+      const replayed = replay(events);
+      const err = localCheck(a, replayed.decisions, replayed.signoff, totalFlags);
       if (err) return err;
       const e: TrailEvent = {
         run_id: runId,
@@ -158,9 +169,9 @@ export function useTrail(runId: string, source?: Source): Trail {
       }
       return null;
     },
-    [mode, workspace, runId, events, localKey, isEng, url],
+    [mode, workspace, runId, events, localKey, isEng, url, totalFlags],
   );
 
-  const { decisions, pairs } = replay(events);
-  return { mode, workspace, events, decisions, pairs, chainOk, act, ...who, readOnly: !!eng?.closed };
+  const { decisions, pairs, signoff } = replay(events);
+  return { mode, workspace, events, decisions, pairs, signoff, chainOk, act, ...who, readOnly: !!eng?.closed };
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Workspace from "./Workspace";
 import { DEMO, engagementSource, type Source } from "./source";
-import { api, ROLE_LABEL, type User, type EngagementDetail } from "./api";
+import { api, type User, type EngagementDetail } from "./api";
 import Login, { ChangePassword } from "./pages/Login";
 import Engagements from "./pages/Engagements";
 import EngagementPage from "./pages/EngagementPage";
@@ -21,7 +21,10 @@ import Loading from "./components/Loading";
 function useHash() {
   const [hash, setHash] = useState(location.hash.replace(/^#/, "") || "/");
   useEffect(() => {
-    const on = () => setHash(location.hash.replace(/^#/, "") || "/");
+    const on = () => {
+      setHash(location.hash.replace(/^#/, "") || "/");
+      window.scrollTo(0, 0); // a new page should start at its top, not wherever the last one left off
+    };
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
@@ -36,11 +39,8 @@ const Back = ({ to, label }: { to: string; label: string }) => (
   </a>
 );
 
-const DEMO_ROLES = ["preparer", "reviewer", "manager"] as const;
-
-// Shown for the shared demo accounts (DEMO_MODE): synthetic data only, switch role (a review needs someone
-// other than the preparer), and wipe the demo engagement.
-function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
+// Shown for the shared demo account (DEMO_MODE): synthetic data only, and a way to wipe the demo engagement.
+function DemoBanner({ onChange }: { onChange: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const run = async (fn: () => Promise<void>) => {
@@ -55,11 +55,6 @@ function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
       setBusy(false);
     }
   };
-  const switchTo = (role: string) =>
-    run(async () => {
-      await api("api/auth/demo-login", { body: { role } });
-      location.hash = "/";
-    });
   const reset = () => {
     if (
       !confirm(
@@ -75,7 +70,6 @@ function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
       location.hash = `/e/${r.engagement.id}`;
     });
   };
-  const current = user.initials === "DP" ? "preparer" : user.initials === "DR" ? "reviewer" : "manager";
   return (
     <div className="banner demo-banner" role="status">
       <p>
@@ -86,14 +80,6 @@ function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
         )}
       </p>
       <div className="row">
-        <span className="muted small">{t("สลับบทบาท", "Switch role")}</span>
-        <div className="segmented small-seg" role="radiogroup" aria-label={t("บทบาท", "Role")}>
-          {DEMO_ROLES.map((r) => (
-            <button key={r} role="radio" aria-checked={r === current} disabled={busy} onClick={() => r !== current && switchTo(r)}>
-              {ROLE_LABEL[r]}
-            </button>
-          ))}
-        </div>
         <button className="btn" disabled={busy} onClick={reset}>
           {t("รีเซ็ตเดโม", "Reset demo")}
         </button>
@@ -205,7 +191,7 @@ export default function App() {
   if (review)
     return (
       <>
-        {user.demo && <DemoBanner user={user} onChange={refresh} />}
+        {user.demo && <DemoBanner onChange={refresh} />}
         <EngagementReview id={review[1]} />
       </>
     );
@@ -220,7 +206,7 @@ export default function App() {
   return (
     <div className="shell">
       {bar}
-      {user.demo && <DemoBanner user={user} onChange={refresh} />}
+      {user.demo && <DemoBanner onChange={refresh} />}
       {page}
     </div>
   );

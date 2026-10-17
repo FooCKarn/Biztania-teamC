@@ -1,26 +1,23 @@
-// Demo accounts and a synthetic engagement, so people outside the firm can try the deployed app.
+// A demo account and a synthetic engagement, so people outside the firm can try the deployed app.
 //
 // Only a firm admin can call these, from the users page (web/src/pages/Users.tsx):
-//   POST /api/users/demo/account/<role>  create or reset one shared account, returns its password once
-//   POST /api/users/demo/engagement      create (or reuse) the open demo engagement and put the three
-//                                        accounts on its team; returns the files it already has
+//   POST /api/users/demo/account     create or reset the shared account, returns its password once
+//   POST /api/users/demo/engagement  create (or reuse) the open demo engagement with that account
+//                                    on its team; returns the files it already has
 // The browser then uploads the sample set (built into web/dist/demo/tg_company/ from
 // pipeline/samples/tg_company, without the answer key) through the normal upload API and starts a run.
 // One request per step keeps each one inside the Free plan's CPU and D1 query limits.
 //
-// Passwords are generated here and shown only to the admin; none is stored in the repo. Demo accounts
-// are ordinary members (not admins), never need a first-login change and cannot change their password.
+// The password is generated here and shown only to the admin; it is never stored in the repo. The
+// demo account is an ordinary member (not an admin), never needs a first-login change and cannot
+// change its own password.
 
 import { HttpError, json, nowIso, randomId, readJson, clientIp } from "./http.js";
 import { ensureAppSchema } from "./schema.js";
 import { requireUser, insertUser, hashPassword, tempPassword, publicUser, startSession, demoEnabled, isDemoEmail, DEMO_DOMAIN } from "./auth.js";
 import { createEngagement, setMember, wipeEngagement } from "./engagements.js";
 
-export const DEMO_ACCOUNTS = [
-  { role: "preparer", email: `preparer@${DEMO_DOMAIN}`, name: "ผู้จัดทำ (บัญชีทดลอง)", initials: "DP" },
-  { role: "reviewer", email: `reviewer@${DEMO_DOMAIN}`, name: "ผู้สอบทาน (บัญชีทดลอง)", initials: "DR" },
-  { role: "manager", email: `manager@${DEMO_DOMAIN}`, name: "Manager (บัญชีทดลอง)", initials: "DM" },
-];
+export const DEMO_ACCOUNT = { email: `auditor@${DEMO_DOMAIN}`, name: "ผู้สอบบัญชี (บัญชีทดลอง)", initials: "DA" };
 
 // Matches pipeline/samples/tg_company/remember.json.
 export const DEMO_ENGAGEMENT = { client: "บริษัท สยามออโต้พาร์ท จำกัด", period: "Q1 2026 (ข้อมูลสมมติ)", tolerance_pct: 1, materiality_thb: 10000, synthetic: true };
@@ -32,9 +29,8 @@ export async function handleDemo(request, env, path) {
   if (request.method !== "POST") throw new HttpError(405, "ใช้ POST");
   const db = env.AUDIT_DB;
 
-  const acc = path.match(/^\/api\/users\/demo\/account\/(preparer|reviewer|manager)$/);
-  if (acc) {
-    const a = DEMO_ACCOUNTS.find((x) => x.role === acc[1]);
+  if (path === "/api/users/demo/account") {
+    const a = DEMO_ACCOUNT;
     const pw = tempPassword();
     const existing = await db.prepare("SELECT * FROM users WHERE email = ?1").bind(a.email).first();
     if (!existing) {
@@ -53,30 +49,22 @@ export async function handleDemo(request, env, path) {
   }
 
   if (path === "/api/users/demo/engagement") {
-    const { results: users } = await db
-      .prepare(`SELECT * FROM users WHERE email IN (${DEMO_ACCOUNTS.map((_, i) => `?${i + 1}`).join(", ")}) AND disabled = 0`)
-      .bind(...DEMO_ACCOUNTS.map((a) => a.email))
-      .all();
-    const byEmail = new Map(users.map((u) => [u.email, u]));
-    const manager = byEmail.get(DEMO_ACCOUNTS.find((a) => a.role === "manager").email);
-    if (!manager) throw new HttpError(409, "ยังไม่มีบัญชีทดลอง กรุณาสร้างบัญชีก่อน");
+    const account = await db.prepare("SELECT * FROM users WHERE email = ?1 AND disabled = 0").bind(DEMO_ACCOUNT.email).first();
+    if (!account) throw new HttpError(409, "ยังไม่มีบัญชีทดลอง กรุณาสร้างบัญชีก่อน");
 
     // Reuse the open demo engagement if there is one (a tester may have closed the last one).
     let e = await db
       .prepare(
         "SELECT e.* FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.status = 'open' AND e.synthetic = 1 AND e.client = ?2 ORDER BY e.created_at DESC LIMIT 1",
       )
-      .bind(manager.id, DEMO_ENGAGEMENT.client)
+      .bind(account.id, DEMO_ENGAGEMENT.client)
       .first();
     const created = !e;
     if (created) e = await createEngagement(env, me, DEMO_ENGAGEMENT);
-    const { results: team } = await db.prepare("SELECT user_id, role FROM members WHERE engagement_id = ?1").bind(e.id).all();
-    // The admin stays a manager so this page can upload the sample set even if a tester changed the team.
-    if (!team.some((t) => t.user_id === me.id && t.role === "manager")) await setMember(env, e.id, me, me, "manager");
-    for (const a of DEMO_ACCOUNTS) {
-      const u = byEmail.get(a.email);
-      if (u && !team.some((t) => t.user_id === u.id && t.role === a.role)) await setMember(env, e.id, me, u, a.role);
-    }
+    const { results: team } = await db.prepare("SELECT user_id FROM members WHERE engagement_id = ?1").bind(e.id).all();
+    // The admin stays on the team so this page can upload the sample set even if a tester left it.
+    if (!team.some((t) => t.user_id === me.id)) await setMember(env, e.id, me, me);
+    if (!team.some((t) => t.user_id === account.id)) await setMember(env, e.id, me, account);
     const { results: files } = await db.prepare("SELECT name FROM files WHERE engagement_id = ?1 AND deleted_at IS NULL").bind(e.id).all();
     const run = await db.prepare("SELECT status FROM runs WHERE engagement_id = ?1 AND status IN ('running', 'done') LIMIT 1").bind(e.id).first();
     return json({ engagement: { id: e.id, client: e.client, created }, files: files.map((f) => f.name), has_run: !!run, at: nowIso() }, created ? 201 : 200);
@@ -86,11 +74,10 @@ export async function handleDemo(request, env, path) {
 }
 
 // ---------- One-click demo entry (DEMO_MODE=true) ----------
-//   POST /api/auth/demo-login  {role?}  signs the visitor in as the shared demo account of that role
-//                                       (default manager), no password, and makes sure the synthetic
-//                                       engagement exists with the three demo accounts on its team
-//   POST /api/auth/demo-reset           (signed in as a demo account) wipes the demo engagement and starts a new one
-// Scope, on purpose: the session is an ordinary one for @demo.example.com accounts that are members of the
+//   POST /api/auth/demo-login  signs the visitor in as the shared demo account, no password, and
+//                               makes sure the synthetic engagement exists with that account on its team
+//   POST /api/auth/demo-reset  (signed in as the demo account) wipes the demo engagement and starts a new one
+// Scope, on purpose: the session is an ordinary one for the @demo.example.com account, a member of the
 // demo engagement only. Every other API still checks team membership, so real engagements stay out of reach;
 // the user directory, team changes, closing, password change and account admin are closed to demo accounts
 // (auth.js, engagements.js). Nothing here runs unless DEMO_MODE is "true" and ALLOW_REAL_DATA is not.
@@ -106,10 +93,10 @@ async function takeEntry(env, ip) {
   else memoryHits.set(k, n + 1);
 }
 
-// The demo account of this role. Created without any usable password (a random hash nobody can match),
-// so these accounts are reachable only through the demo entry, never by typing a password.
-async function demoUser(env, role) {
-  const a = DEMO_ACCOUNTS.find((x) => x.role === role);
+// The shared demo account. Created without any usable password (a random hash nobody can match),
+// so it is reachable only through the demo entry, never by typing a password.
+async function demoUser(env) {
+  const a = DEMO_ACCOUNT;
   const db = env.AUDIT_DB;
   const found = await db.prepare("SELECT * FROM users WHERE email = ?1").bind(a.email).first();
   if (found) {
@@ -124,33 +111,23 @@ async function demoUser(env, role) {
   return row;
 }
 
-const openDemoEngagement = (db, managerId) =>
+const openDemoEngagement = (db, userId) =>
   db
     .prepare(
       "SELECT e.* FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.status = 'open' AND e.synthetic = 1 AND e.client = ?2 ORDER BY e.created_at DESC LIMIT 1",
     )
-    .bind(managerId, DEMO_ENGAGEMENT.client)
+    .bind(userId, DEMO_ENGAGEMENT.client)
     .first();
 
-// The open demo engagement (made if missing) with all three demo accounts on its team.
-async function ensureDemoEngagement(env, users) {
+// The open demo engagement (made if missing) with the demo account on its team.
+async function ensureDemoEngagement(env, user) {
   const db = env.AUDIT_DB;
-  const manager = users.manager;
-  let e = await openDemoEngagement(db, manager.id);
-  if (!e) e = await createEngagement(env, manager, DEMO_ENGAGEMENT);
-  const { results: team } = await db.prepare("SELECT user_id, role FROM members WHERE engagement_id = ?1").bind(e.id).all();
-  for (const a of DEMO_ACCOUNTS) {
-    const u = users[a.role];
-    if (!team.some((t) => t.user_id === u.id && t.role === a.role)) await setMember(env, e.id, manager, u, a.role);
-  }
+  let e = await openDemoEngagement(db, user.id);
+  if (!e) e = await createEngagement(env, user, DEMO_ENGAGEMENT);
+  const { results: team } = await db.prepare("SELECT user_id FROM members WHERE engagement_id = ?1").bind(e.id).all();
+  if (!team.some((t) => t.user_id === user.id)) await setMember(env, e.id, user, user);
   return e;
 }
-
-const allDemoUsers = async (env) => {
-  const out = {};
-  for (const a of DEMO_ACCOUNTS) out[a.role] = await demoUser(env, a.role);
-  return out;
-};
 
 export async function handleDemoEntry(request, env, path) {
   if (!demoEnabled(env)) throw new HttpError(404, "ไม่ได้เปิดโหมดเดโม");
@@ -159,11 +136,9 @@ export async function handleDemoEntry(request, env, path) {
   await takeEntry(env, clientIp(request));
 
   if (path === "/api/auth/demo-login") {
-    const body = await readJson(request).catch(() => ({}));
-    const role = DEMO_ACCOUNTS.some((a) => a.role === body.role) ? body.role : "manager";
-    const users = await allDemoUsers(env);
-    const e = await ensureDemoEngagement(env, users);
-    const res = await startSession(env, users[role]);
+    const user = await demoUser(env);
+    const e = await ensureDemoEngagement(env, user);
+    const res = await startSession(env, user);
     const out = await res.json();
     return json({ ...out, engagement: { id: e.id } }, 200, { "set-cookie": res.headers.get("set-cookie") });
   }
@@ -171,9 +146,9 @@ export async function handleDemoEntry(request, env, path) {
   // demo-reset
   const me = await requireUser(request, env);
   if (!isDemoEmail(me.email)) throw new HttpError(403, "รีเซ็ตได้เฉพาะบัญชีเดโม");
-  const users = await allDemoUsers(env);
-  const old = await openDemoEngagement(env.AUDIT_DB, users.manager.id);
+  const user = await demoUser(env);
+  const old = await openDemoEngagement(env.AUDIT_DB, user.id);
   if (old) await wipeEngagement(env, old.id, me.initials);
-  const e = await ensureDemoEngagement(env, users);
+  const e = await ensureDemoEngagement(env, user);
   return json({ ok: true, engagement: { id: e.id } });
 }
