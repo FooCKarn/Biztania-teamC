@@ -274,3 +274,43 @@ test("a failed dispatch marks the run failed, stale runs time out, uploads need 
   delete env.FILES_KEY;
   assert.equal((await prep.b.post(`/api/engagements/${id}/files?name=b.pdf`, PDF)).status, 503);
 });
+
+test("demo: admin creates shared accounts and the synthetic engagement; demo passwords cannot be changed", async () => {
+  const { admin, prep } = await setupFirm();
+  assert.equal((await prep.b.post("/api/users/demo/account/preparer")).status, 403, "admins only");
+  assert.equal((await admin.post("/api/users/demo/engagement")).status, 409, "accounts first");
+
+  const pw = {};
+  for (const role of ["preparer", "reviewer", "manager"]) {
+    const r = await admin.post(`/api/users/demo/account/${role}`);
+    assert.equal(r.status, 201);
+    assert.equal(r.body.user.firm_role, "member");
+    assert.equal(r.body.user.must_change, false);
+    pw[role] = r.body.password;
+  }
+  const e = await admin.post("/api/users/demo/engagement");
+  assert.equal(e.status, 201);
+  const id = e.body.engagement.id;
+  assert.deepEqual(e.body.files, []);
+  assert.equal((await admin.post(`/api/engagements/${id}/files?name=INV-TG-101.pdf`, PDF)).status, 201);
+
+  const dm = browser();
+  assert.equal((await dm.post("/api/auth/login", { email: "manager@demo.example.com", password: pw.manager })).status, 200);
+  const list = (await dm.get("/api/engagements")).body.engagements;
+  assert.equal(list.length, 1);
+  assert.equal(list[0].my_role, "manager");
+  assert.equal(list[0].synthetic, true);
+  assert.equal((await dm.post("/api/auth/password", { current: pw.manager, next: "someone else's password" })).status, 403);
+
+  // Again: the same engagement (with its files), a new password, old sessions signed out.
+  const again = await admin.post("/api/users/demo/account/manager");
+  assert.equal(again.status, 200);
+  assert.notEqual(again.body.password, pw.manager);
+  assert.equal((await dm.get("/api/engagements")).status, 401);
+  const e2 = await admin.post("/api/users/demo/engagement");
+  assert.equal(e2.status, 200);
+  assert.equal(e2.body.engagement.id, id);
+  assert.deepEqual(e2.body.files, ["INV-TG-101.pdf"]);
+  const team = (await admin.get(`/api/engagements/${id}`)).body.members.map((m) => `${m.initials}:${m.role}`).sort();
+  assert.deepEqual(team, ["DM:manager", "DP:preparer", "DR:reviewer", "MG:manager"]);
+});

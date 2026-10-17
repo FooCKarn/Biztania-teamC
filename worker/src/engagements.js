@@ -180,6 +180,44 @@ async function dispatch(env, run, files, e) {
   if (r.status !== 202 && !r.ok) throw new Error(`pipeline HTTP ${r.status}`);
 }
 
+// A new open engagement with its creator as manager. Synthetic unless ALLOW_REAL_DATA allows otherwise.
+export async function createEngagement(env, user, body) {
+  const db = env.AUDIT_DB;
+  const client = String(body.client || "").trim();
+  if (client.length < 2 || client.length > 120) throw new HttpError(400, "ชื่อลูกค้าต้องยาว 2–120 ตัวอักษร");
+  const synthetic = body.synthetic === false && realDataAllowed(env) ? 0 : 1;
+  const e = {
+    id: randomId(6),
+    client,
+    period: String(body.period || "").trim().slice(0, 40) || null,
+    tolerance_pct: num(body.tolerance_pct ?? 1, 0, 20, "tolerance (%)"),
+    materiality_thb: num(body.materiality_thb ?? 10000, 0, 1e12, "materiality"),
+    synthetic,
+  };
+  const at = nowIso();
+  await db.batch([
+    db
+      .prepare(
+        "INSERT INTO engagements (id, client, period, tolerance_pct, materiality_thb, synthetic, status, created_by, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'open', ?7, ?8)",
+      )
+      .bind(e.id, e.client, e.period, e.tolerance_pct, e.materiality_thb, e.synthetic, user.id, at),
+    db.prepare("INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, 'manager', ?2, ?3)").bind(e.id, user.id, at),
+  ]);
+  await log(env, e.id, user.initials, "create", { client, synthetic: !!synthetic });
+  return { ...e, status: "open", created_at: at };
+}
+
+// Adds a user to the team, or changes their role.
+export async function setMember(env, id, by, u, role) {
+  await env.AUDIT_DB
+    .prepare(
+      "INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (engagement_id, user_id) DO UPDATE SET role = excluded.role",
+    )
+    .bind(id, u.id, role, by.id, nowIso())
+    .run();
+  await log(env, id, by.initials, "member", { user: u.initials, role });
+}
+
 export async function handleEngagements(request, env, path) {
   await ensureAppSchema(env);
   const user = await requireUser(request, env);
@@ -196,29 +234,8 @@ export async function handleEngagements(request, env, path) {
     }
     if (method !== "POST") throw new HttpError(405, "ใช้ GET หรือ POST");
     if (user.firm_role !== "admin") throw new HttpError(403, "เฉพาะผู้ดูแลระบบของสำนักงานสร้าง Engagement ได้");
-    const body = await readJson(request);
-    const client = String(body.client || "").trim();
-    if (client.length < 2 || client.length > 120) throw new HttpError(400, "ชื่อลูกค้าต้องยาว 2–120 ตัวอักษร");
-    const synthetic = body.synthetic === false && realDataAllowed(env) ? 0 : 1;
-    const e = {
-      id: randomId(6),
-      client,
-      period: String(body.period || "").trim().slice(0, 40) || null,
-      tolerance_pct: num(body.tolerance_pct ?? 1, 0, 20, "tolerance (%)"),
-      materiality_thb: num(body.materiality_thb ?? 10000, 0, 1e12, "materiality"),
-      synthetic,
-    };
-    const at = nowIso();
-    await db.batch([
-      db
-        .prepare(
-          "INSERT INTO engagements (id, client, period, tolerance_pct, materiality_thb, synthetic, status, created_by, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'open', ?7, ?8)",
-        )
-        .bind(e.id, e.client, e.period, e.tolerance_pct, e.materiality_thb, e.synthetic, user.id, at),
-      db.prepare("INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, 'manager', ?2, ?3)").bind(e.id, user.id, at),
-    ]);
-    await log(env, e.id, user.initials, "create", { client, synthetic: !!synthetic });
-    return json({ engagement: engagementJson({ ...e, status: "open", created_at: at }, "manager") }, 201);
+    const e = await createEngagement(env, user, await readJson(request));
+    return json({ engagement: engagementJson(e, "manager") }, 201);
   }
 
   const m = path.match(/^\/api\/engagements\/([^/]+)(?:\/(.*))?$/);
@@ -383,13 +400,7 @@ export async function handleEngagements(request, env, path) {
     const u = await db.prepare("SELECT * FROM users WHERE id = ?1 AND disabled = 0").bind(String(body.user_id || "")).first();
     if (!u) throw new HttpError(404, "ไม่พบผู้ใช้");
     if (u.id === user.id && role !== "manager") await keepAManager(db, id, u.id);
-    await db
-      .prepare(
-        "INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (engagement_id, user_id) DO UPDATE SET role = excluded.role",
-      )
-      .bind(id, u.id, role, user.id, nowIso())
-      .run();
-    await log(env, id, user.initials, "member", { user: u.initials, role });
+    await setMember(env, id, user, u, role);
     return json({ ok: true });
   }
   const rm = rest.match(/^members\/([a-f0-9]{16})\/remove$/);

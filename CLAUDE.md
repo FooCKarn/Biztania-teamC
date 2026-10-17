@@ -23,6 +23,8 @@ The human-readable summary is in [`README.md`](README.md).
   pipeline runs on a stateless Render container called with HMAC (`pipeline/auditconcierge/server.py`); raw files and
   page images are deleted `RETENTION_DAYS` (90) after closing, the working paper and trail stay. `ALLOW_REAL_DATA`
   stays false (synthetic only) until the AI provider is switched. Deploy steps: `docs/deploy-pipeline.md`.
+  Demo for outside users: an admin button on the users page creates shared accounts `{preparer,reviewer,manager}@demo.example.com`
+  (no password change, passwords shown once, never in the repo) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
 
 ## Core principles (keep these consistent in any material or prototype)
 

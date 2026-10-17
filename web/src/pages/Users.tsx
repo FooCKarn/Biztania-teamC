@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type User } from "../api";
+import { api, ROLE_LABEL, type Role, type User } from "../api";
 
 // Firm admin: create accounts (each gets a one-time password to hand over in person), disable, reset.
 export default function Users({ me }: { me: User }) {
@@ -56,6 +56,8 @@ export default function Users({ me }: { me: User }) {
           </button>
         </div>
       )}
+      <DemoSetup onDone={load} />
+
       <form className="group-body form" onSubmit={create}>
         <h3>เพิ่มผู้ใช้</h3>
         <div className="row wrap">
@@ -109,6 +111,91 @@ export default function Users({ me }: { me: User }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+type DemoLogin = { role: Role; email: string; password: string };
+
+// Shared demo logins plus a synthetic engagement with the sample documents (worker/src/demo.js).
+// One request per step: three accounts, the engagement, each sample file, then a pipeline run.
+function DemoSetup({ onDone }: { onDone: () => void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [logins, setLogins] = useState<DemoLogin[] | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const start = async () => {
+    if (!confirm("สร้างหรือรีเซ็ตบัญชีทดลอง 3 บัญชี? ถ้ามีอยู่แล้ว รหัสผ่านเดิมจะใช้ไม่ได้อีก")) return;
+    setError(null);
+    setLogins(null);
+    setNote(null);
+    try {
+      const out: DemoLogin[] = [];
+      for (const role of ["preparer", "reviewer", "manager"] as Role[]) {
+        setBusy(`สร้างบัญชี${ROLE_LABEL[role]}`);
+        const r = await api<{ user: User; password: string }>(`api/users/demo/account/${role}`, { method: "POST" });
+        out.push({ role, email: r.user.email, password: r.password });
+      }
+      setLogins(out);
+      setBusy("เตรียม Engagement ทดลอง");
+      const d = await api<{ engagement: { id: string }; files: string[]; has_run: boolean }>("api/users/demo/engagement", { method: "POST" });
+      const id = d.engagement.id;
+      const manifest: string[] = await fetch("demo/tg_company/manifest.json").then((r) => {
+        if (!r.ok) throw new Error("ไม่พบชุดเอกสารตัวอย่างใน build (demo/tg_company)");
+        return r.json();
+      });
+      const have = new Set(d.files);
+      const todo = manifest.filter((p) => !have.has(p.split("/").pop()!));
+      for (const [i, p] of todo.entries()) {
+        const name = p.split("/").pop()!;
+        setBusy(`อัปโหลดเอกสารตัวอย่าง ${i + 1}/${todo.length}`);
+        const bytes = await fetch(`demo/tg_company/${p}`).then((r) => r.blob());
+        await api(`api/engagements/${id}/files?name=${encodeURIComponent(name)}`, { bytes });
+      }
+      if (!d.has_run || todo.length) {
+        setBusy("สั่งประมวลผล (เครื่องประมวลผลอาจใช้เวลาตื่นราว 1 นาที)");
+        try {
+          await api(`api/engagements/${id}/runs`, { method: "POST" });
+          setNote("สั่งประมวลผลแล้ว ผลการตรวจจะขึ้นในหน้า Engagement เมื่อเสร็จ");
+        } catch (x) {
+          setNote(`อัปโหลดเอกสารครบแล้ว แต่ยังสั่งประมวลผลไม่ได้: ${(x as Error).message} · กด "รัน" ในหน้า Engagement ได้ภายหลัง`);
+        }
+      } else setNote("Engagement ทดลองมีเอกสารและผลการตรวจอยู่แล้ว");
+      onDone();
+    } catch (x) {
+      setError((x as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const text = logins?.map((l) => `${ROLE_LABEL[l.role]}: ${l.email} / ${l.password}`).join("\n") ?? "";
+  return (
+    <div className="group-body form">
+      <h3>บัญชีทดลองสำหรับ demo</h3>
+      <p className="muted small">
+        สร้างบัญชีผู้จัดทำ / ผู้สอบทาน / Manager ที่ใช้ร่วมกันได้ และ Engagement ข้อมูลสมมติพร้อมเอกสารตัวอย่าง · กดซ้ำเพื่อรีเซ็ตรหัสผ่าน
+        และเติมเอกสารที่ถูกลบ
+      </p>
+      {error && (
+        <p className="small error" role="alert">
+          {error}
+        </p>
+      )}
+      {logins && (
+        <div className="banner" role="status">
+          <p>รหัสผ่านแสดงครั้งเดียว คัดลอกเก็บไว้ก่อนปิดหน้านี้</p>
+          <pre className="mono small">{text}</pre>
+          <button className="link" onClick={() => navigator.clipboard?.writeText(`${location.origin}${location.pathname}\n${text}`)}>
+            คัดลอก
+          </button>
+        </div>
+      )}
+      {note && <p className="small">{note}</p>}
+      <button className="btn filled" onClick={start} disabled={!!busy}>
+        {busy ?? "สร้าง / รีเซ็ตบัญชีทดลอง"}
+      </button>
     </div>
   );
 }
