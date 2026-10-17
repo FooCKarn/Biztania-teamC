@@ -319,22 +319,27 @@ export default function EngagementPage({ id }: { id: string }) {
             </div>
           </section>
 
+          {open && (
+            <div className="process-block stack">
+              <div className="row">
+                <button
+                  className="btn filled process-btn"
+                  disabled={busy || running || !docs.length || !d.pipeline_configured}
+                  onClick={() => act(() => api(`api/engagements/${id}/runs`, { method: "POST" }), t("เริ่มประมวลผลแล้ว ระบบจะอัปเดตสถานะให้เอง", "Processing started. Status updates on its own."))}
+                >
+                  {running ? t("กำลังประมวลผล…", "Processing…") : busy ? t("กำลังปลุกเครื่องประมวลผล…", "Waking the processor…") : t("ประมวลผลเอกสารทั้งหมด", "Process all documents")}
+                </button>
+                {!d.pipeline_configured && (
+                  <span className="muted small">{t("ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL)", "The processor (PIPELINE_URL) is not configured")}</span>
+                )}
+              </div>
+              {d.runs.filter((r) => r.status === "running").map((r) => (
+                <RunBar key={r.id} p={r.progress ?? { stage: "waking", done: 0, total: r.files, file: null, at: r.started_at }} started={r.started_at} />
+              ))}
+            </div>
+          )}
           <section className="group">
             <div className="group-body stack">
-              {open && (
-                <div className="row">
-                  <button
-                    className="btn filled process-btn"
-                    disabled={busy || running || !docs.length || !d.pipeline_configured}
-                    onClick={() => act(() => api(`api/engagements/${id}/runs`, { method: "POST" }), t("เริ่มประมวลผลแล้ว ระบบจะอัปเดตสถานะให้เอง", "Processing started. Status updates on its own."))}
-                  >
-                    {running ? t("กำลังประมวลผล…", "Processing…") : busy ? t("กำลังปลุกเครื่องประมวลผล…", "Waking the processor…") : t("ประมวลผลเอกสารทั้งหมด", "Process all documents")}
-                  </button>
-                  {!d.pipeline_configured && (
-                    <span className="muted small">{t("ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL)", "The processor (PIPELINE_URL) is not configured")}</span>
-                  )}
-                </div>
-              )}
               {d.runs.length === 0 ? (
                 <p className="muted small">{t("ยังไม่เคยประมวลผล", "Not processed yet")}</p>
               ) : (
@@ -355,7 +360,6 @@ export default function EngagementPage({ id }: { id: string }) {
                             ` · ${t("ไม่พบเอกสารที่อ่านได้ (เปิดหน้าผลเพื่อดูสาเหตุรายไฟล์)", "no readable documents (open the results for per-file reasons)")}`}
                         </span>
                       )}
-                      {r.status === "running" && <RunBar p={r.progress ?? { stage: "waking", done: 0, total: r.files, file: null, at: r.started_at }} started={r.started_at} />}
                       {r.error && <span className="small error"> · {r.error}</span>}
                       {r.result_run_id === d.current_run && r.status === "done" && <span className="muted small"> · {t("ผลที่แสดงอยู่", "current results")}</span>}
                     </li>
