@@ -180,6 +180,8 @@ async function dispatch(env, run, files, e) {
 }
 
 // A new open engagement with its creator as manager. Synthetic unless ALLOW_REAL_DATA allows otherwise.
+const DEMO_MAX_ENGAGEMENTS = 5;
+
 export async function createEngagement(env, user, body) {
   const db = env.AUDIT_DB;
   const client = String(body.client || "").trim();
@@ -229,10 +231,15 @@ export async function handleEngagements(request, env, path) {
         .prepare("SELECT e.*, m.role FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 ORDER BY e.created_at DESC")
         .bind(user.id)
         .all();
-      return json({ engagements: results.map((e) => engagementJson(e, e.role)), can_create: user.firm_role === "admin", real_data_allowed: realDataAllowed(env) });
+      return json({ engagements: results.map((e) => engagementJson(e, e.role)), can_create: true, real_data_allowed: realDataAllowed(env) });
     }
     if (method !== "POST") throw new HttpError(405, "ใช้ GET หรือ POST");
-    if (user.firm_role !== "admin") throw new HttpError(403, "เฉพาะผู้ดูแลระบบของสำนักงานสร้าง Engagement ได้");
+    // Any signed-in Auditor may start an engagement and becomes its first team member. The shared demo account
+    // may too (always synthetic) but only up to DEMO_MAX_ENGAGEMENTS, so a public demo cannot pile up data.
+    if (isDemoEmail(user.email)) {
+      const n = await db.prepare("SELECT COUNT(*) AS n FROM members WHERE user_id = ?1").bind(user.id).first();
+      if (n.n >= DEMO_MAX_ENGAGEMENTS) throw new HttpError(403, `บัญชีทดลองสร้าง Engagement ได้ไม่เกิน ${DEMO_MAX_ENGAGEMENTS} รายการ`);
+    }
     const e = await createEngagement(env, user, await readJson(request));
     return json({ engagement: engagementJson(e, ROLE) }, 201);
   }

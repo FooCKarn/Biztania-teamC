@@ -312,6 +312,11 @@ test("demo: admin creates a shared account and the synthetic engagement; demo pa
   assert.equal(list[0].my_role, "auditor");
   assert.equal(list[0].synthetic, true);
   assert.equal((await dm.post("/api/auth/password", { current: pw, next: "someone else's password" })).status, 403);
+  // Anyone signed in can start an engagement (always synthetic); the demo account is capped at 5.
+  assert.equal((await dm.get("/api/engagements")).body.can_create, true);
+  for (let i = 0; i < 4; i++) assert.equal((await dm.post("/api/engagements", { client: `ลูกค้าทดลอง ${i}`, synthetic: false })).status, 201);
+  assert.equal((await dm.post("/api/engagements", { client: "ลูกค้าทดลอง เกิน" })).status, 403);
+  assert.equal((await dm.get("/api/engagements")).body.engagements.filter((x) => x.synthetic).length, 5);
 
   // Again: the same engagement (with its files), a new password, old sessions signed out.
   const again = await admin.post("/api/users/demo/account");
