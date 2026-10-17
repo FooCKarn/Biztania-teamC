@@ -415,17 +415,10 @@ blockquote {
 a.btn { text-decoration: none; display: inline-block; }
 .page-head { margin: 4px 0 14px; align-items: flex-start; }
 .logo { display: block; height: 28px; width: auto; flex: none; }
-.logo-hero { width: 100%; max-width: 640px; height: auto; }
-.login-split { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
-.login-side { display: flex; flex-direction: column; justify-content: center; gap: 14px; max-width: 460px; width: 100%; margin: 0 auto; padding: 24px 28px; }
-.login-side .login-lang { margin-bottom: 0; }
-.login-tag { margin: 0; }
-.login-art { display: flex; align-items: center; justify-content: center; padding: 32px; }
-@media (max-width: 800px) {
-  .login-split { grid-template-columns: 1fr; min-height: 0; }
-  .login-art { order: -1; padding: 64px 28px 0; }
-  .logo-hero { max-width: 260px; }
-}
+.logo-hero { width: clamp(220px, 46vw, 560px); max-width: 100%; height: auto; }
+.login-stack { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 64px 20px 32px; text-align: center; }
+.login-side { display: flex; flex-direction: column; gap: 14px; max-width: 460px; width: 100%; text-align: left; }
+.login-tag { margin: 0; text-align: center; }
 .navbar h1 .logo { height: 24px; }
 .center { text-align: center; margin-top: 18px; }
 .form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
