@@ -6,7 +6,6 @@ import Loading from "../components/Loading";
 interface List {
   engagements: Engagement[];
   can_create: boolean;
-  can_delete?: boolean;
   real_data_allowed: boolean;
 }
 
@@ -197,7 +196,7 @@ export default function Engagements() {
                       </svg>
                     </button>
                   )}
-                  {list.can_delete && (
+                  {e.can_delete && (
                     <button className="icon-btn danger" title={t("ลบ", "Delete")} aria-label={t("ลบบริษัท", "Delete company")} disabled={busy} onClick={() => remove(e)}>
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <path d="M3 6h18" />

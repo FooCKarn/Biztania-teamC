@@ -8,6 +8,7 @@
 import { HttpError, json, readJson, nowIso, randomId, sha256Hex, verifySigned, signRequest } from "./http.js";
 import { ensureAppSchema } from "./schema.js";
 import { requireUser, isDemoEmail } from "./auth.js";
+import { DEMO_ENGAGEMENT } from "./demo.js";
 import { putBlob, getBlob, deleteBlob, deleteWhere, isConfigured as storeConfigured } from "./store.js";
 import { readTrail, appendEvent, parseAction } from "./trail.js";
 
@@ -176,6 +177,9 @@ async function dispatch(env, run, files, e) {
 
 // A new open engagement with its creator as manager. Synthetic unless ALLOW_REAL_DATA allows otherwise.
 const DEMO_MAX_ENGAGEMENTS = 5;
+// The shared demo account may manage the companies it created itself, but never the main demo company
+// (the one demo entry and the demo reset rely on): it cannot be deleted or renamed by that account.
+const isMainDemo = (user, e) => isDemoEmail(user.email) && e.client === DEMO_ENGAGEMENT.client;
 const DEFAULT_TOLERANCE_PCT = 1;
 const DEFAULT_MATERIALITY_THB = 10000;
 
@@ -231,9 +235,8 @@ export async function handleEngagements(request, env, path) {
         .all();
       const signoffs = await Promise.all(results.map((e) => signoffOf(env, e.id)));
       return json({
-        engagements: results.map((e, i) => ({ ...engagementJson(e, e.role), signoff: signoffs[i] })),
+        engagements: results.map((e, i) => ({ ...engagementJson(e, e.role), signoff: signoffs[i], can_delete: !isMainDemo(user, e) })),
         can_create: true,
-        can_delete: !isDemoEmail(user.email),
         real_data_allowed: realDataAllowed(env),
       });
     }
@@ -414,8 +417,8 @@ export async function handleEngagements(request, env, path) {
 
   // ---------- team and settings ----------
   // Shared demo accounts cannot change the team or close the engagement (the demo reset does that).
-  if (isDemoEmail(user.email) && (rest === "members" || rest === "close" || rest === "delete" || /^members\//.test(rest)))
-    throw new HttpError(403, "บัญชีทดลองเปลี่ยนทีม ปิดงาน หรือลบบริษัทไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
+  if (isDemoEmail(user.email) && (rest === "members" || rest === "close" || /^members\//.test(rest)))
+    throw new HttpError(403, "บัญชีทดลองเปลี่ยนทีมหรือปิดงานไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
   if (rest === "members") {
     const { e } = await access(env, user, id);
     mustBeOpen(e);
@@ -442,6 +445,7 @@ export async function handleEngagements(request, env, path) {
     const body = await readJson(request);
     const client = String(body.client ?? e.client).trim();
     if (client.length < 2 || client.length > 120) throw new HttpError(400, "ชื่อลูกค้าต้องยาว 2–120 ตัวอักษร");
+    if (isMainDemo(user, e) && client !== e.client) throw new HttpError(403, "เปลี่ยนชื่อบริษัทเดโมหลักไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
     const period = String(body.period ?? e.period ?? "").trim().slice(0, 40) || null;
     await db.prepare("UPDATE engagements SET client = ?1, period = ?2 WHERE id = ?3").bind(client, period, id).run();
     await log(env, id, user.initials, "update", { client, period });
@@ -451,6 +455,7 @@ export async function handleEngagements(request, env, path) {
   // hash-chained Audit Trail rows stay (append-only), like after a purge. Open or closed companies can be deleted.
   if (rest === "delete") {
     const { e } = await access(env, user, id);
+    if (isMainDemo(user, e)) throw new HttpError(403, "ลบบริษัทเดโมหลักไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
     const busy = await db.prepare("SELECT id FROM runs WHERE engagement_id = ?1 AND status IN ('queued', 'running')").bind(id).first();
     if (busy) throw new HttpError(409, "กำลังประมวลผลอยู่ ลบบริษัทไม่ได้ในตอนนี้");
     const n = await deleteWhere(env, id, () => false);

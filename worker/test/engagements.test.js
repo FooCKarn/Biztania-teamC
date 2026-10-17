@@ -508,8 +508,8 @@ test("edit and delete a company: team members only, closed ones cannot be edited
   const up = await prep.b.post(`${base}/update`, { client: "บริษัท ใหม่ จำกัด", period: "FY2027" });
   assert.equal(up.status, 200);
   const list = (await admin.get("/api/engagements")).body;
-  assert.equal(list.can_delete, true);
   const row = list.engagements.find((e) => e.id === id);
+  assert.equal(row.can_delete, true);
   assert.deepEqual([row.client, row.period], ["บริษัท ใหม่ จำกัด", "FY2027"]);
 
   const second = await admin.post("/api/engagements", { client: "Closed Co" });
@@ -523,4 +523,27 @@ test("edit and delete a company: team members only, closed ones cannot be edited
   const acts = env.AUDIT_DB.sql.prepare("SELECT action FROM activity WHERE engagement_id = ? ORDER BY seq").all(id).map((a) => a.action);
   assert.ok(acts.includes("update") && acts.includes("delete"), "activity log is kept");
   assert.equal((await admin.post(`/api/engagements/${second.body.engagement.id}/delete`, {})).status, 200, "closed company can be deleted");
+});
+
+test("demo account can edit and delete companies it created, but not the main demo company", async () => {
+  await setupFirm();
+  const guest = browser();
+  const r = await guest.post("/api/auth/demo-login", {});
+  assert.equal(r.status, 200);
+  const mainId = r.body.engagement.id;
+
+  const mine = await guest.post("/api/engagements", { client: "บริษัท ลองใช้ จำกัด" });
+  assert.equal(mine.status, 201);
+  const list = (await guest.get("/api/engagements")).body.engagements;
+  assert.equal(list.find((e) => e.id === mainId).can_delete, false);
+  assert.equal(list.find((e) => e.id === mine.body.engagement.id).can_delete, true);
+
+  assert.equal((await guest.post(`/api/engagements/${mainId}/delete`, {})).status, 403, "main demo company is protected");
+  assert.equal((await guest.post(`/api/engagements/${mainId}/update`, { client: "Renamed" })).status, 403, "and cannot be renamed");
+  assert.equal((await guest.post(`/api/engagements/${mainId}/update`, { period: "Q2 2026" })).status, 200, "other fields can change");
+
+  assert.equal((await guest.post(`/api/engagements/${mine.body.engagement.id}/update`, { client: "ชื่อใหม่ จำกัด" })).status, 200);
+  assert.equal((await guest.post(`/api/engagements/${mine.body.engagement.id}/delete`, {})).status, 200);
+  assert.equal((await guest.get("/api/engagements")).body.engagements.some((e) => e.id === mine.body.engagement.id), false);
+  assert.equal((await guest.post(`/api/engagements/${mainId}/close`, {})).status, 403, "demo still cannot close");
 });

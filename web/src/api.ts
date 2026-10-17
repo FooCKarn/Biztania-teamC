@@ -49,6 +49,8 @@ export interface Engagement {
   status: "open" | "closed";
   /** Sign-off of the current results, if any (separate from closing the company). */
   signoff?: { by: string; at: string } | null;
+  /** False for the main demo company when signed in as the shared demo account. */
+  can_delete?: boolean;
   created_at: string;
   closed_at: string | null;
   purged_at: string | null;
