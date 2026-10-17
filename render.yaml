@@ -18,3 +18,7 @@ services:
         sync: false
       - key: ACCOUNT_TOKEN_SALT # salt for bank-account tokens; never the demo default
         generateValue: true
+      - key: GEMINI_API_KEY # optional: lets the pipeline read real photos/PDFs; without it only the sample templates match
+        sync: false
+      - key: GEMINI_API_KEY_BACKUP # optional second key (another Google project): used per model when the main key is out of quota
+        sync: false

@@ -8,8 +8,11 @@ the templates below, which are also the fallback when no model answers.
 import csv
 import hashlib
 import io
+import os
 import re
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
 from pathlib import Path
 
 from .entities import account_token, mask_account
@@ -18,6 +21,10 @@ from .normalize import amount, norm, squash
 from .quotes import verify
 
 OCR_MIN_CONF = 60  # a line whose weakest word is below this is "อ่านไม่ชัด"
+OCR_MAX_SIDE = int(os.environ.get("OCR_MAX_SIDE", "2000"))  # phone photos are 3000-4000 px; Tesseract gains nothing above this
+OCR_WORKERS = int(os.environ.get("OCR_WORKERS", "0")) or min(4, os.cpu_count() or 1)
+if OCR_WORKERS > 1:  # one Tesseract per image; its own OpenMP threads on top of ours make 4 jobs fight over the cores
+    os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 DOC_NO = re.compile(r"^[A-Z]{2,8}(-[A-Z0-9]+)+$")
 
 
@@ -97,11 +104,18 @@ def _pdf_lines(path: Path):
     return lines
 
 
-def _ocr_lines(path: Path):
+@lru_cache(maxsize=64)
+def _ocr_cached(path: str, size: int, mtime: int):
+    """OCR one image once: save_pages needs the same lines again, and a second pass costs as much as the first.
+    Large photos are OCRed at OCR_MAX_SIDE and the boxes scaled back, so they still fit the original image."""
     import pytesseract
     from PIL import Image
 
     img = Image.open(path)
+    scale = 1.0
+    if max(img.size) > OCR_MAX_SIDE:
+        scale = max(img.size) / OCR_MAX_SIDE
+        img = img.convert("L").resize((round(img.width / scale), round(img.height / scale)), Image.LANCZOS)
     d = pytesseract.image_to_data(img, lang="tha+eng", output_type=pytesseract.Output.DICT)
     groups = defaultdict(list)
     for i, word in enumerate(d["text"]):
@@ -120,8 +134,14 @@ def _ocr_lines(path: Path):
         x1 = max(d["left"][i] + d["width"][i] for i in idx)
         y1 = max(d["top"][i] + d["height"][i] for i in idx)
         conf = min(float(d["conf"][i]) for i in idx)
-        lines.append((norm(text), f"บรรทัด {n} (OCR ความมั่นใจ {conf:.0f})", conf >= OCR_MIN_CONF, [x0, y0, x1 - x0, y1 - y0]))
-    return lines
+        box = [round(v * scale) for v in (x0, y0, x1 - x0, y1 - y0)]
+        lines.append((norm(text), f"บรรทัด {n} (OCR ความมั่นใจ {conf:.0f})", conf >= OCR_MIN_CONF, box))
+    return tuple(lines)
+
+
+def _ocr_lines(path: Path):
+    st = Path(path).stat()
+    return list(_ocr_cached(str(path), st.st_size, int(st.st_mtime)))
 
 
 def _text_record(path: Path, rel: str, fmt: str, llm=None):
@@ -259,14 +279,33 @@ def _read_xlsx(path: Path, rel: str):
 CSV_LAYOUTS = "ต้องมีคอลัมน์ po_no (ใบสั่งซื้อ), withdrawal (รายการเดินบัญชี) หรือ vendor_code+tax_id (Vendor master)"
 
 
-def read_engagement(folder: Path, llm=None):
+def _prefetch_ocr(paths, progress):
+    """OCR every scan at once (Tesseract runs as a separate process, so threads really overlap); the
+    sequential pass below then finds each result in the cache. Without a real CPU gain this costs nothing."""
+    if not paths:
+        return
+    done = 0
+    with ThreadPoolExecutor(max_workers=max(1, min(OCR_WORKERS, len(paths)))) as pool:
+        for fut in [pool.submit(_ocr_lines, p) for p in paths]:
+            try:
+                fut.result()
+            except Exception:
+                pass  # reported per file by the sequential pass
+            done += 1
+            progress("ocr", done=done, total=len(paths))
+
+
+def read_engagement(folder: Path, llm=None, progress=None):
     """Return (records, unreadable_files, reasons). reasons maps an unreadable file to why, in Thai.
-    llm: an extract_llm.LLMExtractor, or None for templates only."""
+    llm: an extract_llm.LLMExtractor, or None for templates only.
+    progress: optional callback progress(stage, **info); stages "ocr" and "read" (done, total, file)."""
+    progress = progress or (lambda *a, **k: None)
     records, skipped, reasons = [], [], {}
-    for path in sorted(p for p in folder.rglob("*") if p.is_file()):
+    todo = [p for p in sorted(p for p in folder.rglob("*") if p.is_file()) if p.name not in ("expected.json", "remember.json")]
+    _prefetch_ocr([p for p in todo if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".tif", ".tiff")], progress)
+    for n, path in enumerate(todo, 1):
         rel = path.relative_to(folder).as_posix()
-        if path.name in ("expected.json", "remember.json"):
-            continue
+        progress("read", done=n - 1, total=len(todo), file=rel)
         ext = path.suffix.lower()
         if ext == ".csv":
             try:
@@ -296,4 +335,5 @@ def read_engagement(folder: Path, llm=None):
         else:
             skipped.append(rel)
             reasons[rel] = "ชนิดไฟล์ไม่รองรับ"
+    progress("read", done=len(todo), total=len(todo))
     return records, skipped, reasons

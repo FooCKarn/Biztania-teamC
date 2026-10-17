@@ -65,6 +65,14 @@ const APP_SCHEMA = [
     summary       TEXT,
     error         TEXT
   )`,
+  `CREATE TABLE IF NOT EXISTS run_progress (
+    run_id     TEXT PRIMARY KEY,
+    stage      TEXT NOT NULL,
+    done       INTEGER,
+    total      INTEGER,
+    file       TEXT,
+    updated_at TEXT NOT NULL
+  )`,
   `CREATE TABLE IF NOT EXISTS activity (
     engagement_id TEXT NOT NULL,
     seq           INTEGER NOT NULL,

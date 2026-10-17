@@ -44,12 +44,16 @@ def save_crops(folder: Path, records, out: Path):
                 f.crop = f"crops/{name}"
 
 
-def build(folder: Path, out: Path | None = None, extractor: str = "template", llm=None) -> dict:
+def build(folder: Path, out: Path | None = None, extractor: str = "template", llm=None, progress=None) -> dict:
     """extractor: template (default here, offline and deterministic for tests) | llm | auto.
-    llm: an already made LLMExtractor (tests pass one with a fake transport)."""
+    llm: an already made LLMExtractor (tests pass one with a fake transport).
+    progress: optional callback progress(stage, **info) with stage ocr | read | pages | check."""
+    progress = progress or (lambda *a, **k: None)
     llm = llm or make_extractor(extractor)
-    records, skipped, skip_reasons = read_engagement(folder, llm)
+    records, skipped, skip_reasons = read_engagement(folder, llm, progress)
+    progress("pages")
     boxes = save_pages(folder, records, out) if out else {}
+    progress("check")
     cfg = load_remember(folder, records)
     book = VendorBook([r for r in records if r.kind == "vendor"])
     resolve_vendors(records, book)

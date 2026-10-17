@@ -11,8 +11,9 @@ The LLM only points at text; code decides every value:
   parsed is kept as unclear. Rules never use either, so a hallucination cannot raise a flag.
 
 Models are tried in order (GEMINI_MODELS) like the Worker: quota, unknown model, server errors and
-timeouts move on to the next model; a rejected key stops the LLM and every document falls back
-to the templates.
+timeouts move on to the next model. Two keys are supported (GEMINI_API_KEY, then GEMINI_API_KEY_BACKUP):
+each model is tried with the main key and then the backup, because quota is per key. A rejected key is
+dropped; when every key is rejected the LLM stops and documents fall back to the templates.
 """
 import json
 import os
@@ -165,17 +166,22 @@ def _http_post(url, headers, body, timeout):
 class LLMExtractor:
     """extract(lines, method) → (kind, fields) or None (no model answered: use the templates)."""
 
-    def __init__(self, api_key: str, models=None, post=_http_post, timeout=30):
-        self.key = api_key
+    def __init__(self, api_key, models=None, post=_http_post, timeout=30):
+        """api_key: one key, or a list in order of preference (main, then backup)."""
+        self.keys = [k for k in ([api_key] if isinstance(api_key, str) else api_key) if k]
         self.models = [m.strip() for m in (models or DEFAULT_MODELS).split(",") if m.strip()]
         self.post, self.timeout = post, timeout
-        self.dead = set()  # models out of quota / missing for the rest of this run
-        self.disabled = False  # key rejected: every model would fail the same way
+        self.dead = set()  # (key index, model) out of quota / missing for the rest of this run; quota is per key
+        self.rejected = set()  # key indexes the API refused: every model would fail the same way
         self.used = {}  # model → documents answered
         self.fallbacks = []  # documents read by the templates because no model answered
         self.errors = []
 
-    def _call(self, model, prompt):
+    @property
+    def disabled(self):  # every key was refused: stop calling the LLM, documents fall back to templates
+        return len(self.rejected) >= len(self.keys)
+
+    def _call(self, model, prompt, key):
         body = {
             "systemInstruction": {"parts": [{"text": SYSTEM}]},
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
@@ -183,7 +189,7 @@ class LLMExtractor:
                                  **({} if model.startswith("gemma") else {"responseMimeType": "application/json"})},
         }
         try:
-            status, data = self.post(API.format(model=model), {"content-type": "application/json", "x-goog-api-key": self.key},
+            status, data = self.post(API.format(model=model), {"content-type": "application/json", "x-goog-api-key": key},
                                      body, self.timeout)
         except (OSError, ValueError) as e:  # network, timeout, or a 200 that is not JSON
             raise ModelError(model, type(e).__name__)
@@ -201,18 +207,19 @@ class LLMExtractor:
         return out
 
     def ask(self, prompt):
-        """→ (answer, model) or None."""
+        """→ (answer, model) or None. Best model first; for each model the main key, then the backup."""
         for model in self.models:
-            if self.disabled or model in self.dead:
-                continue
-            try:
-                return self._call(model, prompt), model
-            except ModelError as e:
-                self.errors.append(str(e))
-                if e.fatal:
-                    self.disabled = True
-                elif "not JSON" not in str(e) and "bad shape" not in str(e):
-                    self.dead.add(model)
+            for i, key in enumerate(self.keys):
+                if i in self.rejected or (i, model) in self.dead:
+                    continue
+                try:
+                    return self._call(model, prompt, key), model
+                except ModelError as e:
+                    self.errors.append(str(e) + (f" (key {i + 1})" if len(self.keys) > 1 else ""))
+                    if e.fatal:
+                        self.rejected.add(i)
+                    elif "not JSON" not in str(e) and "bad shape" not in str(e):
+                        self.dead.add((i, model))
         return None
 
     def extract(self, lines, method, doc=""):
@@ -280,9 +287,9 @@ class LLMExtractor:
 
 def make_extractor(mode: str):
     """mode: template (offline, deterministic) | llm (needs GEMINI_API_KEY) | auto (llm when a key is set)."""
-    key = os.environ.get("GEMINI_API_KEY", "")
-    if mode == "template" or (mode == "auto" and not key):
+    keys = [k for k in (os.environ.get("GEMINI_API_KEY", ""), os.environ.get("GEMINI_API_KEY_BACKUP", "")) if k]
+    if mode == "template" or (mode == "auto" and not keys):
         return None
-    if not key:
+    if not keys:
         raise SystemExit("--extractor llm needs GEMINI_API_KEY")
-    return LLMExtractor(key, os.environ.get("GEMINI_MODELS"))
+    return LLMExtractor(keys, os.environ.get("GEMINI_MODELS"))

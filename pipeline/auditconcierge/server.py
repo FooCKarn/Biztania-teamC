@@ -8,7 +8,7 @@ For each job the service:
   1. downloads each file from the Worker (GET /api/internal/runs/<run>/files/<id>, signed) into a
      fresh temporary folder and checks its SHA-256,
   2. runs build() exactly as the CLI does,
-  3. uploads page images and crops (POST .../asset) and then conflict_map.json (POST .../done),
+  3. reports where it is (POST .../progress) as it goes, uploads page images and crops (POST .../asset) and then conflict_map.json (POST .../done),
   4. deletes the temporary folder, whatever happened. On error it reports POST .../fail.
 
 The service keeps nothing: no database, no files after a job, no credentials besides the shared
@@ -32,6 +32,7 @@ import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -95,6 +96,13 @@ class WorkerClient:
     def asset(self, result_run: str, path: str, data: bytes):
         self._call("POST", "/asset", data, {"path": path, "result": result_run}, "image/png")
 
+    def progress(self, info: dict):
+        """Where the job is now, for the progress bar. Best effort: a lost update must never fail the job."""
+        try:
+            self._call("POST", "/progress", json.dumps(info, ensure_ascii=False).encode(), ctype="application/json")
+        except Exception:
+            pass
+
     def done(self, result: dict):
         self._call("POST", "/done", json.dumps(result, ensure_ascii=False).encode(), ctype="application/json")
 
@@ -125,23 +133,40 @@ def remember_for(folder: Path, settings: dict) -> None:
 def run_job(job: dict, client: WorkerClient) -> dict:
     from .build import build
 
+    say = getattr(client, "progress", lambda info: None)
     work = Path(tempfile.mkdtemp(prefix="ac-job-"))
     try:
         src, out = work / "in", work / "out"
         src.mkdir()
-        for f in job["files"]:
+        total = len(job["files"])
+        for n, f in enumerate(job["files"], 1):
             name = unicodedata.normalize("NFC", f["name"])
             if not NAME_RE.match(name) or ".." in name or not ID_RE.match(f["id"]):
                 raise ValueError(f"ชื่อไฟล์ไม่ถูกต้อง: {name}")
+            say({"stage": "download", "done": n - 1, "total": total, "file": name})
             data = client.file(f["id"])
             if hashlib.sha256(data).hexdigest() != f.get("sha256"):
                 raise ValueError(f"ไฟล์ {name} เสียระหว่างส่ง (SHA-256 ไม่ตรง)")
             (src / name).write_bytes(data)
         remember_for(src, job.get("settings") or {})
-        result = build(src, out)
-        for sub in ("pages", "crops"):
-            for p in sorted((out / sub).glob("*.png")) if (out / sub).exists() else []:
-                client.asset(result["run_id"], f"{sub}/{p.name}", p.read_bytes())
+        last = {}
+
+        def progress(stage, **info):  # build() → Worker, only when something changed
+            msg = {"stage": stage, **info}
+            if msg != last:
+                last.clear()
+                last.update(msg)
+                say(msg)
+
+        result = build(src, out, extractor="auto", progress=progress)  # LLM when GEMINI_API_KEY is set, else templates
+        assets = [(sub, p) for sub in ("pages", "crops") for p in (sorted((out / sub).glob("*.png")) if (out / sub).exists() else [])]
+        say({"stage": "upload", "done": 0, "total": len(assets)})
+        count = 0
+        with ThreadPoolExecutor(max_workers=4) as pool:  # each upload is a network round trip, so overlap them
+            for _ in pool.map(lambda a: client.asset(result["run_id"], f"{a[0]}/{a[1].name}", a[1].read_bytes()), assets):
+                count += 1
+                if count % 4 == 0 or count == len(assets):
+                    say({"stage": "upload", "done": count, "total": len(assets)})
         client.done(result)
         return result
     finally:

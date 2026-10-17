@@ -184,6 +184,16 @@ test("full engagement: upload → pipeline run → sign-off by role → close �
   const got = await internal("GET", `/api/internal/runs/${job.run}/files/${fid}`);
   assert.equal(got.status, 200);
   assert.deepEqual(got.bytes, PDF);
+  // Progress: starts as "waking", then follows what the pipeline reports; bad stages are refused.
+  assert.equal((await rev.b.get(`/api/engagements/${id}`)).body.runs[0].progress.stage, "waking");
+  const say = (o) => internal("POST", `/api/internal/runs/${job.run}/progress`, new TextEncoder().encode(JSON.stringify(o)));
+  assert.equal((await say({ stage: "read", done: 2, total: 6, file: "a.jpg" })).status, 200);
+  assert.deepEqual(
+    (({ stage, done, total, file }) => ({ stage, done, total, file }))((await rev.b.get(`/api/engagements/${id}`)).body.runs[0].progress),
+    { stage: "read", done: 2, total: 6, file: "a.jpg" },
+  );
+  assert.equal((await say({ stage: "hack" })).status, 400);
+  assert.equal((await internal("POST", `/api/internal/runs/${job.run}/progress`, new TextEncoder().encode("{}"), "wrong")).status, 401);
   const page = MAP.documents.find((d) => d.page)?.page.image ?? "pages/INV-BS-201.png";
   assert.equal((await internal("POST", `/api/internal/runs/${job.run}/asset?path=${page}&result=${MAP.run_id}`, PNG)).status, 200);
   const done = await internal("POST", `/api/internal/runs/${job.run}/done`, new TextEncoder().encode(JSON.stringify(MAP)));
@@ -193,6 +203,7 @@ test("full engagement: upload → pipeline run → sign-off by role → close �
   const view = await rev.b.get(`/api/engagements/${id}`);
   assert.equal(view.body.current_run, MAP.run_id);
   assert.equal(view.body.runs[0].status, "done");
+  assert.equal(view.body.runs[0].progress, null, "no progress once finished");
   assert.equal(view.body.runs[0].summary.flags, MAP.flags.length);
   const data = await rev.b.get(`/api/engagements/${id}/data/${MAP.run_id}/conflict_map.json`);
   assert.equal(data.body.run_id, MAP.run_id);

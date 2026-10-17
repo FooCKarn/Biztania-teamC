@@ -157,7 +157,9 @@ export async function loadEngagementMap(env, id, resultRunId) {
   return b ? JSON.parse(new TextDecoder().decode(b.bytes)) : null;
 }
 
-const runJson = (r) => ({
+const STAGES = new Set(["waking", "download", "ocr", "read", "pages", "check", "upload"]);
+
+const runJson = (r, progress) => ({
   id: r.id,
   status: r.status,
   started_at: r.started_at,
@@ -166,6 +168,7 @@ const runJson = (r) => ({
   summary: r.summary ? JSON.parse(r.summary) : null,
   error: r.error,
   files: JSON.parse(r.file_ids).length,
+  progress: r.status === "running" && progress ? { stage: progress.stage, done: progress.done, total: progress.total, file: progress.file, at: progress.updated_at } : null,
 });
 
 async function dispatch(env, run, files, e) {
@@ -258,11 +261,17 @@ export async function handleEngagements(request, env, path) {
       db.prepare("SELECT * FROM activity WHERE engagement_id = ?1 ORDER BY seq DESC LIMIT 50").bind(id).all(),
     ]);
     const done = runs.results.find((r) => r.status === "done") ?? (await latestDone(env, id));
+    const running = runs.results.filter((r) => r.status === "running");
+    const progressOf = new Map();
+    if (running.length) {
+      const q = await db.prepare(`SELECT * FROM run_progress WHERE run_id IN (${running.map((_, i) => `?${i + 1}`).join(",")})`).bind(...running.map((r) => r.id)).all();
+      for (const p of q.results) progressOf.set(p.run_id, p);
+    }
     return json({
       engagement: engagementJson(e, role),
       members: members.results.filter((m) => !isDemoEmail(user.email) || isDemoEmail(m.email)), // a demo account never sees real users
       files: files.results.map((f) => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, uploaded_at: f.uploaded_at, uploaded_by: f.uploaded_by })),
-      runs: runs.results.map(runJson),
+      runs: runs.results.map((r) => runJson(r, progressOf.get(r.id))),
       current_run: done?.result_run_id ?? null,
       activity: activity.results.map((a) => ({ ...a, detail: a.detail ? JSON.parse(a.detail) : null })),
       pipeline_configured: !!(env.PIPELINE_URL && env.PIPELINE_SECRET),
@@ -386,6 +395,7 @@ export async function handleEngagements(request, env, path) {
       .bind(run.id, id, run.file_ids, user.initials, nowIso())
       .run();
     await log(env, id, user.initials, "run", { run: run.id, files: files.length });
+    await setProgress(env, run.id, { stage: "waking", done: 0, total: files.length }); // the page polls while the free host wakes up
     try {
       await dispatch(env, run, files, e);
     } catch (x) {
@@ -454,6 +464,13 @@ async function keepAManager(db, id, leavingUserId) {
 
 // ---------- pipeline callbacks (signed with PIPELINE_SECRET, no cookie) ----------
 
+async function setProgress(env, runId, p) {
+  await env.AUDIT_DB
+    .prepare("INSERT INTO run_progress (run_id, stage, done, total, file, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6) ON CONFLICT(run_id) DO UPDATE SET stage = ?2, done = ?3, total = ?4, file = ?5, updated_at = ?6")
+    .bind(runId, p.stage, p.done ?? null, p.total ?? null, p.file ?? null, nowIso())
+    .run();
+}
+
 async function activeRun(env, runId) {
   const r = await env.AUDIT_DB.prepare("SELECT * FROM runs WHERE id = ?1").bind(runId).first();
   if (!r || r.status !== "running") throw new HttpError(409, "run ไม่ได้อยู่ระหว่างประมวลผล");
@@ -462,7 +479,7 @@ async function activeRun(env, runId) {
 
 export async function handleInternal(request, env, path) {
   await ensureAppSchema(env);
-  const m = path.match(/^\/api\/internal\/runs\/([a-f0-9]{16})\/(files\/([a-f0-9]{16})|asset|done|fail)$/);
+  const m = path.match(/^\/api\/internal\/runs\/([a-f0-9]{16})\/(files\/([a-f0-9]{16})|asset|progress|done|fail)$/);
   if (!m) throw new HttpError(404, "ไม่มีบริการนี้");
   const body = request.method === "GET" ? new Uint8Array() : new Uint8Array(await request.arrayBuffer());
   if (!(await verifySigned(request, env.PIPELINE_SECRET, body))) throw new HttpError(401, "ลายเซ็นไม่ถูกต้อง");
@@ -479,6 +496,18 @@ export async function handleInternal(request, env, path) {
   }
   if (request.method !== "POST") throw new HttpError(405, "ใช้ POST");
 
+  if (op === "progress") {
+    let p;
+    try {
+      p = JSON.parse(new TextDecoder().decode(body));
+    } catch {
+      throw new HttpError(400, "progress ไม่ใช่ JSON");
+    }
+    if (!STAGES.has(p.stage)) throw new HttpError(400, "stage ไม่รู้จัก");
+    const n = (v) => (Number.isInteger(v) && v >= 0 && v < 100000 ? v : null);
+    await setProgress(env, runId, { stage: p.stage, done: n(p.done), total: n(p.total), file: typeof p.file === "string" ? p.file.slice(0, 120) : null });
+    return json({ ok: true });
+  }
   if (op === "asset") {
     const url = new URL(request.url);
     const p = url.searchParams.get("path") || "";

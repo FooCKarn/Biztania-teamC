@@ -114,3 +114,32 @@ def test_worker_calls_do_not_use_the_default_python_user_agent():
     server.WorkerClient("https://w.example", SECRET, "0123456789abcdef", opener).file("fedcba9876543210")
     assert seen["user-agent"] == server.USER_AGENT and "urllib" not in seen["user-agent"].lower()
     assert "x-ac-signature" in seen
+
+
+def test_job_reports_progress_in_order():
+    job, files = sample_job()
+    w = FakeWorker(files)
+    seen = []
+    w.progress = seen.append
+    server.run_job(job, w)
+    stages = [m["stage"] for m in seen]
+    assert stages[0] == "download" and stages[-1] == "upload"
+    order = [s for i, s in enumerate(stages) if i == 0 or s != stages[i - 1]]
+    assert order == ["download", "ocr", "read", "pages", "check", "upload"] or order == ["download", "read", "pages", "check", "upload"]
+    assert any(m["stage"] == "read" and m.get("file") for m in seen), "per-file progress carries the file name"
+    assert seen[-1]["done"] == seen[-1]["total"]
+
+
+def test_large_photo_is_ocred_downscaled_with_boxes_in_original_pixels(tmp_path):
+    from PIL import Image
+
+    from auditconcierge import readers
+
+    src = SAMPLE / "invoices" / "INV-BS-205_scan.png"
+    big = Image.open(src).convert("RGB").resize((3000, 1800))
+    p = tmp_path / "photo.jpg"
+    big.save(p, quality=90)
+    lines = readers._ocr_lines(p)
+    assert lines and all(b[0] + b[2] <= 3000 + 5 and b[1] + b[3] <= 1800 + 5 for *_, b in lines)
+    assert max(b[0] + b[2] for *_, b in lines) > 1000, "boxes are scaled back to the original image, not left in the 2000 px OCR image"
+    assert readers._ocr_lines(p) == lines, "second call is served from the cache"

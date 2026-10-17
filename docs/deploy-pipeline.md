@@ -20,7 +20,8 @@ npx wrangler secret put SETUP_TOKEN      # รหัสใช้ครั้ง�
 2. ใส่ค่า 2 ตัวที่ Render ถาม:
    - `PIPELINE_SECRET` = ค่าเดียวกับข้อ 1
    - `WORKER_URL` = URL ของ Worker เช่น `https://auditpal.foo30749.workers.dev` (ไม่มี `/` ท้าย)
-3. รอ build เสร็จ แล้วจด URL ของ service เช่น `https://auditpal-pipeline.onrender.com` เปิด `/healthz` ต้องได้ `ok`
+3. (แนะนำ) ใส่ `GEMINI_API_KEY` ใน Environment ของ service ด้วย — ถ้าไม่ใส่ เครื่องจะอ่านได้เฉพาะเอกสารที่หน้าตาตรงแม่แบบตัวอย่าง รูปถ่ายใบกำกับภาษีจริงจะขึ้น "ไม่ตรงแม่แบบที่รู้จัก" (ตั้งโมเดลได้ด้วย `GEMINI_MODELS`; ถ้าโมเดลแรกโควตาหมดหรือล่ม ระบบสลับไปโมเดลถัดไปเองตามลำดับ) และใส่ `GEMINI_API_KEY_BACKUP` เป็น key สำรอง (ควรเป็นอีก Google project เพราะโควตานับต่อ project): แต่ละโมเดลจะลอง key หลักก่อน แล้วค่อยลอง key สำรอง
+4. รอ build เสร็จ แล้วจด URL ของ service เช่น `https://auditpal-pipeline.onrender.com` เปิด `/healthz` ต้องได้ `ok`
 
 ## 3) บอก Worker ว่าเครื่องประมวลผลอยู่ไหน
 
