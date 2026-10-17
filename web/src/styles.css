@@ -23,6 +23,9 @@
   --warn: #b45309;
   --warn-fill: #f59e0b;
   --warn-soft: rgba(245, 158, 11, 0.13);
+  --low: #1d4ed8;
+  --low-fill: #2563eb;
+  --low-soft: rgba(37, 99, 235, 0.12);
   --banner: #fdeff4;
   --bar: rgba(255, 247, 250, 0.82);
   --shadow: 0 0 0 1px var(--sep);
@@ -53,6 +56,9 @@
   --warn: #8a5a00;
   --warn-fill: #c88a1c;
   --warn-soft: rgba(200, 138, 28, 0.18);
+  --low: #1f5a8a;
+  --low-fill: #3b7fb5;
+  --low-soft: rgba(59, 127, 181, 0.16);
   --banner: #ece2c8;
   --bar: rgba(239, 230, 208, 0.85);
   color-scheme: light;
@@ -143,10 +149,10 @@ textarea { width: 100%; resize: vertical; margin: 6px 0 8px; }
 .pill.ok, .tag.ok { background: var(--good-soft); color: var(--good); }
 .risk-high { --risk: var(--bad-fill); }
 .risk-mid { --risk: var(--warn-fill); }
-.risk-low { --risk: var(--accent); }
+.risk-low { --risk: var(--low-fill); }
 .pill.risk-high { background: var(--bad-soft); color: var(--bad); }
 .pill.risk-mid { background: var(--warn-soft); color: var(--warn); }
-.pill.risk-low { background: var(--accent-soft); color: var(--accent); }
+.pill.risk-low { background: var(--low-soft); color: var(--low); }
 .ref {
   font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; font-weight: 600; color: var(--muted);
   background: var(--fill); border-radius: 5px; padding: 0 5px;
