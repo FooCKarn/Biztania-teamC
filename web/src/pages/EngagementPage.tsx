@@ -320,25 +320,19 @@ export default function EngagementPage({ id }: { id: string }) {
           </section>
 
           <section className="group">
-            <h3 className="group-title">{t("ประมวลผล", "Processing")}</h3>
             <div className="group-body stack">
               {open && (
                 <div className="row">
                   <button
-                    className="btn filled"
+                    className="btn filled process-btn"
                     disabled={busy || running || !docs.length || !d.pipeline_configured}
                     onClick={() => act(() => api(`api/engagements/${id}/runs`, { method: "POST" }), t("เริ่มประมวลผลแล้ว ระบบจะอัปเดตสถานะให้เอง", "Processing started. Status updates on its own."))}
                   >
                     {running ? t("กำลังประมวลผล…", "Processing…") : busy ? t("กำลังปลุกเครื่องประมวลผล…", "Waking the processor…") : t("ประมวลผลเอกสารทั้งหมด", "Process all documents")}
                   </button>
-                  <span className="muted small">
-                    {d.pipeline_configured
-                      ? t(
-                          "อ่านเอกสาร จับคู่ และตรวจขัดแย้งบน server (ครั้งแรกของวันอาจรอเครื่องตื่นราว 1 นาที)",
-                          "Reads, matches and checks documents on the server (the first run of the day may wait about a minute)",
-                        )
-                      : t("ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL)", "The processor (PIPELINE_URL) is not configured")}
-                  </span>
+                  {!d.pipeline_configured && (
+                    <span className="muted small">{t("ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL)", "The processor (PIPELINE_URL) is not configured")}</span>
+                  )}
                 </div>
               )}
               {d.runs.length === 0 ? (
