@@ -1,6 +1,15 @@
 // Tables for accounts, engagements and their files (D1 / SQLite). Created on first use, like trail.js.
 // The activity log is append-only (triggers), the same way as the Audit Trail.
 
+const MEMBERS_TABLE = `CREATE TABLE IF NOT EXISTS members (
+    engagement_id TEXT NOT NULL,
+    user_id       TEXT NOT NULL,
+    role          TEXT NOT NULL CHECK (role IN ('auditor')),
+    added_by      TEXT NOT NULL,
+    added_at      TEXT NOT NULL,
+    PRIMARY KEY (engagement_id, user_id)
+  )`;
+
 const APP_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (
     id         TEXT PRIMARY KEY,
@@ -35,14 +44,7 @@ const APP_SCHEMA = [
     closed_at      TEXT,
     purged_at      TEXT
   )`,
-  `CREATE TABLE IF NOT EXISTS members (
-    engagement_id TEXT NOT NULL,
-    user_id       TEXT NOT NULL,
-    role          TEXT NOT NULL CHECK (role IN ('auditor')),
-    added_by      TEXT NOT NULL,
-    added_at      TEXT NOT NULL,
-    PRIMARY KEY (engagement_id, user_id)
-  )`,
+  MEMBERS_TABLE,
   `CREATE TABLE IF NOT EXISTS files (
     id            TEXT PRIMARY KEY,
     engagement_id TEXT NOT NULL,
@@ -115,7 +117,7 @@ function ensure(db, name, statements) {
   if (!m.has(name)) {
     m.set(
       name,
-      db.batch(statements.map((s) => db.prepare(s))).catch((e) => {
+      (typeof statements === "function" ? statements(db) : db.batch(statements.map((s) => db.prepare(s)))).catch((e) => {
         m.delete(name);
         throw e;
       }),
@@ -126,7 +128,26 @@ function ensure(db, name, statements) {
 
 export const filesDb = (env) => env.FILES_DB ?? env.AUDIT_DB;
 
+// Databases created before the single Auditor role still have members.role limited to
+// preparer/reviewer/manager, so every new member insert (demo entry, new engagement, adding someone)
+// failed its CHECK. CREATE TABLE IF NOT EXISTS cannot change a constraint, so move the old table aside
+// as members_legacy (kept, nothing is deleted) and copy its rows into a new one as auditors, in one transaction.
+async function migrateMembers(db) {
+  const t = await db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'members'").first();
+  if (!t || !/'preparer'/.test(t.sql)) return;
+  const legacy = await db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'members_legacy'").first();
+  const aside = legacy ? `members_legacy_${Date.now()}` : "members_legacy";
+  await db.batch(
+    [
+      `ALTER TABLE members RENAME TO ${aside}`,
+      MEMBERS_TABLE,
+      `INSERT OR IGNORE INTO members (engagement_id, user_id, role, added_by, added_at) SELECT engagement_id, user_id, 'auditor', added_by, added_at FROM ${aside}`,
+    ].map((s) => db.prepare(s)),
+  );
+}
+
 export async function ensureAppSchema(env) {
   await ensure(env.AUDIT_DB, "app", APP_SCHEMA);
+  await ensure(env.AUDIT_DB, "members-auditor", migrateMembers);
   await ensure(filesDb(env), "blobs", BLOB_SCHEMA);
 }

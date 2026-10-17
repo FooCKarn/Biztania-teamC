@@ -446,3 +446,30 @@ test("file manager: only the user's engagements, storage per kind, other clients
   env.STORAGE_QUOTA_MB = "10240";
   assert.equal((await rev.b.get("/api/files")).body.storage.quota, 10240 * 1024 * 1024);
 });
+
+test("a database made before the single Auditor role is migrated: demo entry works and old team rows are kept", async () => {
+  // members as the earlier three-role schema created it, with rows from that time.
+  env.AUDIT_DB.sql.exec(`CREATE TABLE members (
+    engagement_id TEXT NOT NULL,
+    user_id       TEXT NOT NULL,
+    role          TEXT NOT NULL CHECK (role IN ('preparer', 'reviewer', 'manager')),
+    added_by      TEXT NOT NULL,
+    added_at      TEXT NOT NULL,
+    PRIMARY KEY (engagement_id, user_id)
+  )`);
+  env.AUDIT_DB.sql.exec("INSERT INTO members VALUES ('e1', 'u1', 'manager', 'u1', '2026-10-16T00:00:00Z'), ('e1', 'u2', 'preparer', 'u1', '2026-10-16T00:00:00Z')");
+
+  const r = await browser().post("/api/auth/demo-login", {});
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const roles = env.AUDIT_DB.sql.prepare("SELECT engagement_id, user_id, role FROM members ORDER BY user_id").all();
+  assert.deepEqual(
+    roles.filter((m) => m.engagement_id === "e1").map((m) => [m.user_id, m.role]),
+    [
+      ["u1", "auditor"],
+      ["u2", "auditor"],
+    ],
+  );
+  assert.ok(roles.some((m) => m.engagement_id === r.body.engagement.id), "demo account is on the demo team");
+  assert.equal(env.AUDIT_DB.sql.prepare("SELECT COUNT(*) n FROM members_legacy").get().n, 2, "old table kept aside, nothing deleted");
+  assert.doesNotMatch(env.AUDIT_DB.sql.prepare("SELECT sql FROM sqlite_master WHERE name = 'members'").get().sql, /preparer/);
+});
