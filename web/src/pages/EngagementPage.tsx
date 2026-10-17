@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ROLE_LABEL, when, type EngagementDetail, type Role, type User } from "../api";
+import { api, ROLE_LABEL, when, type EngagementDetail, type Role, type RunProgress, type User } from "../api";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.json";
 const RUN_LABEL = { queued: "รอคิว", running: "กำลังประมวลผล", done: "เสร็จ", failed: "ไม่สำเร็จ" } as const;
@@ -18,6 +18,44 @@ const ACTIVITY_LABEL: Record<string, string> = {
   close: "ปิดงาน",
   purge: "ลบไฟล์ดิบตามนโยบาย",
 };
+// Share of the bar each stage covers; the rest of a stage is filled by done/total.
+const STAGE_SPAN: Record<RunProgress["stage"], [number, number, string]> = {
+  waking: [0, 8, "กำลังปลุกเครื่องประมวลผล (ครั้งแรกอาจรอราว 1 นาที)"],
+  download: [8, 18, "ส่งไฟล์ไปเครื่องประมวลผล"],
+  ocr: [18, 50, "อ่านตัวอักษรจากรูป (OCR)"],
+  read: [50, 85, "สกัดข้อมูลจากเอกสาร"],
+  pages: [85, 88, "เตรียมภาพหน้าเอกสาร"],
+  check: [88, 92, "จับคู่และตรวจความขัดแย้ง"],
+  upload: [92, 99, "บันทึกผลและภาพหน้าเอกสาร"],
+};
+const percent = (p: RunProgress) => {
+  const [a, b] = STAGE_SPAN[p.stage];
+  return Math.round(a + (b - a) * (p.total ? Math.min(1, (p.done ?? 0) / p.total) : 0));
+};
+
+function RunBar({ p, started }: { p: RunProgress; started: string }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const secs = Math.max(0, Math.round((now - Date.parse(started)) / 1000));
+  const count = p.total && p.stage !== "waking" ? ` ${Math.min(p.total, (p.done ?? 0) + (p.stage === "ocr" || p.stage === "upload" ? 0 : 1))}/${p.total}` : "";
+  return (
+    <div className="runbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent(p)}>
+      <div className="runbar-track">
+        <div className="runbar-fill" style={{ width: `${percent(p)}%` }} />
+      </div>
+      <p className="small">
+        {STAGE_SPAN[p.stage][2]}
+        {count}
+        {p.file && (p.stage === "read" || p.stage === "download") ? ` · ${p.file}` : ""}
+        <span className="muted"> · {percent(p)}% · ผ่านไป {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>
+      </p>
+    </div>
+  );
+}
+
 const size = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 const detailText = (d: Record<string, unknown> | null) =>
   !d ? "" : [d.file, d.user && `${d.user}${d.role ? ` → ${ROLE_LABEL[String(d.role)] ?? d.role}` : ""}`, d.flags != null && `${d.flags} จุดควรตรวจ`, d.error].filter(Boolean).join(" · ");
@@ -46,11 +84,12 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
 
   // While a run is in progress, refresh every few seconds.
   const running = d?.runs.some((r) => r.status === "running" || r.status === "queued");
+  // Also while the start request itself is still waiting for the free host to wake up (busy).
   useEffect(() => {
-    if (!running) return;
-    const t = setInterval(load, 4000);
+    if (!running && !busy) return;
+    const t = setInterval(load, 2000);
     return () => clearInterval(t);
-  }, [running, load]);
+  }, [running, busy, load]);
 
   const role = d?.engagement.my_role;
   const manager = role === "manager";
@@ -225,6 +264,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                           {r.summary.documents === 0 && " · ไม่พบเอกสารที่อ่านได้ (เปิดหน้าผลเพื่อดูสาเหตุรายไฟล์)"}
                         </span>
                       )}
+                      {r.status === "running" && <RunBar p={r.progress ?? { stage: "waking", done: 0, total: r.files, file: null, at: r.started_at }} started={r.started_at} />}
                       {r.error && <span className="small error"> · {r.error}</span>}
                       {r.result_run_id === d.current_run && r.status === "done" && <span className="muted small"> · ผลที่แสดงอยู่</span>}
                     </li>

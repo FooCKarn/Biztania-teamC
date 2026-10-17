@@ -63,6 +63,14 @@ export interface FileRow {
   uploaded_by: string;
 }
 
+export interface RunProgress {
+  stage: "waking" | "download" | "ocr" | "read" | "pages" | "check" | "upload";
+  done: number | null;
+  total: number | null;
+  file: string | null;
+  at: string;
+}
+
 export interface Run {
   id: string;
   status: "queued" | "running" | "done" | "failed";
@@ -72,6 +80,7 @@ export interface Run {
   summary: { flags: number; pending: number; documents: number; unreadable: number } | null;
   error: string | null;
   files: number;
+  progress: RunProgress | null;
 }
 
 export interface EngagementDetail {
