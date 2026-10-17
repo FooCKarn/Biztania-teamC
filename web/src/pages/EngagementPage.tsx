@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type RunProgress, type User } from "../api";
+import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type RunProgress } from "../api";
 import { bi, locale, t } from "../i18n";
 import Loading from "../components/Loading";
 
@@ -71,13 +71,11 @@ const size = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.ma
 const detailText = (d: Record<string, unknown> | null) =>
   !d ? "" : [d.file, d.user && `${d.user}${d.role ? ` → ${ROLE_LABEL[String(d.role)] ?? d.role}` : ""}`, d.flags != null && `${d.flags} ${t("จุดควรตรวจ", "to check")}`, d.error].filter(Boolean).join(" · ");
 
-export default function EngagementPage({ id, me }: { id: string; me: User }) {
+export default function EngagementPage({ id }: { id: string }) {
   const [d, setD] = useState<EngagementDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [add, setAdd] = useState<{ user: string }>({ user: "" });
   const [settings, setSettings] = useState<{ t: string; m: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -107,9 +105,6 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   // Every team member has the same access (single Auditor role), so "I'm on the team" is the only gate.
   const member = !!role;
   const open = d?.engagement.status === "open";
-  useEffect(() => {
-    if (member) api<{ users: User[] }>("api/users").then((r) => setUsers(r.users)).catch(() => undefined);
-  }, [member]);
 
   const act = async (fn: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -140,7 +135,6 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   if (!d) return error ? <p className="empty error">{error}</p> : <Loading />;
   const e = d.engagement;
   const purgeOn = e.closed_at ? new Date(Date.parse(e.closed_at) + d.retention_days * 86400_000) : null;
-  const memberIds = new Set(d.members.map((m) => m.id));
   const docs = d.files.filter((f) => f.name !== "remember.json");
   // A file counts as processed when the newest finished run saw this name with the same content (new uploads and replaced files do not).
   const latest = d.runs.find((r) => r.status === "done" && r.result_run_id === d.current_run);
@@ -381,59 +375,6 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
         </div>
 
         <div>
-          <section className="group">
-            <h3 className="group-title">{t("ทีม", "Team")}</h3>
-            <div className="group-body">
-              <table className="fields">
-                <tbody>
-                  {d.members.map((m) => (
-                    <tr key={m.id}>
-                      <td>
-                        <strong>{m.initials}</strong> {m.name}
-                        {m.id === me.id && <span className="muted small"> ({t("คุณ", "you")})</span>}
-                      </td>
-                      <td className="muted small">{ROLE_LABEL[m.role]}</td>
-                      <td>
-                        {member && open && m.id !== me.id && (
-                          <button className="link destructive small" disabled={busy} onClick={() => act(() => api(`api/engagements/${id}/members/${m.id}/remove`, { method: "POST" }))}>
-                            {t("นำออก", "Remove")}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {member && open && (
-                <div className="row add-member">
-                  <select value={add.user} onChange={(ev) => setAdd({ ...add, user: ev.target.value })} aria-label={t("ผู้ใช้", "User")}>
-                    <option value="">{t("เพิ่มคนในทีม…", "Add a team member…")}</option>
-                    {users
-                      .filter((u) => !memberIds.has(u.id))
-                      .map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.initials} · {u.name}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    className="btn"
-                    disabled={!add.user || busy}
-                    onClick={() => act(async () => {
-                      await api(`api/engagements/${id}/members`, { body: { user_id: add.user } });
-                      setAdd({ ...add, user: "" });
-                    })}
-                  >
-                    {t("เพิ่ม", "Add")}
-                  </button>
-                </div>
-              )}
-              <p className="muted small">
-                {t("ทุกคนในทีมเป็นผู้สอบบัญชี (Auditor) ที่เข้าถึง Engagement นี้ได้เท่ากัน: อัปโหลด ประมวลผล ตรวจสอบรายการ ลงนามยืนยันผล จัดการทีม ตั้งค่า และปิดงาน", "Everyone on the team is an Auditor with the same access to this engagement: upload, process, check items, sign off, manage the team, settings and closing")}
-              </p>
-            </div>
-          </section>
-
           {member && open && (
             <section className="group">
               <h3 className="group-title">{t("ตั้งค่าและปิดงาน", "Settings and closing")}</h3>

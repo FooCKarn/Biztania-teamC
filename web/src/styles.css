@@ -407,8 +407,6 @@ a.list-row:hover { background: var(--surface-2); }
 .runs li, .activity li { padding: 6px 0; border-bottom: 1px solid var(--sep); }
 .runs li:last-child, .activity li:last-child { border-bottom: 0; }
 .activity { max-height: 360px; overflow: auto; }
-.add-member { margin-top: 10px; flex-wrap: wrap; }
-.add-member select { flex: 1; min-width: 120px; }
 
 /* Motion & polish */
 .btn, .flag-row, .list-row, .txn-tile, .segmented button, input, select, textarea {

@@ -93,7 +93,7 @@ export default function Engagements() {
             </p>
           )}
           <p className="muted small">
-            {t("คุณจะอยู่ในทีมของ Engagement นี้ แล้วเพิ่มคนอื่นเข้าทีมได้ในหน้าถัดไป", "You will be on this engagement's team and can add others on the next page.")}
+            {t("คุณจะอยู่ในทีมของ Engagement นี้โดยอัตโนมัติ", "You will be on this engagement's team automatically.")}
           </p>
           <button className="btn filled" disabled={busy}>
             {busy ? t("กำลังสร้าง…", "Creating…") : t("สร้าง", "Create")}
