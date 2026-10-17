@@ -1,6 +1,6 @@
 """Run the whole pipeline on one engagement folder and write conflict_map.json for the web app.
 
-Usage: python -m auditconcierge <engagement folder> [--out ../web/public/data]
+Usage: python -m auditconcierge <engagement folder> [--out ../web/public/data] [--extractor auto|llm|template]
 """
 import argparse
 import hashlib
@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from .entities import VendorBook
+from .extract_llm import make_extractor
 from .matching import link_all, resolve_vendors, transactions
 from .pages import locate, save_pages
 from .quotes import verify
@@ -43,8 +44,11 @@ def save_crops(folder: Path, records, out: Path):
                 f.crop = f"crops/{name}"
 
 
-def build(folder: Path, out: Path | None = None) -> dict:
-    records, skipped = read_engagement(folder)
+def build(folder: Path, out: Path | None = None, extractor: str = "template", llm=None) -> dict:
+    """extractor: template (default here, offline and deterministic for tests) | llm | auto.
+    llm: an already made LLMExtractor (tests pass one with a fake transport)."""
+    llm = llm or make_extractor(extractor)
+    records, skipped = read_engagement(folder, llm)
     boxes = save_pages(folder, records, out) if out else {}
     cfg = load_remember(folder, records)
     book = VendorBook([r for r in records if r.kind == "vendor"])
@@ -98,6 +102,9 @@ def build(folder: Path, out: Path | None = None) -> dict:
         "transactions": txns,
         "flags": flags,
         "pending": pending,
+        "extraction": {"mode": "llm" if llm else "template", "models": dict(llm.used) if llm else {},
+                       "template_fallback": list(llm.fallbacks) if llm else [],
+                       "errors": sorted(set(llm.errors)) if llm else []},
         "coverage": {"files": len(files), "unreadable_files": skipped, "unclear_fields": unclear,
                      "unverified_fields": unverified},
     }
@@ -111,8 +118,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("folder", type=Path)
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--extractor", choices=("auto", "llm", "template"), default="auto",
+                    help="auto = LLM when GEMINI_API_KEY is set, else templates")
     a = ap.parse_args()
-    res = build(a.folder, a.out)
+    res = build(a.folder, a.out, a.extractor)
+    ex = res["extraction"]
+    print(f"extraction: {ex['mode']} {ex['models']}" + (f" · templates for {ex['template_fallback']}" if ex["template_fallback"] else ""))
     print(f"files {res['coverage']['files']} · documents {len(res['documents'])} · transactions {len(res['transactions'])}"
           f" · flags {len(res['flags'])} · รอจับคู่ {len(res['pending'])} · อ่านไม่ชัด {len(res['coverage']['unclear_fields'])}")
     for f in res["flags"]:

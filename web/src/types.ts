@@ -10,7 +10,7 @@ export interface Field {
   quote: string;
   locator: string;
   verified: boolean;
-  method: "template" | "table" | "ocr";
+  method: "template" | "llm" | "table" | "ocr";
   clear: boolean;
   bbox: number[] | null;
   crop: string | null;
@@ -131,4 +131,20 @@ export interface Decision {
   at: string;
   by?: string;
   review?: { by: string; at: string };
+}
+
+/** One append-only Audit Trail entry (from /api/trail; the server sets at, evidence and the hashes). */
+export interface TrailEvent {
+  run_id: string;
+  seq: number;
+  at: string;
+  actor: string;
+  action: "prepare" | "review" | "unreview" | "reopen" | "pair";
+  /** Flag id (e.g. F001) or `pair:<doc id>`. */
+  target: string;
+  value: string | null;
+  reason: string | null;
+  evidence: { doc: string; file?: string; locator?: string; sha256: string | null }[];
+  prev_hash: string;
+  hash: string;
 }

@@ -1,12 +1,15 @@
 // AI Audit Concierge demo Worker.
 //  - GET  /*        → static web app (web/dist) via the ASSETS binding
 //  - POST /api/ask  → question about the results, answered by Gemini from conflict_map.json only
+//  - GET/POST /api/trail → append-only Audit Trail of sign-offs and decisions (D1, see trail.js)
 //
 // Safety rules for the demo:
 //  - The Gemini key lives only here (secret GEMINI_API_KEY); the browser never sees it.
 //  - There is no upload endpoint: the model only ever sees the published synthetic results.
 //  - Per-IP and total daily limits keep the free tier from being drained.
 //  - The model is told to point at items worth checking, never to declare fraud.
+
+import { handleTrailGet, handleTrailPost } from "./trail.js";
 
 const MAX_QUESTION = 300;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
@@ -190,6 +193,11 @@ export default {
     if (url.pathname === "/api/ask") {
       if (request.method !== "POST") return json({ answer: "ใช้ POST" }, 405);
       return handleAsk(request, env);
+    }
+    if (url.pathname === "/api/trail") {
+      if (request.method === "GET") return handleTrailGet(request, env);
+      if (request.method === "POST") return handleTrailPost(request, env);
+      return json({ error: "ใช้ GET หรือ POST" }, 405);
     }
     if (url.pathname.startsWith("/api/")) return json({ answer: "ไม่มีบริการนี้" }, 404);
     return env.ASSETS.fetch(request);

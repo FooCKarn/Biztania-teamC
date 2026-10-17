@@ -16,13 +16,19 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
+  // Audit Trail (sign-offs, decisions, pair confirmations), free D1 database in APAC.
+  // The Worker creates the table and its no-UPDATE/no-DELETE triggers on first use (worker/src/trail.js).
+  "d1_databases": [
+    { "binding": "AUDIT_DB", "database_name": "auditpal-trail", "database_id": "78f60802-27c7-4819-b557-1b8457fb73dd" }
+  ],
   "vars": {
     // Tried in order; on quota/token-limit/unavailable errors the Worker moves to the next.
     // Free tier (AI Studio, 2026-10): Gemma 4 30 RPM / 16K TPM / 14.4K RPD;
     // 3.5 & 3.1 Flash-Lite 15 RPM / 250K TPM / 500 RPD; 3.8 Flash & 2.5 Flash 5 RPM / 20 RPD.
     "GEMINI_MODELS": "gemma-4-26b-a4b-it,gemma-4-31b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash,gemini-2.5-flash",
     "DAILY_LIMIT_PER_IP": "20",
-    "DAILY_LIMIT_TOTAL": "300"
+    "DAILY_LIMIT_TOTAL": "300",
+    "TRAIL_WRITES_PER_IP": "200"
   },
   // PR preview builds (Workers Builds runs `wrangler preview` on non-production branches).
   // Lower limits so a preview link cannot drain the demo's free Gemini quota.
