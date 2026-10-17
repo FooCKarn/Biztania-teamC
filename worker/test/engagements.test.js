@@ -205,6 +205,9 @@ test("full engagement: upload → pipeline run → sign-off by role → close �
   assert.equal(view.body.runs[0].status, "done");
   assert.equal(view.body.runs[0].progress, null, "no progress once finished");
   assert.equal(view.body.runs[0].summary.flags, MAP.flags.length);
+  assert.deepEqual(view.body.runs[0].summary.files.map((f) => f.name), MAP.files.map((f) => f.file), "per-file status for the engagement page");
+  assert.ok(view.body.runs[0].summary.files.every((f) => f.read || f.reason !== undefined));
+  assert.equal(view.body.activity.find((a) => a.action === "run_done").detail.files, undefined, "the activity log keeps counts only");
   const data = await rev.b.get(`/api/engagements/${id}/data/${MAP.run_id}/conflict_map.json`);
   assert.equal(data.body.run_id, MAP.run_id);
   assert.equal((await out.b.get(`/api/engagements/${id}/data/${MAP.run_id}/conflict_map.json`)).status, 403);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, ROLE_LABEL, when, type EngagementDetail, type Role, type RunProgress, type User } from "../api";
+import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type Role, type RunProgress, type User } from "../api";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.json";
 const RUN_LABEL = { queued: "รอคิว", running: "กำลังประมวลผล", done: "เสร็จ", failed: "ไม่สำเร็จ" } as const;
@@ -129,6 +129,56 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   const purgeOn = e.closed_at ? new Date(Date.parse(e.closed_at) + d.retention_days * 86400_000) : null;
   const memberIds = new Set(d.members.map((m) => m.id));
   const docs = d.files.filter((f) => f.name !== "remember.json");
+  // A file counts as processed when the newest finished run saw this name with the same content (new uploads and replaced files do not).
+  const latest = d.runs.find((r) => r.status === "done" && r.result_run_id === d.current_run);
+  const seen = new Map((latest?.summary?.files ?? []).map((f) => [f.name, f]));
+  const statusOf = (f: FileRow) => {
+    const x = seen.get(f.name);
+    return x && (x.sha256 === null || x.sha256 === f.sha256) ? x : null;
+  };
+  const fresh = d.files.filter((f) => !statusOf(f));
+  const processed = d.files.filter((f) => statusOf(f));
+  const unreadable = processed.filter((f) => !statusOf(f)!.read).length;
+
+  const FileTable = ({ rows }: { rows: FileRow[] }) => (
+    <table className="fields files-table">
+      <tbody>
+        {rows.map((f) => {
+          const st = statusOf(f);
+          return (
+            <tr key={f.id}>
+              <td>
+                <a href={`api/engagements/${id}/files/${f.id}`} title={`SHA-256 ${f.sha256}`}>
+                  {f.name}
+                </a>
+                {st && (
+                  <div className="small">
+                    <span className={"pill " + (st.read ? "ok" : "bad")}>{st.read ? "ประมวลผลแล้ว" : "อ่านไม่ได้"}</span>
+                    {!st.read && st.reason && <span className="error"> {st.reason}</span>}
+                  </div>
+                )}
+              </td>
+              <td className="muted small num">{size(f.size)}</td>
+              <td className="muted small">
+                {f.uploaded_by} · {when(f.uploaded_at)}
+              </td>
+              <td>
+                {open && (
+                  <button
+                    className="link destructive small"
+                    disabled={busy}
+                    onClick={() => confirm(`ลบ ${f.name}?`) && act(() => api(`api/engagements/${id}/files/${f.id}/delete`, { method: "POST" }))}
+                  >
+                    ลบ
+                  </button>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 
   return (
     <div>
@@ -195,34 +245,33 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
               {d.files.length === 0 ? (
                 <p className="muted small">{e.purged_at ? "ไฟล์ถูกลบตามนโยบายแล้ว" : "ยังไม่มีไฟล์"}</p>
               ) : (
-                <table className="fields files-table">
-                  <tbody>
-                    {d.files.map((f) => (
-                      <tr key={f.id}>
-                        <td>
-                          <a href={`api/engagements/${id}/files/${f.id}`} title={`SHA-256 ${f.sha256}`}>
-                            {f.name}
-                          </a>
-                        </td>
-                        <td className="muted small num">{size(f.size)}</td>
-                        <td className="muted small">
-                          {f.uploaded_by} · {when(f.uploaded_at)}
-                        </td>
-                        <td>
-                          {open && (
-                            <button
-                              className="link destructive small"
-                              disabled={busy}
-                              onClick={() => confirm(`ลบ ${f.name}?`) && act(() => api(`api/engagements/${id}/files/${f.id}/delete`, { method: "POST" }))}
-                            >
-                              ลบ
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <>
+                  {latest && fresh.length === 0 && (
+                    <div className="banner done-banner" role="status">
+                      <span>
+                        ประมวลผลเสร็จเมื่อ {when(latest.finished_at ?? latest.started_at)} · {latest.summary?.flags ?? 0} จุดควรตรวจ
+                        {unreadable > 0 && ` · อ่านไม่ได้ ${unreadable} ไฟล์`}
+                      </span>{" "}
+                      <a className="btn filled" href={`#/e/${id}/review`}>
+                        เปิดผลการตรวจ
+                      </a>
+                    </div>
+                  )}
+                  {fresh.length > 0 && (
+                    <>
+                      {latest && <p className="muted small">รอประมวลผล ({fresh.length}) · ไฟล์ใหม่หรือไฟล์ที่ถูกแทนที่หลังรอบล่าสุด</p>}
+                      <FileTable rows={fresh} />
+                    </>
+                  )}
+                  {processed.length > 0 && (
+                    <details className="processed" open={unreadable > 0 || fresh.length === 0}>
+                      <summary>
+                        ประมวลผลแล้ว ({processed.length}){unreadable > 0 && <span className="pill bad"> อ่านไม่ได้ {unreadable}</span>}
+                      </summary>
+                      <FileTable rows={processed} />
+                    </details>
+                  )}
+                </>
               )}
             </div>
           </section>
