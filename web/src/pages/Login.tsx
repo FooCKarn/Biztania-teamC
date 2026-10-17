@@ -26,7 +26,7 @@ const Field = ({ label, ...p }: { label: string } & React.InputHTMLAttributes<HT
   </label>
 );
 
-export default function Login({ setupNeeded, onDone }: { setupNeeded: boolean; onDone: () => void }) {
+export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: boolean; demoMode?: boolean; onDone: () => void }) {
   const [setup, setSetup] = useState(setupNeeded);
   const [f, setF] = useState({ email: "", password: "", token: "", name: "", initials: "" });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
@@ -35,6 +35,21 @@ export default function Login({ setupNeeded, onDone }: { setupNeeded: boolean; o
     else await api("api/auth/login", { body: { email: f.email, password: f.password } });
     onDone();
   });
+
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
+  const enterDemo = async () => {
+    setDemoBusy(true);
+    setDemoError(null);
+    try {
+      await api("api/auth/demo-login", { body: { role: "manager" } });
+      location.hash = "/";
+      onDone();
+    } catch (x) {
+      setDemoError((x as Error).message);
+      setDemoBusy(false);
+    }
+  };
 
   return (
     <div className="shell narrow">
@@ -45,6 +60,22 @@ export default function Login({ setupNeeded, onDone }: { setupNeeded: boolean; o
         <h1>AI Audit Concierge</h1>
         <p className="muted">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
       </div>
+      {demoMode && (
+        <div className="group-body form">
+          <h3>ลองใช้ฟีเจอร์หลักทันที</h3>
+          <p className="muted small">
+            เข้าด้วยบัญชีทดลอง (บทบาท Manager) ไม่ต้องกรอกอีเมลหรือรหัสผ่าน ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง
+          </p>
+          {demoError && (
+            <p className="small error" role="alert">
+              {demoError}
+            </p>
+          )}
+          <button type="button" className="btn filled wide" onClick={enterDemo} disabled={demoBusy}>
+            {demoBusy ? "กำลังเข้า…" : "เข้าโหมดเดโม (ไม่ต้องเข้าสู่ระบบ)"}
+          </button>
+        </div>
+      )}
       <form className="group-body form" onSubmit={submit}>
         <h3>{setup ? "ตั้งค่าบัญชีผู้ดูแลระบบคนแรก" : "เข้าสู่ระบบ"}</h3>
         {setup && (

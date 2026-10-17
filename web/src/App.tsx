@@ -24,13 +24,72 @@ function useHash() {
   return hash;
 }
 
-type Me = { state: "loading" } | { state: "no-server" } | { state: "out"; setupNeeded: boolean } | { state: "in"; user: User };
+type Me = { state: "loading" } | { state: "no-server" } | { state: "out"; setupNeeded: boolean; demoMode: boolean } | { state: "in"; user: User };
 
 const Back = ({ to, label }: { to: string; label: string }) => (
   <a className="back" href={to}>
     ‹ {label}
   </a>
 );
+
+const DEMO_ROLES = [
+  ["preparer", "ผู้จัดทำ"],
+  ["reviewer", "ผู้สอบทาน"],
+  ["manager", "Manager"],
+] as const;
+
+// Shown for the shared demo accounts (DEMO_MODE): synthetic data only, switch role (a review needs someone
+// other than the preparer), and wipe the demo engagement.
+function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      onChange();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const switchTo = (role: string) =>
+    run(async () => {
+      await api("api/auth/demo-login", { body: { role } });
+      location.hash = "/";
+    });
+  const reset = () => {
+    if (!confirm("รีเซ็ตเดโม: ลบไฟล์และผลการตรวจของ Engagement เดโมทั้งหมดแล้วเริ่มใหม่ ทุกคนที่ใช้เดโมร่วมกันจะเห็นผลนี้ ต้องการดำเนินการต่อหรือไม่?")) return;
+    return run(async () => {
+      const r = await api<{ engagement: { id: string } }>("api/auth/demo-reset", { method: "POST" });
+      location.hash = `/e/${r.engagement.id}`;
+    });
+  };
+  const current = user.initials === "DP" ? "preparer" : user.initials === "DR" ? "reviewer" : "manager";
+  return (
+    <div className="banner" role="status">
+      <strong>โหมดเดโม</strong> · ข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง ทุกคนที่เข้าเดโมใช้ Engagement เดียวกัน
+      <div className="row" style={{ marginTop: 8 }}>
+        <span className="muted small">สลับบทบาท:</span>
+        {DEMO_ROLES.map(([r, label]) => (
+          <button key={r} className={`btn${r === current ? " filled" : ""}`} disabled={busy || r === current} onClick={() => switchTo(r)}>
+            {label}
+          </button>
+        ))}
+        <button className="btn" disabled={busy} onClick={reset}>
+          รีเซ็ตเดโม
+        </button>
+      </div>
+      {error && (
+        <p className="small error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function EngagementReview({ id }: { id: string }) {
   const [src, setSrc] = useState<Source | null>(null);
@@ -62,7 +121,7 @@ export default function App() {
       .then(async (r) => {
         if (!r.ok) throw new Error(String(r.status));
         const b = await r.json();
-        setMe(b.user ? { state: "in", user: b.user } : { state: "out", setupNeeded: b.setup_needed });
+        setMe(b.user ? { state: "in", user: b.user } : { state: "out", setupNeeded: b.setup_needed, demoMode: !!b.demo_mode });
       })
       .catch(() => setMe({ state: "no-server" }));
   }, []);
@@ -72,7 +131,7 @@ export default function App() {
   if (hash === "/demo" || new URLSearchParams(location.search).has("ws")) return <Workspace source={DEMO} back={<Back to="#/" label="หน้าหลัก" />} />;
   if (me.state === "loading") return <div className="empty">กำลังโหลด…</div>;
   if (me.state === "no-server") return <Workspace source={DEMO} />; // static hosting: demo only
-  if (me.state === "out") return <Login setupNeeded={me.setupNeeded} onDone={refresh} />;
+  if (me.state === "out") return <Login setupNeeded={me.setupNeeded} demoMode={me.demoMode} onDone={refresh} />;
 
   const user = me.user;
   if (user.must_change)
@@ -103,9 +162,11 @@ export default function App() {
             ผู้ใช้
           </a>
         )}
-        <a className="btn" href="#/account">
-          รหัสผ่าน
-        </a>
+        {!user.demo && (
+          <a className="btn" href="#/account">
+            รหัสผ่าน
+          </a>
+        )}
         <button className="btn" onClick={logout}>
           ออกจากระบบ
         </button>
@@ -114,7 +175,13 @@ export default function App() {
   );
 
   const review = hash.match(/^\/e\/([a-f0-9]{12})\/review$/);
-  if (review) return <EngagementReview id={review[1]} />;
+  if (review)
+    return (
+      <>
+        {user.demo && <DemoBanner user={user} onChange={refresh} />}
+        <EngagementReview id={review[1]} />
+      </>
+    );
   const eng = hash.match(/^\/e\/([a-f0-9]{12})$/);
   let page;
   if (eng) page = <EngagementPage id={eng[1]} me={user} />;
@@ -124,6 +191,7 @@ export default function App() {
   return (
     <div className="shell">
       {bar}
+      {user.demo && <DemoBanner user={user} onChange={refresh} />}
       {page}
     </div>
   );
