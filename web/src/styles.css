@@ -564,3 +564,4 @@ kbd {
 }
 .brand > div { min-width: 0; }
 .review-title { font-size: 18px; font-weight: 600; color: var(--text); margin: 0 4px 8px; }
+.process-block { margin-bottom: 16px; }
