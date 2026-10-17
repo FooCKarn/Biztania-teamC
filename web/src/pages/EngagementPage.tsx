@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type RunProgress } from "../api";
 import { bi, locale, t } from "../i18n";
-import { amount } from "../labels";
 import Loading from "../components/Loading";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.json";
@@ -200,8 +199,7 @@ export default function EngagementPage({ id }: { id: string }) {
           <h2>{e.client}</h2>
           <p className="muted small">
             {e.period ? `${e.period} · ` : ""}
-            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]} · {t("เกณฑ์คลาดเคลื่อน", "Tolerance")} {e.tolerance_pct}% · {t("เกณฑ์สาระสำคัญ", "Materiality")}{" "}
-            {amount(e.materiality_thb)} ฿{e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
+            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]}{e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
           </p>
         </div>
         <div className="row">
