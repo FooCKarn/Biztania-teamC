@@ -130,9 +130,9 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
     setDocFocus(null);
   };
 
-  const highOpen = data.flags.filter((f) => f.risk === "สูง" && !decisions[f.id]).length;
+  const highOpen = list.filter((f) => f.risk === "สูง" && !decisions[f.id]).length;
   const atStake = list.reduce((s, f) => s + (f.at_stake_thb ?? 0), 0);
-  const checkedCount = data.flags.filter((f) => decisions[f.id]).length;
+  const checkedCount = list.filter((f) => decisions[f.id]).length;
 
   return (
     <div className="workspace">
@@ -205,7 +205,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
           })}
         </ul>
         <p className="sidebar-foot muted small">
-          {t("ตรวจสอบแล้ว", "Checked")} {checkedCount}/{data.flags.length} · {t("ความเสี่ยงสูงที่ยังไม่ตรวจ", "High risk still open")} {highOpen} ·{" "}
+          {t("ตรวจสอบแล้ว", "Checked")} {checkedCount}/{list.length} · {t("ความเสี่ยงสูงที่ยังไม่ตรวจ", "High risk still open")} {highOpen} ·{" "}
           {t("ยอดที่เกี่ยวข้องในรายการ", "At stake in list")} {baht(atStake)}
         </p>
       </aside>
