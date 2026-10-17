@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ConflictMap, Doc, Flag } from "../types";
 import type { Trail } from "../decisions";
 import { fieldLabel, MATCH_LABEL, RISK_ORDER, TYPE_LABEL, baht, riskText } from "../labels";
@@ -58,9 +58,18 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
     .filter((f) => !q || [f.id, f.title, f.summary, ...f.docs].some((s) => s.toLowerCase().includes(q)))
     .sort(byRisk);
 
+  // After a check, move on to the highest-risk item still open instead of leaving a finished one on screen.
+  const decidedBefore = useRef<Set<string> | null>(null);
   const flag = data.flags.find((f) => f.id === selected) ?? (txnOnly ? undefined : list[0]);
   const txnId = flag?.transaction ?? txnOnly;
   const txn = data.transactions.find((t) => t.id === txnId);
+
+  useEffect(() => {
+    const now = new Set(data.flags.filter((f) => decisions[f.id]).map((f) => f.id));
+    const justChecked = flag && now.has(flag.id) && decidedBefore.current && !decidedBefore.current.has(flag.id);
+    decidedBefore.current = now;
+    if (justChecked && state === "open" && list[0] && list[0].id !== flag.id) select(list[0].id);
+  });
 
   // j / k (or ↓ / ↑) move through the list, like a mail app.
   useEffect(() => {
@@ -114,6 +123,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
     setDocFocus(null);
   };
 
+  const highOpen = data.flags.filter((f) => f.risk === "สูง" && !decisions[f.id]).length;
+  const atStake = list.reduce((s, f) => s + (f.at_stake_thb ?? 0), 0);
   const checkedCount = data.flags.filter((f) => decisions[f.id]).length;
 
   return (
@@ -130,8 +141,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
           />
           <div className="segmented small-seg" role="radiogroup" aria-label={t("สถานะ", "Status")}>
             {[
-              ["open", t("ยังไม่ลงนาม", "Unsigned")],
-              ["done", t("ลงนามแล้ว", "Signed")],
+              ["open", t("ยังไม่ตรวจ", "Open")],
+              ["done", t("ตรวจแล้ว", "Checked")],
               ["all", t("ทั้งหมด", "All")],
             ].map(([v, l]) => (
               <button key={v} role="radio" aria-checked={state === v} onClick={() => setState(v)}>
@@ -164,8 +175,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
             const d = decisions[f.id];
             return (
               <li key={f.id}>
-                <button className={"flag-row" + (flag?.id === f.id ? " active" : "")} onClick={() => select(f.id)}>
-                  <span className={`dot risk-${RISK_KEY[f.risk]}`} aria-label={riskText(f.risk)} />
+                <button className={"flag-row" + (flag?.id === f.id ? " active" : "")} onClick={() => select(f.id)} aria-current={flag?.id === f.id ? "true" : undefined}>
+                  <span className={`dot risk-${RISK_KEY[f.risk]}`} role="img" aria-label={riskText(f.risk)} />
                   <span className="flag-main">
                     <span className="flag-top">
                       <span className="ref">{f.id}</span>
@@ -175,7 +186,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
                     <span className="flag-sum">{f.summary}</span>
                     <span className="flag-meta">
                       <span className={"so" + (d ? " done" : "")} title={t("ตรวจสอบแล้ว", "Checked")}>
-                        ✓{d ? ` ${d.by ?? ""}` : ""}
+                        ✓{d ? ` ${d.by ?? ""} · ${d.verdict === "issue" ? t("เป็นประเด็น", "Issue") : t("ไม่เป็นประเด็น", "Not an issue")}` : ""}
                       </span>
                       {f.match === "likely" && <span className="pill warn">{MATCH_LABEL.likely}</span>}
                       {f.ocr && <span className="pill">OCR</span>}
@@ -187,7 +198,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
           })}
         </ul>
         <p className="sidebar-foot muted small">
-          {t("ตรวจสอบแล้ว", "Checked")} {checkedCount}/{data.flags.length} · {t("กด", "Press")} <kbd>J</kbd> / <kbd>K</kbd>{" "}
+          {t("ตรวจสอบแล้ว", "Checked")} {checkedCount}/{data.flags.length} · {t("ความเสี่ยงสูงที่ยังไม่ตรวจ", "High risk still open")} {highOpen} ·{" "}
+          {t("ยอดที่เกี่ยวข้องในรายการ", "At stake in list")} {baht(atStake)} · {t("กด", "Press")} <kbd>J</kbd> / <kbd>K</kbd>{" "}
           {t("เพื่อเลื่อนรายการ", "to move through the list")}
         </p>
       </aside>

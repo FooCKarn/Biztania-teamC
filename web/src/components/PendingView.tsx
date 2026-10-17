@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Trail } from "../decisions";
 import type { ConflictMap, Doc } from "../types";
-import { fieldLabel, KIND_LABEL } from "../labels";
-import { locale, t } from "../i18n";
+import { amount, fieldLabel, KIND_LABEL } from "../labels";
+import { t } from "../i18n";
 
 const SHOW = ["date", "vendor_name", "description", "subtotal", "amount", "total"];
 
@@ -12,7 +12,7 @@ function Facts({ doc }: { doc: Doc }) {
       {SHOW.filter((k) => doc.fields[k]).map((k) => (
         <div key={k}>
           <dt>{fieldLabel(k)}</dt>
-          <dd>{typeof doc.fields[k].value === "number" ? doc.fields[k].value!.toLocaleString(locale()) : String(doc.fields[k].value)}</dd>
+          <dd>{typeof doc.fields[k].value === "number" ? amount(doc.fields[k].value!) : String(doc.fields[k].value)}</dd>
         </div>
       ))}
     </dl>

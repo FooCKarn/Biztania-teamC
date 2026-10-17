@@ -10,7 +10,8 @@ import AskBox from "./components/AskBox";
 import SignoffBar from "./components/SignoffBar";
 import ReportView from "./report/ReportView";
 import { exportTrailCsv } from "./export";
-import { LangToggle, locale, t } from "./i18n";
+import { LangToggle, t } from "./i18n";
+import { amount } from "./labels";
 import Loading from "./components/Loading";
 
 type Tab = "flags" | "pending" | "overview" | "report";
@@ -118,8 +119,8 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
 
       <AskBox run={data.run_id} />
       <footer className="foot">
-        run {data.run_id} · schema {data.schema_version} · tolerance {data.engagement.tolerance_pct}% · materiality{" "}
-        {data.engagement.materiality_thb.toLocaleString(locale())} ฿
+        {t("รอบประมวลผล", "Run")} {data.run_id} · schema {data.schema_version} · {t("เกณฑ์คลาดเคลื่อน", "Tolerance")} {data.engagement.tolerance_pct}% · {t("เกณฑ์สาระสำคัญ", "Materiality")}{" "}
+        {amount(data.engagement.materiality_thb)} ฿
       </footer>
     </div>
     </SourceContext.Provider>

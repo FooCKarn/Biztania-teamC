@@ -58,7 +58,9 @@ export default function DecisionBox({ flagId, trail }: Props) {
     setError(await trail.act(a));
     setBusy(false);
   };
-  const check = (verdict: Decision["verdict"]) => run({ action: "check", target: flagId, value: verdict, reason: reason.trim(), actor: who });
+  const check = (verdict: Decision["verdict"]) =>
+    (verdict !== "issue" || window.confirm(t("บันทึกรายการนี้เป็นประเด็น?", "Record this item as an issue?"))) &&
+    run({ action: "check", target: flagId, value: verdict, reason: reason.trim(), actor: who });
   const needWho = () => (who.length >= 2 ? true : (setError(t("ใส่ชื่อย่อก่อน", "Enter your initials first")), false));
 
   return (
@@ -112,11 +114,13 @@ export default function DecisionBox({ flagId, trail }: Props) {
               onChange={(e) => setReason(e.target.value)}
               rows={2}
               maxLength={500}
+              onKeyDown={(ev) => (ev.ctrlKey || ev.metaKey) && ev.key === "Enter" && ok && (ev.preventDefault(), check("not_issue"))}
               aria-label={t("เหตุผล", "Reason")}
               placeholder={t(
                 "เหตุผล (จำเป็น) เช่น ได้รับหนังสือแจ้งเปลี่ยนบัญชีจาก vendor ลงวันที่ …",
                 "Reason (required), e.g. received the vendor's bank change letter dated …",
               )}
+              title={t("Ctrl+Enter = ไม่เป็นประเด็น", "Ctrl+Enter = not an issue")}
             />
             <div className="row">
               <button className="btn destructive" disabled={!ok} onClick={() => check("issue")}>

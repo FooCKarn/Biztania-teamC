@@ -1,6 +1,6 @@
 import type { Flag, Rule } from "../types";
-import { fieldLabel } from "../labels";
-import { locale, t } from "../i18n";
+import { amount, fieldLabel } from "../labels";
+import { t } from "../i18n";
 import type { Mark } from "./DocViewer";
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
   onPick: (key: string) => void;
 }
 
-const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? v.toLocaleString(locale(), { minimumFractionDigits: 2 }) : v);
+const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? amount(v) : v);
 
 // Each row is a quote with file + location; picking it opens the source with a box on the value.
 export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }: Props) {
@@ -23,7 +23,7 @@ export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }:
         <table className="evidence-table">
           <thead>
             <tr>
-              <th aria-label="tick mark" />
+              <th aria-label={t("เครื่องหมายตรวจ", "Tick mark")} />
               <th>{t("ข้อมูล", "Field")}</th>
               <th className="num">{t("ค่า", "Value")}</th>
               <th className="src">{t("ที่มา", "Source")}</th>
@@ -39,7 +39,7 @@ export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }:
                   onClick={() => onPick(m.key)}
                   tabIndex={0}
                   onKeyDown={(ev) => (ev.key === "Enter" || ev.key === " ") && (ev.preventDefault(), onPick(m.key))}
-                  aria-selected={m.key === activeKey}
+                  aria-current={m.key === activeKey ? "true" : undefined}
                 >
                   <td>
                     <span className="tick ok" title={t("พบข้อความนี้ในไฟล์ต้นฉบับ", "Found in the source file")}>
@@ -64,6 +64,7 @@ export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }:
             })}
           </tbody>
         </table>
+        <p className="muted small">✓ {t("= พบข้อความนี้ในไฟล์ต้นฉบับ (ไม่ใช่ข้อสรุปการตรวจสอบ)", "= quote found in the source file (not an audit conclusion)")}</p>
         {rule && (
           <p className="rule small">
             <span className={"tick " + (rule.verified ? "ok" : "warn")}>{rule.verified ? "✓" : "?"}</span> {t("กฎ", "Rule")} {rule.id}{" "}
