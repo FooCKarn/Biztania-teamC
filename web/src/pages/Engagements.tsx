@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, ROLE_LABEL, when, type Engagement } from "../api";
+import { api, when, type Engagement } from "../api";
 import { t } from "../i18n";
 import Loading from "../components/Loading";
 
@@ -124,7 +124,6 @@ export default function Engagements() {
                 </p>
               </div>
               <div className="row">
-                <span className="pill">{ROLE_LABEL[e.my_role]}</span>
                 {e.signoff && <span className="pill ok">{t("ลงนามยืนยันผลแล้ว", "Signed off")}</span>}
                 <span className={"pill " + (e.status === "open" ? "ok" : "")}>{e.status === "open" ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
                 <span className="chev" aria-hidden>
