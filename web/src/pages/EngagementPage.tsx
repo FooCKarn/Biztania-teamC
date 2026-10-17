@@ -277,8 +277,6 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                     </button>
                   </p>
                   <p className="muted small">{t("PDF, สแกน (PNG/JPG/TIFF), CSV, XLSX ไม่เกิน 100 MB ต่อไฟล์", "PDF, scans (PNG/JPG/TIFF), CSV, XLSX up to 100 MB each")}</p>
-                  <p className="muted small">{t("กฎของบริษัทใส่เป็น remember.json", "Company rules go in remember.json")}</p>
-                  <p className="muted small">{t("ไฟล์ถูกเข้ารหัสแยกต่อ Engagement", "Files are encrypted per engagement")}</p>
                   <input ref={input} type="file" multiple accept={ACCEPT} hidden onChange={(ev) => upload(ev.target.files)} />
                 </div>
               )}

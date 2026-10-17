@@ -70,7 +70,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
       <div className="group-body signoff">
         {signedIn ? (
           <p className="muted small">
-            {t("ลงนามในชื่อ", "Signing as")} <b>{trail.actor}</b>{" "}
+            {t("ตรวจในชื่อ", "Checking as")} <b>{trail.actor}</b>{" "}
             {t("จากบัญชีที่เข้าสู่ระบบ", "from the signed-in account")}
             {trail.readOnly && ` · ${t("Engagement ปิดแล้ว ดูได้อย่างเดียว", "Engagement closed, read only")}`}
           </p>
@@ -82,7 +82,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
               onChange={(e) => remember(e.target.value)}
               maxLength={4}
               placeholder={t("เช่น SK", "e.g. SK")}
-              aria-label={t("ชื่อย่อผู้ลงนาม", "Signer initials")}
+              aria-label={t("ชื่อย่อผู้ตรวจ", "Checker initials")}
             />
           </label>
         )}
