@@ -2,7 +2,7 @@ import type { ConflictMap } from "../types";
 import { KIND_LABEL, RISK_LABEL, baht, fieldLabel } from "../labels";
 import { t as tr } from "../i18n";
 import { when, type Report } from "./model";
-import { zip } from "./xlsx";
+import { zip } from "./zip";
 
 // Minimal .docx writer (no dependency), same content as the printable report so the Word copy can
 // be edited into the firm's own working-paper template. Thai is a complex script in Word, so every
