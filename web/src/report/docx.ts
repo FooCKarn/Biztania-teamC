@@ -97,7 +97,7 @@ export function reportBody(report: Report, data: ConflictMap): string {
   const t = report.totals;
   const out: string[] = [];
 
-  out.push(para([[tr("AI Audit Concierge · กระดาษทำการ", "AI Audit Concierge · Working paper"), { color: "6E6E73", size: 18 }]]));
+  out.push(para([[tr("AuditPal · กระดาษทำการ", "AuditPal · Working paper"), { color: "6E6E73", size: 18 }]]));
   out.push(h(report.title, 1));
   out.push(para([[report.client, { bold: true }]]));
   out.push(
@@ -262,7 +262,7 @@ export function buildDocx(report: Report, data: ConflictMap): Uint8Array {
     ],
     [
       "docProps/core.xml",
-      `${XML}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${esc(report.title)}</dc:title><dc:subject>${esc(report.client)}</dc:subject><dc:creator>AI Audit Concierge</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${report.generatedAt.replace(/\.\d+Z$/, "Z")}</dcterms:created></cp:coreProperties>`,
+      `${XML}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${esc(report.title)}</dc:title><dc:subject>${esc(report.client)}</dc:subject><dc:creator>AuditPal</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${report.generatedAt.replace(/\.\d+Z$/, "Z")}</dcterms:created></cp:coreProperties>`,
     ],
     [
       "word/_rels/document.xml.rels",

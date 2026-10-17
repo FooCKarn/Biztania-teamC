@@ -1,4 +1,4 @@
-# Project context — AI Audit Concierge (MoGate, Biztania Camp 2026)
+# Project context — AuditPal (MoGate, Biztania Camp 2026)
 
 Context file for anyone (human or AI assistant) picking up work in this repo.
 Source of truth so far: the team's business pitch deck *Biztania26_Business_MoGate* (12 slides, Canva, Oct 2026).
@@ -8,7 +8,7 @@ The human-readable summary is in [`README.md`](README.md).
 
 - **Event:** CU-TU Biztania Camp 2026 (business case competition). Repo is Team C.
 - **Team name:** MoGate. Members: Sudpidchaya Khonsak, Tiptanya Khunchana.
-- **Product:** *AI Audit Concierge* — a B2B SaaS assistant for financial auditors that gathers,
+- **Product:** *AuditPal* — a B2B SaaS assistant for financial auditors that gathers,
   links and analyses audit evidence across many data sources and flags anomalies with evidence.
 - **Current stage:** business concept / pitch plus a conflict-map MVP on synthetic data
   (`pipeline/` Python, `web/` React + TSX, `worker/` Cloudflare Worker JS; see `docs/mvp.md`).
@@ -107,4 +107,5 @@ reconciliation, follow-up, dashboards, ERP/accounting integration, custom risk r
 - The web UI is bilingual (Thai default, English via the ไทย/EN switch, kept in localStorage `ac-lang`).
   Write every user-facing string as a pair, `t("ไทย", "English")`, or a `bi({...})` label table (`web/src/i18n.tsx`).
   Text produced by the pipeline (flag titles, summaries, questions, locators) stays Thai.
+- Three colour themes via `data-theme` on `<html>` (`pink` default, `reading`, `dark`), switched by icon buttons (`web/src/theme.tsx`, kept in localStorage `ac-theme`, applied before first paint in `web/index.html`). Use the CSS variables in `styles.css`, never hard-coded colours; the report sheet stays paper-white in every theme. The product name is **AuditPal** (was "AI Audit Concierge"; the Python package `auditconcierge` keeps its name).
 - When adding numbers or claims, keep them consistent with this file or update this file in the same change.

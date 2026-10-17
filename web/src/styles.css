@@ -1,15 +1,18 @@
 /* Minimal, modern: neutral canvas, hairline borders, one calm accent, soft motion. */
-:root {
-  --bg: #fafaf9;
+/* Three themes on <html data-theme="pink|reading|dark">; pink is the default. The attribute is set before first
+   paint (index.html) and by theme.tsx. */
+:root,
+:root[data-theme="pink"] {
+  --bg: #fff7fa;
   --surface: #ffffff;
-  --surface-2: #f5f5f4;
-  --fill: rgba(24, 24, 27, 0.05);
-  --fill-strong: rgba(24, 24, 27, 0.09);
-  --text: #18181b;
-  --muted: #71717a;
-  --sep: rgba(24, 24, 27, 0.08);
-  --accent: #4f46e5;
-  --accent-soft: rgba(79, 70, 229, 0.09);
+  --surface-2: #fdeff4;
+  --fill: rgba(194, 37, 92, 0.06);
+  --fill-strong: rgba(194, 37, 92, 0.11);
+  --text: #2b1b22;
+  --muted: #7a6470;
+  --sep: rgba(120, 40, 70, 0.12);
+  --accent: #c2255c;
+  --accent-soft: rgba(194, 37, 92, 0.12);
   --good: #15803d;
   --good-fill: #22c55e;
   --good-soft: rgba(34, 197, 94, 0.12);
@@ -19,39 +22,61 @@
   --warn: #b45309;
   --warn-fill: #f59e0b;
   --warn-soft: rgba(245, 158, 11, 0.13);
-  --banner: #f5f5f4;
-  --bar: rgba(250, 250, 249, 0.8);
+  --banner: #fdeff4;
+  --bar: rgba(255, 247, 250, 0.82);
   --shadow: 0 0 0 1px var(--sep);
   --radius: 14px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b0d;
-    --surface: #141417;
-    --surface-2: #1a1a1e;
-    --fill: rgba(255, 255, 255, 0.06);
-    --fill-strong: rgba(255, 255, 255, 0.11);
-    --text: #f4f4f5;
-    --muted: #a1a1aa;
-    --sep: rgba(255, 255, 255, 0.09);
-    --accent: #818cf8;
-    --accent-soft: rgba(129, 140, 248, 0.16);
-    --good: #4ade80;
-    --good-fill: #4ade80;
-    --good-soft: rgba(74, 222, 128, 0.14);
-    --bad: #f87171;
-    --bad-fill: #f87171;
-    --bad-soft: rgba(248, 113, 113, 0.16);
-    --warn: #fbbf24;
-    --warn-fill: #fbbf24;
-    --warn-soft: rgba(251, 191, 36, 0.16);
-    --banner: #1a1a1e;
-    --bar: rgba(11, 11, 13, 0.8);
-    --shadow: 0 0 0 1px var(--sep);
-    color-scheme: dark;
-  }
+/* Reading mode: warm paper, low glare, no blue-white. */
+:root[data-theme="reading"] {
+  --bg: #efe6d0;
+  --surface: #f8f1de;
+  --surface-2: #ece2c8;
+  --fill: rgba(80, 60, 30, 0.07);
+  --fill-strong: rgba(80, 60, 30, 0.13);
+  --text: #3a3024;
+  --muted: #655843;
+  --sep: rgba(80, 60, 30, 0.18);
+  --accent: #8a4b14;
+  --accent-soft: rgba(138, 75, 20, 0.14);
+  --good: #2f6b2a;
+  --good-fill: #5a9a4a;
+  --good-soft: rgba(90, 154, 74, 0.18);
+  --bad: #9c2a1f;
+  --bad-fill: #c4513f;
+  --bad-soft: rgba(196, 81, 63, 0.14);
+  --warn: #8a5a00;
+  --warn-fill: #c88a1c;
+  --warn-soft: rgba(200, 138, 28, 0.18);
+  --banner: #ece2c8;
+  --bar: rgba(239, 230, 208, 0.85);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #0b0b0d;
+  --surface: #141417;
+  --surface-2: #1a1a1e;
+  --fill: rgba(255, 255, 255, 0.06);
+  --fill-strong: rgba(255, 255, 255, 0.11);
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --sep: rgba(255, 255, 255, 0.09);
+  --accent: #f472b6;
+  --accent-soft: rgba(244, 114, 182, 0.17);
+  --good: #4ade80;
+  --good-fill: #4ade80;
+  --good-soft: rgba(74, 222, 128, 0.14);
+  --bad: #f87171;
+  --bad-fill: #f87171;
+  --bad-soft: rgba(248, 113, 113, 0.16);
+  --warn: #fbbf24;
+  --warn-fill: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.16);
+  --banner: #1a1a1e;
+  --bar: rgba(11, 11, 13, 0.8);
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body {
@@ -454,6 +479,7 @@ h2 { font-weight: 650; letter-spacing: -0.025em; }
 .topnav a:hover { background: var(--fill); color: var(--text); }
 .topnav a[aria-current="page"] { color: var(--text); background: var(--fill); }
 .topbar-end { gap: 10px; }
+.theme-toggle button { display: grid; place-items: center; padding: 5px 9px; }
 .avatar {
   flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
   background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
@@ -462,7 +488,7 @@ h2 { font-weight: 650; letter-spacing: -0.025em; }
 .who { color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Login: language at the top, the three demo roles as tappable cards */
-.login-lang { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.login-lang { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
 .role-picker { display: grid; gap: 8px; }
 .role-card {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;

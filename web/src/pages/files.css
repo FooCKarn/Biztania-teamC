@@ -10,8 +10,7 @@
   --ft-others: #f59e0b;
   --ft-overhead: #a8a29e;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
     --ft-pdf: #f87171;
     --ft-image: #c084fc;
     --ft-csv: #4ade80;
@@ -21,9 +20,8 @@
     --ft-pages: #60a5fa;
     --ft-others: #fbbf24;
     --ft-overhead: #78716c;
-  }
-  .ft-badge, .grid-icon { color: #0b0b0d; }
 }
+:root[data-theme="dark"] .ft-badge, :root[data-theme="dark"] .grid-icon { color: #0b0b0d; }
 
 .storage { margin-bottom: 16px; }
 .storage-big { margin: 0; font-size: 20px; letter-spacing: -0.01em; }

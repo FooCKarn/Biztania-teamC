@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Audit Concierge · แผนที่เอกสารขัดแย้ง</title>
+    <title>AuditPal · แผนที่เอกสารขัดแย้ง</title>
+    <script>
+      /* Apply the saved colour theme before first paint (same rule as src/theme.tsx). */
+      (function () {
+        var v = null;
+        try { v = localStorage.getItem("ac-theme"); } catch (e) {}
+        if (v !== "pink" && v !== "reading" && v !== "dark") v = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "pink";
+        document.documentElement.setAttribute("data-theme", v);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
