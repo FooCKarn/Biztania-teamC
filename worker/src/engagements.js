@@ -136,6 +136,19 @@ async function latestDone(env, id) {
     .first();
 }
 
+// Sign-off state of the run the workspace shows ({ by, at } or null). It is separate from open/closed:
+// signing off confirms the review, closing the company is a later, explicit step.
+async function signoffOf(env, id) {
+  try {
+    const run = await latestDone(env, id);
+    if (!run?.result_run_id) return null;
+    const { state } = await readTrail(env.AUDIT_DB, wsOf(id), run.result_run_id);
+    return state.signoff;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadEngagementMap(env, id, resultRunId) {
   const b = await getBlob(env, id, outKey(id, resultRunId, "conflict_map.json"));
   return b ? JSON.parse(new TextDecoder().decode(b.bytes)) : null;
@@ -221,7 +234,12 @@ export async function handleEngagements(request, env, path) {
         .prepare("SELECT e.*, m.role FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 ORDER BY e.created_at DESC")
         .bind(user.id)
         .all();
-      return json({ engagements: results.map((e) => engagementJson(e, e.role)), can_create: true, real_data_allowed: realDataAllowed(env) });
+      const signoffs = await Promise.all(results.map((e) => signoffOf(env, e.id)));
+      return json({
+        engagements: results.map((e, i) => ({ ...engagementJson(e, e.role), signoff: signoffs[i] })),
+        can_create: true,
+        real_data_allowed: realDataAllowed(env),
+      });
     }
     if (method !== "POST") throw new HttpError(405, "ใช้ GET หรือ POST");
     // Any signed-in Auditor may start an engagement and becomes its first team member. The shared demo account
@@ -259,7 +277,7 @@ export async function handleEngagements(request, env, path) {
       for (const p of q.results) progressOf.set(p.run_id, p);
     }
     return json({
-      engagement: engagementJson(e, role),
+      engagement: { ...engagementJson(e, role), signoff: await signoffOf(env, id) },
       members: members.results.filter((m) => !isDemoEmail(user.email) || isDemoEmail(m.email)), // a demo account never sees real users
       files: files.results.map((f) => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, uploaded_at: f.uploaded_at, uploaded_by: f.uploaded_by })),
       runs: runs.results.map((r) => runJson(r, progressOf.get(r.id))),

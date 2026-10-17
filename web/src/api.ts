@@ -49,6 +49,8 @@ export interface Engagement {
   materiality_thb: number;
   synthetic: boolean;
   status: "open" | "closed";
+  /** Sign-off of the current results, if any (separate from closing the company). */
+  signoff?: { by: string; at: string } | null;
   created_at: string;
   closed_at: string | null;
   purged_at: string | null;
@@ -118,7 +120,7 @@ export interface FilesOverview {
     overhead: number;
     by_type: { ext: string; bytes: number; count: number }[];
   };
-  engagements: { id: string; client: string; period: string | null; status: "open" | "closed"; purged: boolean; my_role: Role; can_delete: boolean }[];
+  engagements: { id: string; client: string; period: string | null; status: "open" | "closed"; signoff?: { by: string; at: string } | null; purged: boolean; my_role: Role; can_delete: boolean }[];
   files: ManagedFile[];
 }
 

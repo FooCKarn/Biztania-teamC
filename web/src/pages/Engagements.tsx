@@ -125,6 +125,7 @@ export default function Engagements() {
               </div>
               <div className="row">
                 <span className="pill">{ROLE_LABEL[e.my_role]}</span>
+                {e.signoff && <span className="pill ok">{t("ลงนามยืนยันผลแล้ว", "Signed off")}</span>}
                 <span className={"pill " + (e.status === "open" ? "ok" : "")}>{e.status === "open" ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
                 <span className="chev" aria-hidden>
                   ›

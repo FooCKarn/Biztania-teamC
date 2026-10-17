@@ -208,6 +208,7 @@ export default function EngagementPage({ id }: { id: string }) {
               {t("เปิดผลการตรวจ", "Open results")}
             </a>
           )}
+          {e.signoff && <span className="pill ok">{t("ลงนามยืนยันผลแล้ว", "Signed off")}</span>}
           <span className={"pill " + (open ? "ok" : "")}>
             {!open ? t("ปิดแล้ว", "Closed") : d.current_run ? t("มีผลการตรวจ", "Has results") : t("เปิดอยู่", "Open")}
           </span>
