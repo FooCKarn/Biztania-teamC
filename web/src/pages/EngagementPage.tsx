@@ -203,12 +203,14 @@ export default function EngagementPage({ id }: { id: string }) {
           </p>
         </div>
         <div className="row">
-          <span className={"pill " + (open ? "ok" : "")}>{open ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
           {d.current_run && !doneBanner && (
             <a className="btn filled" href={`#/e/${id}/review`}>
               {t("เปิดผลการตรวจ", "Open results")}
             </a>
           )}
+          <span className={"pill " + (open ? "ok" : "")}>
+            {!open ? t("ปิดแล้ว", "Closed") : d.current_run ? t("มีผลการตรวจ", "Has results") : t("เปิดอยู่", "Open")}
+          </span>
         </div>
       </div>
       {!open && (
