@@ -42,6 +42,9 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
     onDone();
   });
 
+  // With the demo entry on, the page shows only the role choices. The real form stays reachable (not linked) at
+  // ?login=1 for firm admins, and shows itself while the first admin account still has to be created.
+  const showForm = !demoMode || setupNeeded || new URLSearchParams(location.search).has("login");
   const [demoBusy, setDemoBusy] = useState<string | null>(null);
   const [demoError, setDemoError] = useState<string | null>(null);
   const enterDemo = async (role: string) => {
@@ -84,6 +87,7 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
           ))}
         </div>
       )}
+      {showForm && (
       <form className="group-body form" onSubmit={submit}>
         <h3>{setup ? "ตั้งค่าบัญชีผู้ดูแลระบบคนแรก" : "เข้าสู่ระบบ"}</h3>
         {setup && (
@@ -119,11 +123,14 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
         )}
         <p className="muted small">ยังไม่มีบัญชี? ให้ผู้ดูแลระบบของสำนักงานสร้างให้ (ไม่มีการสมัครเอง)</p>
       </form>
-      <p className="center">
-        <a className="btn" href="#/demo">
-          ดูเดโมด้วยข้อมูลสมมติ (ไม่ต้องเข้าสู่ระบบ)
-        </a>
-      </p>
+      )}
+      {showForm && (
+        <p className="center">
+          <a className="btn" href="#/demo">
+            ดูเดโมด้วยข้อมูลสมมติ (ไม่ต้องเข้าสู่ระบบ)
+          </a>
+        </p>
+      )}
     </div>
   );
 }
