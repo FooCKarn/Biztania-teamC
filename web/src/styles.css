@@ -1,4 +1,4 @@
-/* Three themes on <html data-theme="pink|reading|dark">; pink is the default. The attribute is set before first
+/* Three themes on <html data-theme="pink|reading">; pink is the default. The attribute is set before first
    paint (index.html) and by theme.tsx. */
 :root,
 :root[data-theme="pink"] {
@@ -56,32 +56,6 @@
   --banner: #ece2c8;
   --bar: rgba(239, 230, 208, 0.85);
   color-scheme: light;
-}
-:root[data-theme="dark"] {
-  --bg: #0b0b0d;
-  --surface: #141417;
-  --surface-2: #1a1a1e;
-  --fill: rgba(255, 255, 255, 0.06);
-  --fill-strong: rgba(255, 255, 255, 0.11);
-  --text: #f4f4f5;
-  --muted: #a1a1aa;
-  --sep: rgba(255, 255, 255, 0.09);
-  --accent: #f472b6;
-  --logo-text: #f4f4f5;
-  --logo-accent: #f472b6;
-  --accent-soft: rgba(244, 114, 182, 0.17);
-  --good: #4ade80;
-  --good-fill: #4ade80;
-  --good-soft: rgba(74, 222, 128, 0.14);
-  --bad: #f87171;
-  --bad-fill: #f87171;
-  --bad-soft: rgba(248, 113, 113, 0.16);
-  --warn: #fbbf24;
-  --warn-fill: #fbbf24;
-  --warn-soft: rgba(251, 191, 36, 0.16);
-  --banner: #1a1a1e;
-  --bar: rgba(11, 11, 13, 0.8);
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body {

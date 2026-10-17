@@ -40,7 +40,7 @@ export default function Users({ me }: { me: User }) {
   return (
     <div>
       <a className="back" href="#/">
-        ‹ {t("Engagement ทั้งหมด", "All engagements")}
+        ‹ {t("บริษัททั้งหมด", "All companies")}
       </a>
       <h2 className="page-head">{t("ผู้ใช้ของสำนักงาน", "Firm users")}</h2>
       {error && (
@@ -81,15 +81,15 @@ export default function Users({ me }: { me: User }) {
             <span>{t("สิทธิ์ในสำนักงาน", "Firm role")}</span>
             <select value={f.firm_role} onChange={(e) => setF({ ...f, firm_role: e.target.value })}>
               <option value="member">{t("ผู้ใช้ทั่วไป", "Member")}</option>
-              <option value="admin">{t("ผู้ดูแลระบบ (สร้าง Engagement และผู้ใช้)", "Admin (creates engagements and users)")}</option>
+              <option value="admin">{t("ผู้ดูแลระบบ (สร้างบริษัทและผู้ใช้)", "Admin (creates companies and users)")}</option>
             </select>
           </label>
         </div>
         <button className="btn filled">{t("เพิ่มผู้ใช้", "Add user")}</button>
         <p className="muted small">
           {t(
-            "ทุกคนที่อยู่ในทีมของ Engagement เป็นผู้สอบบัญชี (Auditor) ที่เข้าถึงเท่ากัน · ผู้ดูแลระบบไม่เห็นข้อมูลของ Engagement ที่ตนไม่ได้อยู่ในทีม",
-            "Everyone on an engagement's team is an Auditor with the same access · Admins cannot see engagements they are not on.",
+            "ทุกคนที่อยู่ในทีมของบริษัทเป็นผู้สอบบัญชี (Auditor) ที่เข้าถึงเท่ากัน · ผู้ดูแลระบบไม่เห็นข้อมูลของบริษัทที่ตนไม่ได้อยู่ในทีม",
+            "Everyone on a company's team is an Auditor with the same access · Admins cannot see companies they are not on.",
           )}
         </p>
       </form>
@@ -142,7 +142,7 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
       setBusy(t("สร้างบัญชีทดลอง", "Creating the trial account"));
       const r = await api<{ user: User; password: string }>("api/users/demo/account", { method: "POST" });
       setLogins([{ email: r.user.email, password: r.password }]);
-      setBusy(t("เตรียม Engagement ทดลอง", "Preparing the trial engagement"));
+      setBusy(t("เตรียมบริษัททดลอง", "Preparing the trial company"));
       const d = await api<{ engagement: { id: string }; files: string[]; has_run: boolean }>("api/users/demo/engagement", { method: "POST" });
       const id = d.engagement.id;
       const manifest: string[] = await fetch("demo/tg_company/manifest.json").then((r) => {
@@ -161,16 +161,16 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
         setBusy(t("สั่งประมวลผล (เครื่องประมวลผลอาจใช้เวลาตื่นราว 1 นาที)", "Starting processing (the processor may take about a minute to wake)"));
         try {
           await api(`api/engagements/${id}/runs`, { method: "POST" });
-          setNote(t("สั่งประมวลผลแล้ว ผลการตรวจจะขึ้นในหน้า Engagement เมื่อเสร็จ", "Processing started. Results appear on the engagement page when done."));
+          setNote(t("สั่งประมวลผลแล้ว ผลการตรวจจะขึ้นในหน้าบริษัทเมื่อเสร็จ", "Processing started. Results appear on the company page when done."));
         } catch (x) {
           setNote(
             t(
-              `อัปโหลดเอกสารครบแล้ว แต่ยังสั่งประมวลผลไม่ได้: ${(x as Error).message} · กดประมวลผลในหน้า Engagement ได้ภายหลัง`,
-              `All documents uploaded, but processing could not start: ${(x as Error).message} · Run it later from the engagement page.`,
+              `อัปโหลดเอกสารครบแล้ว แต่ยังสั่งประมวลผลไม่ได้: ${(x as Error).message} · กดประมวลผลในหน้าบริษัทได้ภายหลัง`,
+              `All documents uploaded, but processing could not start: ${(x as Error).message} · Run it later from the company page.`,
             ),
           );
         }
-      } else setNote(t("Engagement ทดลองมีเอกสารและผลการตรวจอยู่แล้ว", "The trial engagement already has its documents and results."));
+      } else setNote(t("บริษัททดลองมีเอกสารและผลการตรวจอยู่แล้ว", "The trial company already has its documents and results."));
       onDone();
     } catch (x) {
       setError((x as Error).message);
@@ -185,8 +185,8 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
       <h3>{t("บัญชีทดลองสำหรับ demo", "Demo trial account")}</h3>
       <p className="muted small">
         {t(
-          "สร้างบัญชีผู้สอบบัญชีที่ใช้ร่วมกันได้ และ Engagement ข้อมูลสมมติพร้อมเอกสารตัวอย่าง · กดซ้ำเพื่อรีเซ็ตรหัสผ่านและเติมเอกสารที่ถูกลบ",
-          "Creates a shared Auditor account and a synthetic engagement with sample documents · Press again to reset the password and restore deleted documents.",
+          "สร้างบัญชีผู้สอบบัญชีที่ใช้ร่วมกันได้ และบริษัทข้อมูลสมมติพร้อมเอกสารตัวอย่าง · กดซ้ำเพื่อรีเซ็ตรหัสผ่านและเติมเอกสารที่ถูกลบ",
+          "Creates a shared Auditor account and a synthetic company with sample documents · Press again to reset the password and restore deleted documents.",
         )}
       </p>
       {error && (

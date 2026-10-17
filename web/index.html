@@ -10,7 +10,7 @@
       (function () {
         var v = null;
         try { v = localStorage.getItem("ac-theme"); } catch (e) {}
-        if (v !== "pink" && v !== "reading" && v !== "dark") v = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "pink";
+        if (v !== "pink" && v !== "reading") v = "pink";
         document.documentElement.setAttribute("data-theme", v);
       })();
     </script>

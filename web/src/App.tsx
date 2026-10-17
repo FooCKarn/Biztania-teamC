@@ -48,12 +48,12 @@ function EngagementReview({ id }: { id: string }) {
   if (error)
     return (
       <div className="shell">
-        <Back to={`#/e/${id}`} label="Engagement" />
+        <Back to={`#/e/${id}`} label="Company" />
         <p className="empty">{error}</p>
       </div>
     );
   if (!src) return <Loading />;
-  return <Workspace source={src} back={<Back to={`#/e/${id}`} label="Engagement" />} />;
+  return <Workspace source={src} back={<Back to={`#/e/${id}`} label="Company" />} />;
 }
 
 export default function App() {
@@ -96,7 +96,7 @@ export default function App() {
       </a>
       <nav className="topnav" aria-label={t("เมนู", "Menu")}>
         <a href="#/" aria-current={hash === "/" || hash.startsWith("/e/") ? "page" : undefined}>
-          Engagement
+          {t("บริษัท", "Companies")}
         </a>
         <a href="#/files" aria-current={hash.startsWith("/files") ? "page" : undefined}>
           {t("ไฟล์", "Files")}
