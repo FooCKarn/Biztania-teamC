@@ -1,0 +1,88 @@
+// Calls to the Worker API for signed-in pages. Every state change carries the x-ac-csrf header,
+// which the Worker requires (a cross-site page cannot add it without a preflight the Worker refuses).
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export async function api<T = any>(path: string, opts: { method?: string; body?: unknown; bytes?: Blob } = {}): Promise<T> {
+  const method = opts.method ?? (opts.body !== undefined || opts.bytes ? "POST" : "GET");
+  const headers: Record<string, string> = {};
+  if (method !== "GET") headers["x-ac-csrf"] = "1";
+  if (opts.body !== undefined) headers["content-type"] = "application/json";
+  let r: Response;
+  try {
+    r = await fetch(path, { method, headers, body: opts.bytes ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined), credentials: "same-origin" });
+  } catch {
+    throw new ApiError(0, "เชื่อมต่อ server ไม่ได้");
+  }
+  const b = await r.json().catch(() => ({}));
+  if (!r.ok) throw new ApiError(r.status, b.error ?? b.answer ?? `HTTP ${r.status}`);
+  return b as T;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  initials: string;
+  firm_role: "admin" | "member";
+  must_change: boolean;
+  disabled: boolean;
+}
+
+export type Role = "preparer" | "reviewer" | "manager";
+export const ROLE_LABEL: Record<string, string> = { preparer: "ผู้จัดทำ", reviewer: "ผู้สอบทาน", manager: "Manager" };
+
+export interface Engagement {
+  id: string;
+  client: string;
+  period: string | null;
+  tolerance_pct: number;
+  materiality_thb: number;
+  synthetic: boolean;
+  status: "open" | "closed";
+  created_at: string;
+  closed_at: string | null;
+  purged_at: string | null;
+  my_role: Role;
+}
+
+export interface FileRow {
+  id: string;
+  name: string;
+  size: number;
+  sha256: string;
+  uploaded_at: string;
+  uploaded_by: string;
+}
+
+export interface Run {
+  id: string;
+  status: "queued" | "running" | "done" | "failed";
+  started_at: string;
+  finished_at: string | null;
+  result_run_id: string | null;
+  summary: { flags: number; pending: number; documents: number; unreadable: number } | null;
+  error: string | null;
+  files: number;
+}
+
+export interface EngagementDetail {
+  engagement: Engagement;
+  members: { id: string; name: string; initials: string; email: string; role: Role }[];
+  files: FileRow[];
+  runs: Run[];
+  current_run: string | null;
+  activity: { seq: number; at: string; actor: string; action: string; detail: Record<string, unknown> | null }[];
+  pipeline_configured: boolean;
+  retention_days: number;
+  store_configured: boolean;
+}
+
+export const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });

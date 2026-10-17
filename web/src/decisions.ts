@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Decision, TrailEvent } from "./types";
+import type { Source } from "./source";
 
 // The auditor's sign-offs and pair confirmations as an append-only Audit Trail.
 // With the Worker's D1 store bound, /api/trail is the record and the server stamps time and evidence.
 // Without it (e.g. `npm run dev` alone or static hosting) the same log is kept in this browser.
+// In an engagement the signer is the signed-in account (the server ignores any typed name) and
+// what each person may sign depends on their role in that engagement.
 
 export type TrailAction =
   | { action: "prepare"; target: string; value: Decision["verdict"]; reason: string; actor: string }
@@ -17,6 +20,10 @@ export interface Trail {
   decisions: Record<string, Decision>;
   pairs: Record<string, string>;
   chainOk: boolean | null;
+  /** Engagements: the signed-in user's initials and role; the demo uses typed initials instead. */
+  actor?: string;
+  role?: string;
+  readOnly?: boolean;
   /** Resolves to an error message, or null when the event was recorded. */
   act: (a: TrailAction) => Promise<string | null>;
 }
@@ -61,26 +68,40 @@ function localCheck(a: TrailAction, decisions: Record<string, Decision>): string
   return null;
 }
 
-export function useTrail(runId: string): Trail {
-  const [workspace] = useState(workspaceId);
+export function useTrail(runId: string, source?: Source): Trail {
+  const eng = source?.engagement;
+  const isEng = !!eng;
+  const [demoWorkspace] = useState(workspaceId);
+  const workspace = eng ? `eng-${eng.id}` : demoWorkspace;
   const [mode, setMode] = useState<Trail["mode"]>("loading");
   const [events, setEvents] = useState<TrailEvent[]>([]);
   const [chainOk, setChainOk] = useState<boolean | null>(null);
+  const [who, setWho] = useState<{ actor?: string; role?: string }>({});
   const localKey = `ac-trail-${workspace}-${runId}`;
+  const url = eng
+    ? `api/engagements/${eng.id}/trail?run=${encodeURIComponent(runId)}`
+    : `api/trail?ws=${encodeURIComponent(workspace)}&run=${encodeURIComponent(runId)}`;
 
   useEffect(() => {
     if (runId === "none") return;
     let live = true;
-    fetch(`api/trail?ws=${encodeURIComponent(workspace)}&run=${encodeURIComponent(runId)}`)
+    fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((b) => {
         if (!live) return;
         setEvents(b.events);
         setChainOk(b.chain_ok);
+        setWho({ actor: b.actor, role: b.role });
         setMode("server");
       })
       .catch(() => {
         if (!live) return;
+        if (isEng) {
+          // Never fall back to browser storage for a real engagement: the server is the record.
+          setEvents([]);
+          setMode("local");
+          return;
+        }
         try {
           setEvents(JSON.parse(localStorage.getItem(localKey) || "[]"));
         } catch {
@@ -91,15 +112,15 @@ export function useTrail(runId: string): Trail {
     return () => {
       live = false;
     };
-  }, [workspace, runId, localKey]);
+  }, [url, runId, localKey, isEng]);
 
   const act = useCallback(
     async (a: TrailAction): Promise<string | null> => {
       if (mode === "server") {
         try {
-          const r = await fetch("api/trail", {
+          const r = await fetch(isEng ? url : "api/trail", {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", ...(isEng && { "x-ac-csrf": "1" }) },
             body: JSON.stringify({ ws: workspace, run: runId, ...a }),
           });
           const b = await r.json();
@@ -111,6 +132,7 @@ export function useTrail(runId: string): Trail {
           return "เชื่อมต่อ server ไม่ได้ ยังไม่ได้บันทึก";
         }
       }
+      if (isEng) return "ยังเชื่อมต่อ Audit Trail ไม่ได้ จึงยังไม่ได้บันทึก";
       const err = localCheck(a, replay(events).decisions);
       if (err) return err;
       const e: TrailEvent = {
@@ -135,9 +157,9 @@ export function useTrail(runId: string): Trail {
       }
       return null;
     },
-    [mode, workspace, runId, events, localKey],
+    [mode, workspace, runId, events, localKey, isEng, url],
   );
 
   const { decisions, pairs } = replay(events);
-  return { mode, workspace, events, decisions, pairs, chainOk, act };
+  return { mode, workspace, events, decisions, pairs, chainOk, act, ...who, readOnly: !!eng?.closed };
 }

@@ -18,6 +18,11 @@ The human-readable summary is in [`README.md`](README.md).
   tokenised at ingestion and only shown masked. Sign-offs and decisions go to an append-only, hash-chained
   Audit Trail in D1 (`worker/src/trail.js`); the server stamps time and evidence refs. `pipeline/samples/tg_company/expected.json` is the
   answer key the tests score against.
+- **Engagements (uploads):** login with per-engagement roles preparer / reviewer / manager (the signer is the account);
+  every API checks team membership; files are AES-GCM encrypted per engagement in D1 `auditpal-files`; the Python
+  pipeline runs on a stateless Render container called with HMAC (`pipeline/auditconcierge/server.py`); raw files and
+  page images are deleted `RETENTION_DAYS` (90) after closing, the working paper and trail stay. `ALLOW_REAL_DATA`
+  stays false (synthetic only) until the AI provider is switched. Deploy steps: `docs/deploy-pipeline.md`.
 
 ## Core principles (keep these consistent in any material or prototype)
 

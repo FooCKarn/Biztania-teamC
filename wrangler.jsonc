@@ -1,5 +1,5 @@
 {
-  // One Worker serves the built web app (web/dist) and /api/ask. Free plan.
+  // One Worker serves the built web app (web/dist) and the API (/api/*). Free plan.
   // Deploy from the repo root: `npx wrangler deploy` (or connect the repo in Cloudflare
   // Workers Builds with root directory "/" and deploy command `npx wrangler deploy`).
   // The build step below runs first, so the browser always gets compiled JS, never
@@ -19,8 +19,16 @@
   // Audit Trail (sign-offs, decisions, pair confirmations), free D1 database in APAC.
   // The Worker creates the table and its no-UPDATE/no-DELETE triggers on first use (worker/src/trail.js).
   "d1_databases": [
-    { "binding": "AUDIT_DB", "database_name": "auditpal-trail", "database_id": "78f60802-27c7-4819-b557-1b8457fb73dd" }
+    { "binding": "AUDIT_DB", "database_name": "auditpal-trail", "database_id": "78f60802-27c7-4819-b557-1b8457fb73dd" },
+    // Uploaded client files and pipeline output, encrypted per engagement (worker/src/store.js). APAC.
+    { "binding": "FILES_DB", "database_name": "auditpal-files", "database_id": "429bf835-69d0-4712-8e67-bce141915d8f" }
   ],
+  // Daily 03:00 UTC: delete raw files RETENTION_DAYS after an engagement closes; time out stuck runs.
+  "triggers": { "crons": ["0 3 * * *"] },
+  // Secrets for uploads and login (never commit them):
+  //   npx wrangler secret put FILES_KEY        # 32+ random characters; encrypts every uploaded file
+  //   npx wrangler secret put PIPELINE_SECRET  # same value on the pipeline host (Render)
+  //   npx wrangler secret put SETUP_TOKEN      # one-time code to create the first admin account
   "vars": {
     // Tried in order; on quota/token-limit/unavailable errors the Worker moves to the next.
     // Free tier (AI Studio, 2026-10): Gemma 4 30 RPM / 16K TPM / 14.4K RPD;
@@ -28,7 +36,12 @@
     "GEMINI_MODELS": "gemma-4-26b-a4b-it,gemma-4-31b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash,gemini-2.5-flash",
     "DAILY_LIMIT_PER_IP": "20",
     "DAILY_LIMIT_TOTAL": "300",
-    "TRAIL_WRITES_PER_IP": "200"
+    "TRAIL_WRITES_PER_IP": "200",
+    // Pipeline host (Python + OCR), e.g. https://auditpal-pipeline.onrender.com. Empty = uploads work, runs are off.
+    "PIPELINE_URL": "",
+    "RETENTION_DAYS": "90",
+    // Keep "false" until the AI provider is switched under a data agreement: every engagement is then synthetic.
+    "ALLOW_REAL_DATA": "false"
   },
   // PR preview builds (Workers Builds runs `wrangler preview` on non-production branches).
   // Lower limits so a preview link cannot drain the demo's free Gemini quota.

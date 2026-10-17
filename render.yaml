@@ -1,0 +1,20 @@
+# Render Blueprint for the pipeline service (free web service, Docker, Singapore).
+# Render dashboard → New → Blueprint → pick this repo. Then set the two secrets below.
+# Steps and the matching Worker secrets: docs/deploy-pipeline.md
+services:
+  - type: web
+    name: auditpal-pipeline
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: pipeline
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PIPELINE_SECRET # same value as the Worker secret PIPELINE_SECRET
+        sync: false
+      - key: WORKER_URL # e.g. https://auditpal.<subdomain>.workers.dev
+        sync: false
+      - key: ACCOUNT_TOKEN_SALT # salt for bank-account tokens; never the demo default
+        generateValue: true
