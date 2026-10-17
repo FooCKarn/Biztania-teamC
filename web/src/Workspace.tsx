@@ -120,7 +120,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
 
       <AskBox run={data.run_id} />
       <footer className="foot">
-        run {data.run_id} · schema {data.schema_version} · tolerance {data.engagement.tolerance_pct}% · materiality{" "}
+        {t("รอบประมวลผล", "Run")} {data.run_id} · schema {data.schema_version} · {t("เกณฑ์คลาดเคลื่อน", "Tolerance")} {data.engagement.tolerance_pct}% · {t("เกณฑ์สาระสำคัญ", "Materiality")}{" "}
         {data.engagement.materiality_thb.toLocaleString(locale())} ฿
       </footer>
     </div>

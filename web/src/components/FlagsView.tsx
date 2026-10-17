@@ -130,8 +130,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
           />
           <div className="segmented small-seg" role="radiogroup" aria-label={t("สถานะ", "Status")}>
             {[
-              ["open", t("ยังไม่ลงนาม", "Unsigned")],
-              ["done", t("ลงนามแล้ว", "Signed")],
+              ["open", t("ยังไม่ตรวจ", "Open")],
+              ["done", t("ตรวจแล้ว", "Checked")],
               ["all", t("ทั้งหมด", "All")],
             ].map(([v, l]) => (
               <button key={v} role="radio" aria-checked={state === v} onClick={() => setState(v)}>
@@ -164,8 +164,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
             const d = decisions[f.id];
             return (
               <li key={f.id}>
-                <button className={"flag-row" + (flag?.id === f.id ? " active" : "")} onClick={() => select(f.id)}>
-                  <span className={`dot risk-${RISK_KEY[f.risk]}`} aria-label={riskText(f.risk)} />
+                <button className={"flag-row" + (flag?.id === f.id ? " active" : "")} onClick={() => select(f.id)} aria-current={flag?.id === f.id ? "true" : undefined}>
+                  <span className={`dot risk-${RISK_KEY[f.risk]}`} role="img" aria-label={riskText(f.risk)} />
                   <span className="flag-main">
                     <span className="flag-top">
                       <span className="ref">{f.id}</span>
@@ -175,7 +175,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
                     <span className="flag-sum">{f.summary}</span>
                     <span className="flag-meta">
                       <span className={"so" + (d ? " done" : "")} title={t("ตรวจสอบแล้ว", "Checked")}>
-                        ✓{d ? ` ${d.by ?? ""}` : ""}
+                        ✓{d ? ` ${d.by ?? ""} · ${d.verdict === "issue" ? t("เป็นประเด็น", "Issue") : t("ไม่เป็นประเด็น", "Not an issue")}` : ""}
                       </span>
                       {f.match === "likely" && <span className="pill warn">{MATCH_LABEL.likely}</span>}
                       {f.ocr && <span className="pill">OCR</span>}

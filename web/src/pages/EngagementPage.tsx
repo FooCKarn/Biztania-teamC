@@ -202,7 +202,7 @@ export default function EngagementPage({ id }: { id: string }) {
           <h2>{e.client}</h2>
           <p className="muted small">
             {e.period ? `${e.period} · ` : ""}
-            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]} · tolerance {e.tolerance_pct}% · materiality{" "}
+            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]} · {t("เกณฑ์คลาดเคลื่อน", "Tolerance")} {e.tolerance_pct}% · {t("เกณฑ์สาระสำคัญ", "Materiality")}{" "}
             {e.materiality_thb.toLocaleString(locale())} ฿{e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
           </p>
         </div>
