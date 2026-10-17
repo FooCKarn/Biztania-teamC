@@ -11,6 +11,8 @@
   --muted: #7a6470;
   --sep: rgba(120, 40, 70, 0.12);
   --accent: #c2255c;
+  --logo-text: #2b1b22;
+  --logo-accent: #c2255c;
   --accent-soft: rgba(194, 37, 92, 0.12);
   --good: #15803d;
   --good-fill: #22c55e;
@@ -39,6 +41,8 @@
   --muted: #655843;
   --sep: rgba(80, 60, 30, 0.18);
   --accent: #8a4b14;
+  --logo-text: #3a3024;
+  --logo-accent: #8a4b14;
   --accent-soft: rgba(138, 75, 20, 0.14);
   --good: #2f6b2a;
   --good-fill: #5a9a4a;
@@ -63,6 +67,8 @@
   --muted: #a1a1aa;
   --sep: rgba(255, 255, 255, 0.09);
   --accent: #f472b6;
+  --logo-text: #f4f4f5;
+  --logo-accent: #f472b6;
   --accent-soft: rgba(244, 114, 182, 0.17);
   --good: #4ade80;
   --good-fill: #4ade80;
@@ -425,7 +431,9 @@ blockquote {
 a.btn { text-decoration: none; display: inline-block; }
 .page-head { margin: 4px 0 14px; align-items: flex-start; }
 .login-head { text-align: center; margin-bottom: 18px; }
-.app-icon.big { width: 56px; height: 56px; font-size: 28px; border-radius: 14px; margin: 0 auto 10px; }
+.logo { display: block; height: 28px; width: auto; flex: none; }
+.logo-big { height: 64px; margin: 0 auto 10px; }
+.navbar h1 .logo { height: 24px; }
 .center { text-align: center; margin-top: 18px; }
 .form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
 .form-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1; min-width: 140px; }

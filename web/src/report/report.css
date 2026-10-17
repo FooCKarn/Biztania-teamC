@@ -81,3 +81,5 @@
   .rp-table tr { break-inside: avoid; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+.rp-logo { display: block; height: 30px; width: auto; margin-bottom: 6px; --logo-text: #2b2b30; --logo-accent: #5aa7d6; }

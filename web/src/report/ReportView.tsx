@@ -1,3 +1,4 @@
+import Logo from "../components/Logo";
 import { useMemo, useState } from "react";
 import type { ConflictMap, Decision, Signoff } from "../types";
 import { baht, fieldLabel, KIND_LABEL, RISK_LABEL } from "../labels";
@@ -61,7 +62,8 @@ export default function ReportView({ data, decisions, signoff }: Props) {
       <article className="report" aria-label={report.title}>
         <header className="rp-head">
           <div>
-            <p className="rp-kicker">AuditPal · {tr("กระดาษทำการ", "Working paper")}</p>
+            <Logo className="rp-logo" />
+            <p className="rp-kicker">{tr("กระดาษทำการ", "Working paper")}</p>
             <h2>{report.title}</h2>
             <p>
               <b>{report.client}</b>

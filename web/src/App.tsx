@@ -1,3 +1,4 @@
+import Logo from "./components/Logo";
 import { useCallback, useEffect, useState } from "react";
 import Workspace from "./Workspace";
 import { DEMO, engagementSource, type Source } from "./source";
@@ -91,10 +92,7 @@ export default function App() {
   const bar = (
     <header className="topbar">
       <a className="brand-link" href="#/">
-        <span className="app-icon" aria-hidden>
-          ✓
-        </span>
-        <span className="brand-name">AuditPal</span>
+        <Logo className="logo-bar" />
       </a>
       <nav className="topnav" aria-label={t("เมนู", "Menu")}>
         <a href="#/" aria-current={hash === "/" || hash.startsWith("/e/") ? "page" : undefined}>
