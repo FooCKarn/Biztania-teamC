@@ -1,3 +1,4 @@
+import Logo from "./components/Logo";
 import ReadProblems from "./components/ReadProblems";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ConflictMap } from "./types";
@@ -70,11 +71,10 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       <header className="navbar">
         <div className="brand">
           {back}
-          <span className="app-icon" aria-hidden>
-            ✓
-          </span>
           <div>
-            <h1>AuditPal</h1>
+            <h1>
+              <Logo className="logo-bar" />
+            </h1>
             <p className="sub">
               {data.engagement.client} · {data.coverage.files} {t("ไฟล์", "files")} · {data.documents.length} {t("เอกสาร", "documents")} ·{" "}
               {data.transactions.length} {t("ธุรกรรม", "transactions")}

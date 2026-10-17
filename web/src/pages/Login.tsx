@@ -1,3 +1,4 @@
+import Logo from "../components/Logo";
 import { useState } from "react";
 import { api } from "../api";
 import { LangToggle, t } from "../i18n";
@@ -62,10 +63,9 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
         <LangToggle />
       </div>
       <div className="login-head">
-        <span className="app-icon big" aria-hidden>
-          ✓
-        </span>
-        <h1>AuditPal</h1>
+        <h1>
+          <Logo className="logo-big" />
+        </h1>
         <p className="muted">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
       </div>
       {demoMode && (
