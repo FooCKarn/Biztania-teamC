@@ -86,7 +86,7 @@ python -m auditconcierge samples/tg_company --out ../web/public/data --extractor
 
 ```bash
 # 1) pipeline (ต้องมี tesseract-ocr และ tesseract-ocr-tha)
-sudo apt-get install -y tesseract-ocr tesseract-ocr-tha
+sudo apt-get install -y tesseract-ocr tesseract-ocr-tha fonts-tlwg-loma-otf
 cd pipeline
 pip install -r requirements.txt
 python -m pytest -q                                   # เทสต์เทียบกับเฉลย
