@@ -151,6 +151,8 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   };
   const fresh = d.files.filter((f) => !statusOf(f));
   const processed = d.files.filter((f) => statusOf(f));
+  // The "Processed on … · N to check" bar carries the run context, so its button wins; the header one is only a fallback.
+  const doneBanner = !!latest && fresh.length === 0 && d.files.length > 0;
   const unreadable = processed.filter((f) => !statusOf(f)!.read).length;
 
   const FileTable = ({ rows }: { rows: FileRow[] }) => (
@@ -212,7 +214,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
         </div>
         <div className="row">
           <span className={"pill " + (open ? "ok" : "")}>{open ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
-          {d.current_run && (
+          {d.current_run && !doneBanner && (
             <a className="btn filled" href={`#/e/${id}/review`}>
               {t("เปิดผลการตรวจ", "Open results")}
             </a>
@@ -284,7 +286,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                 <p className="muted small">{e.purged_at ? t("ไฟล์ถูกลบตามนโยบายแล้ว", "Files were deleted per the retention policy") : t("ยังไม่มีไฟล์", "No files yet")}</p>
               ) : (
                 <>
-                  {latest && fresh.length === 0 && (
+                  {doneBanner && latest && (
                     <div className="banner done-banner" role="status">
                       <span>
                         {t("ประมวลผลเสร็จเมื่อ", "Processed on")} {when(latest.finished_at ?? latest.started_at)} · {latest.summary?.flags ?? 0}{" "}
