@@ -199,7 +199,7 @@ export async function handleAsk(request, env, fetchImpl = fetch) {
     )
       .bind(id, user.id)
       .first();
-    if (!row) return json({ answer: "คุณไม่ได้อยู่ในทีมของ Engagement นี้" }, 403);
+    if (!row) return json({ answer: "คุณไม่ได้อยู่ในทีมของบริษัทนี้" }, 403);
     if (!row.synthetic) return json({ answer: "ปิดการถาม AI สำหรับข้อมูลจริง จนกว่าจะเปลี่ยนผู้ให้บริการ AI ตามสัญญาข้อมูล" }, 403);
     if (!/^[a-f0-9]{12}$/.test(String(body.run || ""))) return json({ answer: "ต้องระบุ run" }, 400);
     map = await loadEngagementMap(env, id, String(body.run));

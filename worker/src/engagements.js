@@ -88,9 +88,9 @@ async function log(env, engagementId, actor, action, detail = null) {
 }
 
 async function loadEngagement(env, id) {
-  if (!ID_RE.test(id)) throw new HttpError(404, "ไม่พบ Engagement");
+  if (!ID_RE.test(id)) throw new HttpError(404, "ไม่พบ บริษัท");
   const e = await env.AUDIT_DB.prepare("SELECT * FROM engagements WHERE id = ?1").bind(id).first();
-  if (!e) throw new HttpError(404, "ไม่พบ Engagement");
+  if (!e) throw new HttpError(404, "ไม่พบ บริษัท");
   return e;
 }
 
@@ -98,11 +98,11 @@ async function loadEngagement(env, id) {
 async function access(env, user, id) {
   const e = await loadEngagement(env, id);
   const m = await env.AUDIT_DB.prepare("SELECT role FROM members WHERE engagement_id = ?1 AND user_id = ?2").bind(id, user.id).first();
-  if (!m) throw new HttpError(403, "คุณไม่ได้อยู่ในทีมของ Engagement นี้");
+  if (!m) throw new HttpError(403, "คุณไม่ได้อยู่ในทีมของบริษัทนี้");
   return { e, role: m.role };
 }
 const mustBeOpen = (e) => {
-  if (e.status !== "open") throw new HttpError(409, "Engagement ปิดแล้ว แก้ไขไม่ได้");
+  if (e.status !== "open") throw new HttpError(409, "บริษัทปิดแล้ว แก้ไขไม่ได้");
 };
 
 const num = (v, lo, hi, label) => {
@@ -228,7 +228,7 @@ export async function handleEngagements(request, env, path) {
     // may too (always synthetic) but only up to DEMO_MAX_ENGAGEMENTS, so a public demo cannot pile up data.
     if (isDemoEmail(user.email)) {
       const n = await db.prepare("SELECT COUNT(*) AS n FROM members WHERE user_id = ?1").bind(user.id).first();
-      if (n.n >= DEMO_MAX_ENGAGEMENTS) throw new HttpError(403, `บัญชีทดลองสร้าง Engagement ได้ไม่เกิน ${DEMO_MAX_ENGAGEMENTS} รายการ`);
+      if (n.n >= DEMO_MAX_ENGAGEMENTS) throw new HttpError(403, `บัญชีทดลองสร้างบริษัทได้ไม่เกิน ${DEMO_MAX_ENGAGEMENTS} รายการ`);
     }
     const e = await createEngagement(env, user, await readJson(request));
     return json({ engagement: engagementJson(e, ROLE) }, 201);
@@ -445,7 +445,7 @@ async function keepAMember(db, id, leavingUserId) {
     .prepare("SELECT COUNT(*) AS n FROM members WHERE engagement_id = ?1 AND user_id != ?2")
     .bind(id, leavingUserId)
     .first();
-  if (r.n === 0) throw new HttpError(409, "Engagement ต้องมีคนในทีมอย่างน้อย 1 คน");
+  if (r.n === 0) throw new HttpError(409, "บริษัทต้องมีคนในทีมอย่างน้อย 1 คน");
 }
 
 // ---------- pipeline callbacks (signed with PIPELINE_SECRET, no cookie) ----------
