@@ -33,8 +33,7 @@ const amountOf = (d: Doc) => {
 const shortId = (id: string) =>
   id.replace(/^BANK-(\d{4}-\d{2}-\d{2}).*/, t("โอน $1", "Paid $1")).replace(" (อ่านเลขที่ไม่ชัด)", "");
 
-// PO → GR → Invoice → Payment laid out left to right; documents that a flag pulls in from
-// outside the chain (contract, vendor master, a second copy) go in an extra column.
+// PO → GR → Invoice → Payment; other documents a flag pulls in go in an extra column.
 export default function TxnChain({ txn, docs, flags, highlight, selectedDoc, onSelect, compact }: Props) {
   const txnFlags = flags.filter((f) => f.transaction === txn.id);
   const extra = [...new Set(txnFlags.flatMap((f) => f.docs))].filter((d) => !txn.members.includes(d) && docs.has(d));

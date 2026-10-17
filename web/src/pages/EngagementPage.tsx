@@ -102,7 +102,6 @@ export default function EngagementPage({ id }: { id: string }) {
   }, [running, busy, load]);
 
   const role = d?.engagement.my_role;
-  // Every team member has the same access (single Auditor role), so "I'm on the team" is the only gate.
   const member = !!role;
   const open = d?.engagement.status === "open";
 

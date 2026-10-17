@@ -1,8 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-// Two languages, Thai first. Strings stay next to the code that shows them as a pair: t("ไทย", "English").
-// The choice is kept in this browser (localStorage) and the root re-renders on change, so plain t() calls
-// during render always follow the current language.
+// Thai/English strings as pairs: t("ไทย", "English"). The choice is kept in localStorage.
 
 export type Lang = "th" | "en";
 const KEY = "ac-lang";

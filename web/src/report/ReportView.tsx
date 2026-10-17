@@ -14,12 +14,10 @@ interface Props {
 
 const RISK_CLASS = { สูง: "risk-high", กลาง: "risk-mid", ต่ำ: "risk-low" } as const;
 
-// Printable working paper, also downloadable as Word (editable copy). "บันทึก PDF" uses the browser's print-to-PDF, so Thai text renders with
-// the system fonts and nothing leaves the browser.
+// Printable working paper, also exported as Word. PDF uses the browser's print-to-PDF.
 export default function ReportView({ data, decisions, signoff }: Props) {
   const [audience, setAudience] = useState<Audience>("manager");
   const lang = useLang();
-  // lang is a dependency because the labels inside the report follow the language.
   const report = useMemo(() => buildReport(data, decisions, signoff, audience), [data, decisions, signoff, audience, lang]);
   const client = audience === "client";
   const t = report.totals;

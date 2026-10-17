@@ -19,8 +19,7 @@ function loadInitials() {
   }
 }
 
-// The one engagement-level sign-off: once every flagged item has been checked, the auditor signs
-// off the whole set in a single step (no separate preparer/reviewer pass per item).
+// Engagement-level sign-off, available once every item is checked.
 export default function SignoffBar({ trail, total, checked }: Props) {
   const [initials, setInitials] = useState(loadInitials);
   const [busy, setBusy] = useState(false);

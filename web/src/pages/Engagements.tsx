@@ -23,7 +23,7 @@ export default function Engagements() {
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (busy) return; // a double click or double Enter must not create two engagements
+    if (busy) return; // no double submit
     setBusy(true);
     setError(null);
     try {

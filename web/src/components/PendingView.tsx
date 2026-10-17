@@ -19,8 +19,7 @@ function Facts({ doc }: { doc: Doc }) {
   );
 }
 
-// Documents whose partner is ambiguous are NOT checked for conflicts until the auditor
-// confirms the pair; guessing would create false flags or hide real ones.
+// Ambiguous pairs are not checked until the auditor confirms them.
 export default function PendingView({ data, docs, trail }: { data: ConflictMap; docs: Map<string, Doc>; trail: Trail }) {
   const picked = trail.pairs;
   const [error, setError] = useState<string | null>(null);

@@ -1,7 +1,7 @@
 import type { ConflictMap } from "../types";
 import { t } from "../i18n";
 
-// Why the page may look empty: files the pipeline could not read, with its reason, and the table layouts it accepts.
+// Files the pipeline could not read, and the table layouts it accepts.
 export default function ReadProblems({ data }: { data: ConflictMap }) {
   const bad = data.coverage.unreadable_files;
   const empty = data.documents.length === 0;
