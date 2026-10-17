@@ -126,8 +126,7 @@ export default function Users({ me }: { me: User }) {
 
 type DemoLogin = { email: string; password: string };
 
-// A shared demo login plus a synthetic engagement with the sample documents (worker/src/demo.js).
-// One request per step: the account, the engagement, each sample file, then a pipeline run.
+// Shared demo login plus a synthetic engagement (worker/src/demo.js), one request per step.
 function DemoSetup({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

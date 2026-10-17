@@ -19,8 +19,7 @@ function loadInitials() {
   }
 }
 
-// The one engagement-level sign-off: once every flagged item has been checked, the auditor signs
-// off the whole set in a single step (no separate preparer/reviewer pass per item).
+// Engagement-level sign-off, available once every item is checked.
 export default function SignoffBar({ trail, total, checked }: Props) {
   const [initials, setInitials] = useState(loadInitials);
   const [busy, setBusy] = useState(false);
@@ -38,7 +37,9 @@ export default function SignoffBar({ trail, total, checked }: Props) {
       /* storage blocked: initials last for this page view */
     }
   };
+  const issues = Object.values(trail.decisions).filter((d) => d.verdict === "issue").length;
   const run = async (action: "signoff" | "unsignoff") => {
+    if (action === "signoff" && !window.confirm(t(`ลงนามยืนยันผล ${total} รายการ (เป็นประเด็น ${issues})?`, `Sign off ${total} items (${issues} issue(s))?`))) return;
     setBusy(true);
     setError(await trail.act({ action, target: SIGNOFF_TARGET, actor: who }));
     setBusy(false);
@@ -81,6 +82,11 @@ export default function SignoffBar({ trail, total, checked }: Props) {
       <button className="btn filled" disabled={!ready || who.length < 2 || busy || locked} onClick={() => run("signoff")}>
         {t("ลงนามยืนยันผล", "Sign off")}
       </button>
+      {checked > 0 && (
+        <span className="muted small">
+          {t("เป็นประเด็น", "Issues")} {issues} · {t("ไม่เป็นประเด็น", "Not an issue")} {checked - issues}
+        </span>
+      )}
       {!ready && <span className="muted small">{t("ตรวจสอบให้ครบทุกจุดก่อนลงนาม", "Check every item before signing off")}</span>}
       {error && <span className="small error">{error}</span>}
     </div>

@@ -38,9 +38,7 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
     onDone();
   });
 
-  // With the demo entry on, the page shows only the "try it" button. The real form stays reachable
-  // (not linked) at ?login=1 for firm admins, and shows itself while the first admin account still
-  // has to be created.
+  // Demo entry on: only the try-it button shows. The real form is at ?login=1, or while no admin exists.
   const showForm = !demoMode || setupNeeded || new URLSearchParams(location.search).has("login");
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);

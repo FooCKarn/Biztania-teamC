@@ -1,17 +1,9 @@
-// Engagements: one audit job for one client, with its own team, files, pipeline runs and Audit Trail.
+// Engagements: one audit job per client, with its own team, files, runs and Audit Trail.
 //
-// Isolation: every route checks that the signed-in user is a member of that engagement (a firm admin
-// is not automatically one). Files are encrypted with a key derived for that engagement only
-// (store.js), stored under eng/<id>/, and the pipeline can fetch a file only while a run of the same
-// engagement that lists it is in progress.
-//
-// One role per engagement: everyone on the team is an auditor, with full access to that engagement
-// (upload, run, check items, sign off, manage the team and settings, close). This is a platform for
-// a single auditor role right now; the account that owns a login is what distinguishes people, not
-// a role within an engagement.
-// A closed engagement is read-only. RETENTION_DAYS (default 90) after closing, the raw files and the
-// page images rendered from them are deleted (purgeExpired, run daily by the cron trigger); the
-// working paper (conflict_map.json with its quotes) and the Audit Trail stay.
+// Every route requires team membership (an admin is not automatically a member). Files are encrypted per
+// engagement (store.js); the pipeline can fetch one only during a run that lists it. All members have the
+// same access. A closed engagement is read-only; RETENTION_DAYS after closing, raw files and page images are
+// purged (purgeExpired, daily cron) while the working paper and Audit Trail stay.
 
 import { HttpError, json, readJson, nowIso, randomId, sha256Hex, verifySigned, signRequest } from "./http.js";
 import { ensureAppSchema } from "./schema.js";
@@ -102,9 +94,7 @@ async function loadEngagement(env, id) {
   return e;
 }
 
-// Checks the signed-in user is on this engagement's team, or 403. Not being a member looks the same
-// as not existing to the caller only in the message; the list endpoint never shows other
-// engagements' details. Every team member has the same access, so there is nothing else to check.
+// 403 unless the signed-in user is on this engagement's team.
 async function access(env, user, id) {
   const e = await loadEngagement(env, id);
   const m = await env.AUDIT_DB.prepare("SELECT role FROM members WHERE engagement_id = ?1 AND user_id = ?2").bind(id, user.id).first();
@@ -208,7 +198,7 @@ export async function createEngagement(env, user, body) {
   return { ...e, status: "open", created_at: at };
 }
 
-// Adds a user to the team. Every member has the same access, so there is no role to set.
+// Adds a user to the team.
 export async function setMember(env, id, by, u) {
   await env.AUDIT_DB
     .prepare(

@@ -9,11 +9,7 @@ interface Answer {
   model?: string;
 }
 
-// Q&A goes through the Worker (/api/ask). The Gemini key lives only in the Worker;
-// the browser never sees it. The Worker answers only from conflict_map.json.
-//
-// Shown as a floating chat bubble (fixed to the viewport) so the question box is visible the
-// moment this page opens, not only after scrolling to the bottom.
+// Q&A goes through the Worker (/api/ask); the Gemini key never reaches the browser.
 export default function AskBox({ run }: { run?: string }) {
   const { engagement } = useSource();
   const [open, setOpen] = useState(false);

@@ -11,20 +11,13 @@ import { LangToggle, t, useLang } from "./i18n";
 import { ThemeToggle } from "./theme";
 import Loading from "./components/Loading";
 
-// Hash routes, so the static build works on any host:
-//   #/demo                 public demo (synthetic sample, no login)
-//   #/                     engagements of the signed-in user (or the login page)
-//   #/e/<id>               one engagement: files, runs, team, activity
-//   #/e/<id>/review        the review workspace on that engagement's latest results
-//   #/files[/<id>]         file manager and storage used (optionally opened on one engagement)
-//   #/users                accounts (firm admin)
-//   #/account              change password
+// Hash routes: #/demo, #/, #/e/<id>, #/e/<id>/review, #/files[/<id>], #/users, #/account
 function useHash() {
   const [hash, setHash] = useState(location.hash.replace(/^#/, "") || "/");
   useEffect(() => {
     const on = () => {
       setHash(location.hash.replace(/^#/, "") || "/");
-      window.scrollTo(0, 0); // a new page should start at its top, not wherever the last one left off
+      window.scrollTo(0, 0);
     };
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
@@ -63,7 +56,7 @@ function EngagementReview({ id }: { id: string }) {
 }
 
 export default function App() {
-  useLang(); // re-render everything when the language changes
+  useLang();
   const hash = useHash();
   const [me, setMe] = useState<Me>({ state: "loading" });
   const refresh = useCallback(() => {

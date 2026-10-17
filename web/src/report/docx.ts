@@ -4,9 +4,7 @@ import { t as tr } from "../i18n";
 import { when, type Report } from "./model";
 import { zip } from "./zip";
 
-// Minimal .docx writer (no dependency), same content as the printable report so the Word copy can
-// be edited into the firm's own working-paper template. Thai is a complex script in Word, so every
-// run sets the cs font/size too, otherwise Word falls back to a font that may not have Thai glyphs.
+// Minimal .docx writer. Every run sets the cs font/size too, or Word may pick a font without Thai glyphs.
 
 const FONT = "Tahoma";
 

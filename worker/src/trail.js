@@ -1,24 +1,13 @@
-// Audit Trail: the auditor's decisions, sign-offs and pair confirmations, stored server-side in D1.
-//  - GET  /api/trail?ws=<workspace>&run=<run_id> → events + current state + whether the hash chain holds
-//  - POST /api/trail                              → append one event (never update, never delete)
+// Audit Trail in D1.
+//  GET  /api/trail?ws=&run=   events, replayed state, chain_ok
+//  POST /api/trail            append one event
 //
-// Append-only by construction: the Worker only ever INSERTs, and SQLite triggers reject UPDATE and
-// DELETE on the table. Each event carries the SHA-256 of the previous one, so editing a row by
-// hand (e.g. from the dashboard console) breaks the chain and GET reports chain_ok: false.
+// Append-only: only INSERTs, triggers reject UPDATE/DELETE, and each event carries the SHA-256 of the
+// previous one, so a hand edit breaks the chain. The server sets the time, validates the action against
+// the current state and copies evidence from the published conflict_map.json.
 //
-// The server, not the browser, decides: the time stamp, whether the action is allowed in the
-// current state, and the evidence reference, which it copies from the published conflict_map.json
-// (doc, file, locator, file SHA-256).
-//
-// Sign-off model: each flagged item gets one "check" (verdict + reason, by whoever on the team did
-// it — this is a single-auditor platform, there is no separate preparer/reviewer step). Once every
-// flag is checked, the engagement is signed off once with "signoff", confirming the whole set was
-// reviewed. A signed-off run is locked for per-flag edits until "unsignoff" reopens it.
-//
-// Public demo (/api/trail): small JSON bodies only, a daily write limit per IP, and each browser
-// gets its own workspace unless a ?ws= link is shared; initials there are typed, not verified.
-// Engagements (/api/engagements/<id>/trail, engagements.js) use the same log with workspace
-// "eng-<id>" and the signed-in user's initials, so the signer is the account, not a typed name.
+// Each flag gets one "check"; once all are checked, "signoff" locks per-flag edits until "unsignoff".
+// Demo: typed initials, per-IP write limit. Engagements use workspace "eng-<id>" and the signed-in user's initials.
 
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });

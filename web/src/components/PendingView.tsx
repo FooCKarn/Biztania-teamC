@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Trail } from "../decisions";
 import type { ConflictMap, Doc } from "../types";
-import { fieldLabel, KIND_LABEL } from "../labels";
-import { locale, t } from "../i18n";
+import { amount, fieldLabel, KIND_LABEL } from "../labels";
+import { t } from "../i18n";
 
 const SHOW = ["date", "vendor_name", "description", "subtotal", "amount", "total"];
 
@@ -12,15 +12,14 @@ function Facts({ doc }: { doc: Doc }) {
       {SHOW.filter((k) => doc.fields[k]).map((k) => (
         <div key={k}>
           <dt>{fieldLabel(k)}</dt>
-          <dd>{typeof doc.fields[k].value === "number" ? doc.fields[k].value!.toLocaleString(locale()) : String(doc.fields[k].value)}</dd>
+          <dd>{typeof doc.fields[k].value === "number" ? amount(doc.fields[k].value!) : String(doc.fields[k].value)}</dd>
         </div>
       ))}
     </dl>
   );
 }
 
-// Documents whose partner is ambiguous are NOT checked for conflicts until the auditor
-// confirms the pair; guessing would create false flags or hide real ones.
+// Ambiguous pairs are not checked until the auditor confirms them.
 export default function PendingView({ data, docs, trail }: { data: ConflictMap; docs: Map<string, Doc>; trail: Trail }) {
   const picked = trail.pairs;
   const [error, setError] = useState<string | null>(null);

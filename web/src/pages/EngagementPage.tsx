@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type RunProgress } from "../api";
 import { bi, locale, t } from "../i18n";
+import { amount } from "../labels";
 import Loading from "../components/Loading";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.json";
@@ -53,7 +54,7 @@ function RunBar({ p, started }: { p: RunProgress; started: string }) {
   const secs = Math.max(0, Math.round((now - Date.parse(started)) / 1000));
   const count = p.total && p.stage !== "waking" ? ` ${Math.min(p.total, (p.done ?? 0) + (p.stage === "ocr" || p.stage === "upload" ? 0 : 1))}/${p.total}` : "";
   return (
-    <div className="runbar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent(p)}>
+    <div className="runbar" role="progressbar" aria-label={t("ความคืบหน้าการประมวลผล", "Processing progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent(p)}>
       <div className="runbar-track">
         <div className="runbar-fill" style={{ width: `${percent(p)}%` }} />
       </div>
@@ -102,7 +103,6 @@ export default function EngagementPage({ id }: { id: string }) {
   }, [running, busy, load]);
 
   const role = d?.engagement.my_role;
-  // Every team member has the same access (single Auditor role), so "I'm on the team" is the only gate.
   const member = !!role;
   const open = d?.engagement.status === "open";
 
@@ -202,8 +202,8 @@ export default function EngagementPage({ id }: { id: string }) {
           <h2>{e.client}</h2>
           <p className="muted small">
             {e.period ? `${e.period} · ` : ""}
-            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]} · tolerance {e.tolerance_pct}% · materiality{" "}
-            {e.materiality_thb.toLocaleString(locale())} ฿{e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
+            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]} · {t("เกณฑ์คลาดเคลื่อน", "Tolerance")} {e.tolerance_pct}% · {t("เกณฑ์สาระสำคัญ", "Materiality")}{" "}
+            {amount(e.materiality_thb)} ฿{e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
           </p>
         </div>
         <div className="row">

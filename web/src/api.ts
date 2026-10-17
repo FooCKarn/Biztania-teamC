@@ -1,7 +1,6 @@
 import { bi, locale, t } from "./i18n";
 
-// Calls to the Worker API for signed-in pages. Every state change carries the x-ac-csrf header,
-// which the Worker requires (a cross-site page cannot add it without a preflight the Worker refuses).
+// Worker API calls. State changes carry x-ac-csrf, which the Worker requires.
 
 export class ApiError extends Error {
   constructor(
@@ -39,7 +38,6 @@ export interface User {
   demo?: boolean;
 }
 
-// One role: everyone on an engagement's team is an auditor with the same access.
 export type Role = "auditor";
 export const ROLE_LABEL: Record<string, string> = bi({ auditor: ["ผู้สอบบัญชี", "Auditor"] });
 

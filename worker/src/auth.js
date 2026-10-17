@@ -1,12 +1,8 @@
 // Accounts and sessions.
-//  - Passwords: PBKDF2-SHA256 with a per-user salt. 100,000 rounds (the Workers maximum) by default;
-//    PASSWORD_ITERATIONS can lower it if the Free plan's 10 ms CPU limit rejects logins. Each hash
-//    keeps its own round count, so changing the setting never locks anyone out.
-//  - Sessions: a random 32-byte token in an HttpOnly, Secure, SameSite=Strict cookie; only its
-//    SHA-256 is stored, so a copy of the database cannot be used to log in.
-//  - No self sign-up. The first account (a firm admin) is created with the SETUP_TOKEN secret;
-//    after that only an admin creates accounts, each with a one-time password to change at first login.
-//  - Initials are unique per account, and are what the Audit Trail records as the signer.
+//  - PBKDF2-SHA256, 100,000 rounds by default (PASSWORD_ITERATIONS can lower it); each hash keeps its own count.
+//  - Session: random token in an HttpOnly, Secure, SameSite=Strict cookie; only its SHA-256 is stored.
+//  - No self sign-up: the first admin uses SETUP_TOKEN, later accounts get a one-time password.
+//  - Initials are unique and are the Audit Trail signer.
 
 import { HttpError, json, readJson, nowIso, randomId, hex, sha256Hex, sameString, clientIp } from "./http.js";
 import { ensureAppSchema } from "./schema.js";

@@ -3,10 +3,7 @@ import { api, when, type FilesOverview, type ManagedFile } from "../api";
 import { bi, t } from "../i18n";
 import "./files.css";
 
-// File manager (#/files, or #/files/<engagement id> to open on one engagement): storage meter like a
-// cloud drive, files of every engagement the user is on, filtered by extension, searchable, with
-// download and delete. Page images the pipeline rendered count toward storage but are not listed:
-// the evidence viewer needs them, and only the retention policy removes them.
+// File manager: storage meter and the user's files. Page images count toward storage but are not listed.
 
 const KIND: Record<string, { color: string }> = {
   pdf: { color: "var(--ft-pdf)" },

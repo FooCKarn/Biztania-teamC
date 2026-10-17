@@ -47,9 +47,7 @@ function cells(quote: string, format: string): string[] {
 const sameValue = (cell: string, v: Mark["value"]) =>
   v != null && (cell.trim() === String(v).trim() || (typeof v === "number" && Number(cell.replace(/,/g, "")) === v));
 
-// Like ticking a value against the source in DataSnipper: the page (or sheet) the value came from,
-// with a box on the exact line or cell. Only data the pipeline already published is shown, so bank
-// accounts stay masked (and page images have account-like lines blacked out by the pipeline).
+// Shows the page or sheet a value came from, boxed. Only published data, so accounts stay masked.
 export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
   const activeRef = useRef<HTMLElement | null>(null);
   const { base, engagement } = useSource();

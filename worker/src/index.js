@@ -1,21 +1,13 @@
-// AuditPal demo Worker.
-//  - GET  /*        → static web app (web/dist) via the ASSETS binding
-//  - POST /api/ask  → question about the results, answered by Gemini from conflict_map.json only
-//  - GET/POST /api/trail → append-only Audit Trail of sign-offs and decisions (D1, see trail.js)
-//  - /api/auth/*, /api/users*      → login, sessions, accounts (auth.js)
-//  - /api/engagements*             → engagements, team roles, encrypted uploads, pipeline runs,
-//                                    results and their Audit Trail (engagements.js)
-//  - /api/files                    → file manager: files of the user's engagements, storage used (files.js)
-//  - /api/internal/*               → callbacks from the Python pipeline host, HMAC-signed
-//  - cron                          → deletes raw files 90 days after an engagement closes
-//
-// Safety rules for the demo:
-//  - The Gemini key lives only here (secret GEMINI_API_KEY); the browser never sees it.
-//  - The public demo has no upload: there the model only sees the published synthetic results.
-//    Uploaded engagements get Q&A only when marked synthetic (until the AI provider is switched),
-//    and only from that engagement's results, for its members.
-//  - Per-IP and total daily limits keep the free tier from being drained.
-//  - The model is told to point at items worth checking, never to declare fraud.
+// AuditPal Worker.
+//  /*              static web app (ASSETS)
+//  /api/ask        Q&A over conflict_map.json (Gemini, key only here)
+//  /api/trail      demo Audit Trail (trail.js)
+//  /api/auth, /api/users   accounts (auth.js)
+//  /api/engagements        engagements, uploads, runs, results (engagements.js)
+//  /api/files              file manager (files.js)
+//  /api/internal/*         HMAC-signed pipeline callbacks
+//  cron            retention purge
+// Q&A on an uploaded engagement is for its members and only while it is synthetic.
 
 import { handleTrailGet, handleTrailPost } from "./trail.js";
 import { HttpError } from "./http.js";

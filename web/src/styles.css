@@ -1,4 +1,3 @@
-/* Minimal, modern: neutral canvas, hairline borders, one calm accent, soft motion. */
 /* Three themes on <html data-theme="pink|reading|dark">; pink is the default. The attribute is set before first
    paint (index.html) and by theme.tsx. */
 :root,
