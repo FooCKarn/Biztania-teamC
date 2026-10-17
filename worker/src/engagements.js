@@ -452,7 +452,7 @@ export async function handleEngagements(request, env, path) {
   }
   // Edit the name, period and thresholds of an open company.
   if (rest === "update") {
-    const { e } = await access(env, user, id);
+    const { e, role } = await access(env, user, id);
     mustBeOpen(e);
     const body = await readJson(request);
     const client = String(body.client ?? e.client).trim();
