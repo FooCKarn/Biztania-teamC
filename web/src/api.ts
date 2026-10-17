@@ -34,6 +34,7 @@ export interface User {
   firm_role: "admin" | "member";
   must_change: boolean;
   disabled: boolean;
+  demo?: boolean;
 }
 
 export type Role = "preparer" | "reviewer" | "manager";

@@ -21,6 +21,8 @@ const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
 // may change it; the firm admin resets them from the users page instead.
 export const DEMO_DOMAIN = "demo.example.com";
 export const isDemoEmail = (email) => String(email || "").endsWith(`@${DEMO_DOMAIN}`);
+// DEMO_MODE=true turns on the one-click demo entry (worker/src/demo.js). It never applies while real data is allowed.
+export const demoEnabled = (env) => String(env.DEMO_MODE || "false") === "true" && String(env.ALLOW_REAL_DATA || "false") !== "true";
 
 async function pbkdf2(password, saltHex, iter = PBKDF2_ITER) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
@@ -58,6 +60,7 @@ export const publicUser = (u) => ({
   firm_role: u.firm_role,
   must_change: !!u.must_change,
   disabled: !!u.disabled,
+  demo: isDemoEmail(u.email),
 });
 
 function cookieOf(request) {
@@ -89,7 +92,7 @@ export async function requireUser(request, env, { allowMustChange = false } = {}
   return u;
 }
 
-async function startSession(env, user) {
+export async function startSession(env, user) {
   const token = randomId(32);
   const expires = new Date(Date.now() + SESSION_HOURS * 3600_000).toISOString();
   await env.AUDIT_DB.prepare("INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?1, ?2, ?3, ?4)")
@@ -148,7 +151,7 @@ export async function handleAuth(request, env, path) {
 
   if (path === "/api/auth/me" && request.method === "GET") {
     const u = await currentUser(request, env);
-    return json({ user: u ? publicUser(u) : null, setup_needed: (await userCount(env)) === 0 && !!env.SETUP_TOKEN });
+    return json({ user: u ? publicUser(u) : null, setup_needed: (await userCount(env)) === 0 && !!env.SETUP_TOKEN, demo_mode: demoEnabled(env) });
   }
 
   if (request.method !== "POST") throw new HttpError(405, "ใช้ POST");
@@ -216,7 +219,9 @@ export async function handleUsers(request, env, path) {
   if (path === "/api/users" && request.method === "GET") {
     // Everyone signed in may see the directory (to add team members); only admins see disabled accounts.
     const { results } = await db.prepare("SELECT * FROM users ORDER BY name").all();
-    return json({ users: results.filter((u) => me.firm_role === "admin" || !u.disabled).map(publicUser) });
+    // A shared demo account sees only the demo accounts, never the firm's real users.
+    const visible = results.filter((u) => (me.firm_role === "admin" || !u.disabled) && (!isDemoEmail(me.email) || isDemoEmail(u.email)));
+    return json({ users: visible.map(publicUser) });
   }
   if (me.firm_role !== "admin") throw new HttpError(403, "เฉพาะผู้ดูแลระบบของสำนักงาน");
   if (request.method !== "POST") throw new HttpError(405, "ใช้ POST");

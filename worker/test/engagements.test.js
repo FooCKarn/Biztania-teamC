@@ -328,3 +328,60 @@ test("a run whose callbacks never arrive does not block the engagement until the
   assert.equal(runs[0].status, "failed");
   assert.equal((await prep.b.post(`/api/engagements/${id}/runs`)).status, 202, "can retry");
 });
+
+test("demo mode: off by default; on, one click enters the synthetic engagement only, scoped and resettable", async () => {
+  const { admin, id: realId } = await setupFirm();
+  const guest = browser();
+  assert.equal((await guest.post("/api/auth/demo-login", {})).status, 404, "off by default");
+  assert.equal((await guest.get("/api/auth/me")).body.demo_mode, false);
+
+  env.DEMO_MODE = "true";
+  assert.equal((await guest.get("/api/auth/me")).body.demo_mode, true);
+  env.ALLOW_REAL_DATA = "true";
+  assert.equal((await guest.post("/api/auth/demo-login", {})).status, 404, "never while real data is allowed");
+  delete env.ALLOW_REAL_DATA;
+
+  const r = await guest.post("/api/auth/demo-login", {});
+  assert.equal(r.status, 200);
+  assert.equal(r.body.user.email, "manager@demo.example.com");
+  assert.equal(r.body.user.demo, true);
+  const demoId = r.body.engagement.id;
+  assert.notEqual(demoId, realId);
+
+  // Only the demo engagement is visible; the real one and its users are out of reach.
+  const list = (await guest.get("/api/engagements")).body.engagements;
+  assert.deepEqual(list.map((e) => e.id), [demoId]);
+  assert.equal(list[0].synthetic, true);
+  assert.equal((await guest.get(`/api/engagements/${realId}`)).status, 403);
+  assert.equal((await guest.post(`/api/engagements/${realId}/files?name=a.pdf`, PDF)).status, 403);
+  const users = (await guest.get("/api/users")).body.users;
+  assert.ok(users.length && users.every((u) => u.email.endsWith("@demo.example.com")));
+  assert.equal((await guest.post("/api/users", { email: "x@y.zz", name: "Xx", initials: "XX" })).status, 403);
+  assert.equal((await guest.post("/api/auth/password", { current: "a", next: "b".repeat(12) })).status, 403);
+  const detail = (await guest.get(`/api/engagements/${demoId}`)).body;
+  assert.ok(detail.members.every((m) => m.email.endsWith("@demo.example.com")));
+
+  // The demo account cannot log in with a password; it cannot change the team or close.
+  assert.equal((await browser().post("/api/auth/login", { email: "manager@demo.example.com", password: "anything-at-all" })).status, 401);
+  assert.equal((await guest.post(`/api/engagements/${demoId}/members`, { user_id: users[0].id, role: "preparer" })).status, 403);
+  assert.equal((await guest.post(`/api/engagements/${demoId}/close`)).status, 403);
+
+  // Core feature: upload (size-capped), then reset wipes it into a fresh engagement.
+  assert.equal((await guest.post(`/api/engagements/${demoId}/files?name=INV-TG-101.pdf`, PDF)).status, 201);
+  const big = new Uint8Array(3 * 1024 * 1024 + 1);
+  big.set(PDF);
+  assert.equal((await guest.post(`/api/engagements/${demoId}/files?name=big.pdf`, big)).status, 413);
+  const reset = await guest.post("/api/auth/demo-reset");
+  assert.equal(reset.status, 200);
+  assert.notEqual(reset.body.engagement.id, demoId);
+  const fresh = (await guest.get(`/api/engagements/${reset.body.engagement.id}`)).body;
+  assert.deepEqual(fresh.files, []);
+  assert.equal((await guest.post(`/api/engagements/${demoId}/files?name=b.pdf`, PDF)).status, 409, "old one is closed");
+
+  // Reviewer role: another entry as a different demo account.
+  const rev = browser();
+  assert.equal((await rev.post("/api/auth/demo-login", { role: "reviewer" })).body.user.initials, "DR");
+  assert.equal((await rev.get("/api/engagements")).body.engagements[0].my_role, "reviewer");
+  assert.equal((await browser().post("/api/auth/demo-reset")).status, 401, "reset needs a demo session");
+  assert.equal((await admin.post("/api/auth/demo-reset")).status, 403, "real accounts cannot reset");
+});

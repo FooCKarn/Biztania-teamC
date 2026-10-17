@@ -15,7 +15,7 @@
 
 import { HttpError, json, readJson, nowIso, randomId, sha256Hex, verifySigned, signRequest } from "./http.js";
 import { ensureAppSchema } from "./schema.js";
-import { requireUser } from "./auth.js";
+import { requireUser, isDemoEmail } from "./auth.js";
 import { putBlob, getBlob, deleteBlob, deleteWhere, isConfigured as storeConfigured } from "./store.js";
 import { readTrail, appendEvent, parseAction } from "./trail.js";
 
@@ -29,6 +29,8 @@ const ACTION_NEEDS = { prepare: "work", pair: "work", reopen: "work", review: "r
 
 const MAX_FILE = 10 * 1024 * 1024;
 const MAX_FILES = 200;
+const DEMO_MAX_FILE = 3 * 1024 * 1024; // shared demo accounts: smaller limits, the storage is shared by every visitor
+const DEMO_MAX_FILES = 30;
 const MAX_ASSET = 5 * 1024 * 1024;
 const MAX_MAP = 20 * 1024 * 1024;
 const STALE_RUN_MIN = 30;
@@ -258,7 +260,7 @@ export async function handleEngagements(request, env, path) {
     const done = runs.results.find((r) => r.status === "done") ?? (await latestDone(env, id));
     return json({
       engagement: engagementJson(e, role),
-      members: members.results,
+      members: members.results.filter((m) => !isDemoEmail(user.email) || isDemoEmail(m.email)), // a demo account never sees real users
       files: files.results.map((f) => ({ id: f.id, name: f.name, size: f.size, sha256: f.sha256, uploaded_at: f.uploaded_at, uploaded_by: f.uploaded_by })),
       runs: runs.results.map(runJson),
       current_run: done?.result_run_id ?? null,
@@ -322,6 +324,8 @@ export async function handleEngagements(request, env, path) {
     if (!looksLike(ext, bytes)) throw new HttpError(415, "เนื้อไฟล์ไม่ตรงกับนามสกุล");
     const count = await db.prepare("SELECT COUNT(*) AS n FROM files WHERE engagement_id = ?1 AND deleted_at IS NULL").bind(id).first();
     const same = await db.prepare("SELECT * FROM files WHERE engagement_id = ?1 AND name = ?2 AND deleted_at IS NULL").bind(id, name).first();
+    if (isDemoEmail(user.email) && (bytes.length > DEMO_MAX_FILE || (!same && count.n >= DEMO_MAX_FILES)))
+      throw new HttpError(413, `เดโมรับไฟล์ไม่เกิน ${DEMO_MAX_FILE / 1e6} MB และไม่เกิน ${DEMO_MAX_FILES} ไฟล์`);
     if (!same && count.n >= MAX_FILES) throw new HttpError(413, `ไฟล์ครบ ${MAX_FILES} ไฟล์แล้ว`);
 
     const f = { id: randomId(8), name, size: bytes.length, sha256: await sha256Hex(bytes) };
@@ -393,6 +397,9 @@ export async function handleEngagements(request, env, path) {
   }
 
   // ---------- team and settings (manager) ----------
+  // Shared demo accounts cannot change the team or close the engagement (the demo reset does that).
+  if (isDemoEmail(user.email) && (rest === "members" || rest === "close" || /^members\//.test(rest)))
+    throw new HttpError(403, "บัญชีทดลองเปลี่ยนทีมหรือปิดงานไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
   if (rest === "members") {
     const { e } = await access(env, user, id, "manage");
     mustBeOpen(e);
@@ -522,6 +529,20 @@ export async function expireStaleRuns(env, now = Date.now(), engagementId = null
     ? await env.AUDIT_DB.prepare(q + " AND engagement_id = ?3").bind(at, stale, engagementId).run()
     : await env.AUDIT_DB.prepare(q).bind(at, stale).run();
   return r?.meta?.changes ?? 0;
+}
+
+// Demo reset: closes the engagement and deletes everything stored for it at once (raw files, page images,
+// results). The activity log and the hash-chained trail rows stay, like after a normal purge.
+export async function wipeEngagement(env, id, actor) {
+  const db = env.AUDIT_DB;
+  const n = await deleteWhere(env, id, () => false);
+  const at = nowIso();
+  await db.batch([
+    db.prepare("UPDATE files SET deleted_at = ?1 WHERE engagement_id = ?2 AND deleted_at IS NULL").bind(at, id),
+    db.prepare("UPDATE engagements SET status = 'closed', closed_at = COALESCE(closed_at, ?1), purged_at = ?1 WHERE id = ?2").bind(at, id),
+  ]);
+  await log(env, id, actor, "purge", { objects: n, reason: "demo reset" });
+  return n;
 }
 
 // ---------- retention (cron) ----------
