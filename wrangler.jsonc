@@ -38,7 +38,7 @@
     "DAILY_LIMIT_TOTAL": "300",
     "TRAIL_WRITES_PER_IP": "200",
     // Pipeline host (Python + OCR), e.g. https://auditpal-pipeline.onrender.com. Empty = uploads work, runs are off.
-    "PIPELINE_URL": "",
+    "PIPELINE_URL": "https://auditpal-pipeline.onrender.com",
     "RETENTION_DAYS": "90",
     // Keep "false" until the AI provider is switched under a data agreement: every engagement is then synthetic.
     "ALLOW_REAL_DATA": "false"

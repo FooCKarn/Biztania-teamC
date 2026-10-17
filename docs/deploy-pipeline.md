@@ -37,7 +37,7 @@ npx wrangler secret put SETUP_TOKEN      # รหัสใช้ครั้ง�
 
 | ค่า | ค่าเริ่มต้น | ความหมาย |
 | --- | --- | --- |
-| `PIPELINE_URL` | ว่าง | URL ของเครื่องประมวลผล ว่าง = อัปโหลดได้แต่ประมวลผลไม่ได้ |
+| `PIPELINE_URL` | `https://auditpal-pipeline.onrender.com` (ตรวจให้ตรงกับ URL จริงบน Render) | URL ของเครื่องประมวลผล ว่าง = อัปโหลดได้แต่ประมวลผลไม่ได้ |
 | `RETENTION_DAYS` | 90 | ลบไฟล์ดิบและภาพหน้าเอกสารกี่วันหลังปิดงาน |
 | `ALLOW_REAL_DATA` | false | false = ทุก Engagement เป็นข้อมูลสมมติ เปิดเป็น true ได้หลังเปลี่ยนผู้ให้บริการ AI และ region ตามสัญญาข้อมูลเท่านั้น |
 | `PASSWORD_ITERATIONS` | 100000 | รอบ PBKDF2 ลดได้ (ขั้นต่ำ 10000) ถ้า Workers Free ตัดคำขอล็อกอินเพราะ CPU เกิน 10 ms |
