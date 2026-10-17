@@ -65,7 +65,8 @@ const APP_SCHEMA = [
     created_at     TEXT NOT NULL,
     closed_by      TEXT,
     closed_at      TEXT,
-    purged_at      TEXT
+    purged_at      TEXT,
+    deleted_at     TEXT
   )`,
   MEMBERS_TABLE,
   `CREATE TABLE IF NOT EXISTS files (
@@ -170,8 +171,16 @@ async function migrateMembers(db) {
   );
 }
 
+// Companies are never hard-deleted (the activity log and Audit Trail are append-only); "delete" sets deleted_at.
+// Databases created before that column existed get it added here.
+async function migrateEngagementsDeletedAt(db) {
+  const { results } = await db.prepare("PRAGMA table_info(engagements)").all();
+  if (results.length && !results.some((c) => c.name === "deleted_at")) await db.prepare("ALTER TABLE engagements ADD COLUMN deleted_at TEXT").run();
+}
+
 export async function ensureAppSchema(env) {
   await ensure(env.AUDIT_DB, "app", APP_SCHEMA);
   await ensure(env.AUDIT_DB, "members-auditor", migrateMembers);
+  await ensure(env.AUDIT_DB, "engagements-deleted-at", migrateEngagementsDeletedAt);
   await ensure(filesDb(env), "blobs", BLOB_SCHEMA);
 }

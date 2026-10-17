@@ -23,7 +23,7 @@ export async function handleFiles(request, env, path) {
 
   const { results: engs } = await db
     .prepare(
-      "SELECT e.id, e.client, e.period, e.status, e.purged_at, m.role FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 ORDER BY e.created_at DESC",
+      "SELECT e.id, e.client, e.period, e.status, e.purged_at, m.role FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.deleted_at IS NULL ORDER BY e.created_at DESC",
     )
     .bind(user.id)
     .all();

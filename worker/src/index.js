@@ -195,7 +195,7 @@ export async function handleAsk(request, env, fetchImpl = fetch) {
     }
     const id = String(body.engagement);
     const row = await env.AUDIT_DB.prepare(
-      "SELECT e.synthetic FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?2 WHERE e.id = ?1",
+      "SELECT e.synthetic FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?2 WHERE e.id = ?1 AND e.deleted_at IS NULL",
     )
       .bind(id, user.id)
       .first();

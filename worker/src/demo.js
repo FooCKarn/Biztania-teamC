@@ -46,7 +46,7 @@ export async function handleDemo(request, env, path) {
     // Reuse the open demo engagement if there is one (a tester may have closed the last one).
     let e = await db
       .prepare(
-        "SELECT e.* FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.status = 'open' AND e.synthetic = 1 AND e.client = ?2 ORDER BY e.created_at DESC LIMIT 1",
+        "SELECT e.* FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.status = 'open' AND e.deleted_at IS NULL AND e.synthetic = 1 AND e.client = ?2 ORDER BY e.created_at DESC LIMIT 1",
       )
       .bind(account.id, DEMO_ENGAGEMENT.client)
       .first();
@@ -104,7 +104,7 @@ async function demoUser(env) {
 const openDemoEngagement = (db, userId) =>
   db
     .prepare(
-      "SELECT e.* FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.status = 'open' AND e.synthetic = 1 AND e.client = ?2 ORDER BY e.created_at DESC LIMIT 1",
+      "SELECT e.* FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.status = 'open' AND e.deleted_at IS NULL AND e.synthetic = 1 AND e.client = ?2 ORDER BY e.created_at DESC LIMIT 1",
     )
     .bind(userId, DEMO_ENGAGEMENT.client)
     .first();

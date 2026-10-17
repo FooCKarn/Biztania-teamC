@@ -6,6 +6,7 @@ import Loading from "../components/Loading";
 interface List {
   engagements: Engagement[];
   can_create: boolean;
+  can_delete?: boolean;
   real_data_allowed: boolean;
 }
 
@@ -15,6 +16,8 @@ export default function Engagements() {
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({ client: "", period: "", tolerance_pct: "1", materiality_thb: "10000", synthetic: true });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [ef, setEf] = useState({ client: "", period: "", tolerance_pct: "1", materiality_thb: "10000" });
   const load = () =>
     api<List>("api/engagements")
       .then(setList)
@@ -35,6 +38,47 @@ export default function Engagements() {
       setError((x as Error).message);
       setBusy(false);
     }
+  };
+
+  const startEdit = (e: Engagement) => {
+    setError(null);
+    setEf({ client: e.client, period: e.period ?? "", tolerance_pct: String(e.tolerance_pct), materiality_thb: String(e.materiality_thb) });
+    setEditId(e.id);
+  };
+  const saveEdit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (busy || !editId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`api/engagements/${editId}/update`, {
+        body: { ...ef, tolerance_pct: Number(ef.tolerance_pct), materiality_thb: Number(ef.materiality_thb) },
+      });
+      setEditId(null);
+      await load();
+    } catch (x) {
+      setError((x as Error).message);
+    }
+    setBusy(false);
+  };
+  const remove = async (e: Engagement) => {
+    if (busy) return;
+    const ok = window.confirm(
+      t(
+        `ลบบริษัท "${e.client}"? ไฟล์และผลการตรวจจะถูกลบ ส่วนประวัติการทำงานและ Audit Trail ยังเก็บไว้ ย้อนกลับไม่ได้`,
+        `Delete "${e.client}"? Its files and results are removed; the activity log and Audit Trail are kept. This cannot be undone.`,
+      ),
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`api/engagements/${e.id}/delete`, { body: {} });
+      await load();
+    } catch (x) {
+      setError((x as Error).message);
+    }
+    setBusy(false);
   };
 
   if (!list) return error ? <p className="empty error">{error}</p> : <Loading />;
@@ -113,25 +157,78 @@ export default function Engagements() {
         </div>
       ) : (
         <div className="group-body list">
-          {list.engagements.map((e) => (
-            <a key={e.id} className="list-row" href={`#/e/${e.id}`}>
-              <div>
-                <strong>{e.client}</strong>
-                <p className="muted small">
-                  {e.period ? `${e.period} · ` : ""}
-                  {t("สร้าง", "Created")} {when(e.created_at)}
-                  {e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
-                </p>
+          {list.engagements.map((e) =>
+            editId === e.id ? (
+              <form key={e.id} className="list-row edit-row" onSubmit={saveEdit}>
+                <div className="row wrap grow">
+                  <label className="form-field">
+                    <span>{t("ชื่อลูกค้า", "Client name")}</span>
+                    <input value={ef.client} onChange={(x) => setEf({ ...ef, client: x.target.value })} required minLength={2} maxLength={120} autoFocus />
+                  </label>
+                  <label className="form-field">
+                    <span>{t("งวดที่ตรวจ", "Period")}</span>
+                    <input value={ef.period} onChange={(x) => setEf({ ...ef, period: x.target.value })} maxLength={40} />
+                  </label>
+                  <label className="form-field short">
+                    <span>Tolerance (%)</span>
+                    <input type="number" step="0.1" min="0" max="20" value={ef.tolerance_pct} onChange={(x) => setEf({ ...ef, tolerance_pct: x.target.value })} />
+                  </label>
+                  <label className="form-field short">
+                    <span>Materiality (฿)</span>
+                    <input type="number" min="0" value={ef.materiality_thb} onChange={(x) => setEf({ ...ef, materiality_thb: x.target.value })} />
+                  </label>
+                </div>
+                <div className="row">
+                  <button className="btn filled" disabled={busy}>
+                    {t("บันทึก", "Save")}
+                  </button>
+                  <button type="button" className="btn" disabled={busy} onClick={() => setEditId(null)}>
+                    {t("ยกเลิก", "Cancel")}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div key={e.id} className="list-row">
+                <a className="list-main" href={`#/e/${e.id}`}>
+                  <div>
+                    <strong>{e.client}</strong>
+                    <p className="muted small">
+                      {e.period ? `${e.period} · ` : ""}
+                      {t("สร้าง", "Created")} {when(e.created_at)}
+                      {e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
+                    </p>
+                  </div>
+                  <div className="row">
+                    {e.signoff && <span className="pill ok">{t("ลงนามยืนยันผลแล้ว", "Signed off")}</span>}
+                    <span className={"pill " + (e.status === "open" ? "ok" : "")}>{e.status === "open" ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
+                    <span className="chev" aria-hidden>
+                      ›
+                    </span>
+                  </div>
+                </a>
+                <div className="row icon-actions">
+                  {e.status === "open" && (
+                    <button className="icon-btn" title={t("แก้ไข", "Edit")} aria-label={t("แก้ไขบริษัท", "Edit company")} disabled={busy} onClick={() => startEdit(e)}>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                      </svg>
+                    </button>
+                  )}
+                  {list.can_delete && (
+                    <button className="icon-btn danger" title={t("ลบ", "Delete")} aria-label={t("ลบบริษัท", "Delete company")} disabled={busy} onClick={() => remove(e)}>
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v5M14 11v5" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="row">
-                {e.signoff && <span className="pill ok">{t("ลงนามยืนยันผลแล้ว", "Signed off")}</span>}
-                <span className={"pill " + (e.status === "open" ? "ok" : "")}>{e.status === "open" ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
-                <span className="chev" aria-hidden>
-                  ›
-                </span>
-              </div>
-            </a>
-          ))}
+            ),
+          )}
         </div>
       )}
     </div>
