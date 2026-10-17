@@ -206,8 +206,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
         </ul>
         <p className="sidebar-foot muted small">
           {t("ตรวจสอบแล้ว", "Checked")} {checkedCount}/{data.flags.length} · {t("ความเสี่ยงสูงที่ยังไม่ตรวจ", "High risk still open")} {highOpen} ·{" "}
-          {t("ยอดที่เกี่ยวข้องในรายการ", "At stake in list")} {baht(atStake)} · {t("กด", "Press")} <kbd>J</kbd> / <kbd>K</kbd>{" "}
-          {t("เพื่อเลื่อนรายการ", "to move through the list")}
+          {t("ยอดที่เกี่ยวข้องในรายการ", "At stake in list")} {baht(atStake)}
         </p>
       </aside>
 
