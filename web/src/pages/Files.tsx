@@ -64,7 +64,7 @@ function StorageMeter({ o }: { o: FilesOverview }) {
   for (const t of s.by_type) byKind.set(kindOf(t.ext), (byKind.get(kindOf(t.ext)) ?? 0) + t.bytes);
   const parts = [
     ...[...byKind.entries()].map(([k, b]) => ({ key: k, label: KIND_LABEL[k], color: KIND[k].color, bytes: b })),
-    { key: "pages", label: t("ภาพหน้าเอกสารและผลการตรวจ", "Page images and results"), color: "var(--ft-pages)", bytes: s.pages },
+    { key: "pages", label: t("ผลการตรวจและภาพหน้าเอกสาร", "Results and page images"), color: "var(--ft-pages)", bytes: s.pages },
     { key: "others", label: t("บริษัทอื่นในสำนักงาน", "Other companies in the firm"), color: "var(--ft-others)", bytes: s.others },
     { key: "overhead", label: t("ระบบฐานข้อมูล", "Database"), color: "var(--ft-overhead)", bytes: s.overhead },
   ].filter((p) => p.bytes > 0);
@@ -84,6 +84,11 @@ function StorageMeter({ o }: { o: FilesOverview }) {
         </div>
         <span className={`pill ${level}`}>{used < 0.1 && s.used > 0 ? "<0.1" : used.toFixed(used < 10 ? 1 : 0)}%</span>
       </div>
+      {o.files.length === 0 && s.pages > 0 && (
+        <p className="muted small">
+          {t("ผลการตรวจ (working paper) ของบริษัทยังเก็บไว้เพื่อดูหลักฐานและ Audit Trail จึงยังนับในพื้นที่ แม้ไม่มีไฟล์แล้ว", "The company's results (working paper) are kept for evidence and the Audit Trail, so they still count toward storage even with no files left.")}
+        </p>
+      )}
       <div className="storage-bar" role="meter" aria-valuemin={0} aria-valuemax={s.quota} aria-valuenow={s.used} aria-label={t("พื้นที่ที่ใช้", "Storage used")}>
         {parts.map((p) => (
           <span key={p.key} style={{ width: `${pct(p.bytes)}%`, background: p.color }} title={`${p.label} ${bytes(p.bytes)}`} />

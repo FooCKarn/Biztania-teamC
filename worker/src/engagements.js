@@ -363,7 +363,11 @@ export async function handleEngagements(request, env, path) {
     mustBeOpen(e);
     await db.prepare("UPDATE files SET deleted_at = ?1 WHERE id = ?2").bind(nowIso(), fid).run();
     await deleteBlob(env, rawKey(id, fid));
-    await log(env, id, user.initials, "delete_file", { file: f.name });
+    // With no raw file left, the rendered page images have nothing to point at: remove them too
+    // (the working paper conflict_map.json stays, as after the retention purge).
+    const left = await db.prepare("SELECT COUNT(*) AS n FROM files WHERE engagement_id = ?1 AND deleted_at IS NULL").bind(id).first();
+    const pages = left.n === 0 ? await deleteWhere(env, id, (key) => !key.includes("/pages/")) : 0;
+    await log(env, id, user.initials, "delete_file", { file: f.name, ...(pages ? { page_images: pages } : {}) });
     return json({ ok: true });
   }
 
