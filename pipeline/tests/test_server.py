@@ -91,3 +91,26 @@ def test_without_rules_file_the_run_still_works(tmp_path):
     server.remember_for(tmp_path, {"client": "X", "tolerance_pct": 2, "materiality_thb": 5, "synthetic": False})
     cfg = json.loads((tmp_path / "remember.json").read_text(encoding="utf-8"))
     assert cfg == {"rules": [], "client": "X", "tolerance_pct": 2.0, "materiality_thb": 5.0, "synthetic": False}
+
+
+def test_worker_calls_do_not_use_the_default_python_user_agent():
+    # Cloudflare refuses "Python-urllib/3.x" with 403 (error 1010) before the Worker sees the request.
+    seen = {}
+
+    class Reply:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b"ok"
+
+    def opener(req, timeout):
+        seen.update({k.lower(): v for k, v in req.header_items()})
+        return Reply()
+
+    server.WorkerClient("https://w.example", SECRET, "0123456789abcdef", opener).file("fedcba9876543210")
+    assert seen["user-agent"] == server.USER_AGENT and "urllib" not in seen["user-agent"].lower()
+    assert "x-ac-signature" in seen

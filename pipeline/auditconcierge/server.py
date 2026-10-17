@@ -29,11 +29,13 @@ import threading
 import time
 import traceback
 import unicodedata
+import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+USER_AGENT = "auditconcierge-pipeline/1.0"
 MAX_JOB_BODY = 256 * 1024
 MAX_SKEW = 300
 NAME_RE = re.compile(r"^[A-Za-z0-9฀-๿][A-Za-z0-9฀-๿ _.()-]{0,118}\.(pdf|png|jpe?g|tiff?|csv|xlsx|json)$", re.I)
@@ -74,11 +76,18 @@ class WorkerClient:
         full = self.prefix + path
         url = self.base + urllib.parse.quote(full) + ("?" + urllib.parse.urlencode(query) if query else "")
         headers = sign(self.secret, method, urllib.parse.quote(full), body)
+        # Cloudflare answers the default "Python-urllib/3.x" agent with 403 (error 1010) before the Worker runs.
+        headers["user-agent"] = USER_AGENT
         if method == "POST":
             headers["content-type"] = ctype
         req = urllib.request.Request(url, data=body if method == "POST" else None, method=method, headers=headers)
-        with self.opener(req, timeout=120) as r:
-            return r.read()
+        try:
+            with self.opener(req, timeout=120) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            detail = e.read(300).decode("utf-8", "replace").strip()  # the edge or the Worker says why
+            print(f"Worker {method} {full} -> HTTP {e.code}: {detail}", flush=True)
+            raise
 
     def file(self, file_id: str) -> bytes:
         return self._call("GET", f"/files/{file_id}")
