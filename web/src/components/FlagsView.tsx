@@ -76,6 +76,19 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
     const justChecked = flag && now.has(flag.id) && decidedBefore.current && !decidedBefore.current.has(flag.id);
     decidedBefore.current = now;
     if (justChecked && state === "open" && list[0] && list[0].id !== flag.id) select(list[0].id);
+    // Last item checked: nothing is "open" any more, so show everything instead of an empty screen.
+    if (justChecked && state === "open" && !list[0]) {
+      setSelected(flag.id);
+      setState("all");
+    }
+  });
+
+  // Returning to a fully checked (or signed-off) run: the default "open" filter would be empty, so start on "all".
+  const autoStateDone = useRef(false);
+  useEffect(() => {
+    if (autoStateDone.current || trail.mode === "loading") return;
+    autoStateDone.current = true;
+    if (data.flags.length > 0 && data.flags.every((f) => decisions[f.id])) setState("all");
   });
 
   // j / k (or ↓ / ↑) move through the list, like a mail app.
