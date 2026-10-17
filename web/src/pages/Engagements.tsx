@@ -40,7 +40,7 @@ export default function Engagements() {
   if (!list) return error ? <p className="empty error">{error}</p> : <Loading />;
   return (
     <div>
-      <div className="between page-head">
+      <div className="row row between page-head">
         <h2>{t("Engagement ของฉัน", "My engagements")}</h2>
         {list.can_create && (
           <button className="btn filled" onClick={() => setCreating(!creating)}>
