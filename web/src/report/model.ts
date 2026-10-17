@@ -27,8 +27,6 @@ export interface Report {
   runId: string;
   synthetic: boolean;
   generatedAt: string;
-  materiality: number;
-  tolerancePct: number;
   totals: { flags: number; checked: number; issues: number; notIssues: number; pending: number };
   byRisk: { risk: Risk; total: number; checked: number; issues: number; atStake: number }[];
   flags: ReportFlag[];
@@ -97,8 +95,6 @@ export function buildReport(data: ConflictMap, decisions: Record<string, Decisio
     runId: data.run_id,
     synthetic: data.engagement.synthetic,
     generatedAt: new Date().toISOString(),
-    materiality: data.engagement.materiality_thb,
-    tolerancePct: data.engagement.tolerance_pct,
     totals: {
       flags: flags.length,
       checked: flags.filter((r) => r.state === "checked").length,

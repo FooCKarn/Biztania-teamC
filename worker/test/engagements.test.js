@@ -505,12 +505,12 @@ test("edit and delete a company: team members only, closed ones cannot be edited
   assert.equal((await out.b.post(`${base}/delete`, {})).status, 403, "not on the team");
   assert.equal((await admin.post(`${base}/update`, { client: "x" })).status, 400, "name too short");
 
-  const up = await prep.b.post(`${base}/update`, { client: "บริษัท ใหม่ จำกัด", period: "FY2027", tolerance_pct: 2, materiality_thb: 5000 });
+  const up = await prep.b.post(`${base}/update`, { client: "บริษัท ใหม่ จำกัด", period: "FY2027" });
   assert.equal(up.status, 200);
   const list = (await admin.get("/api/engagements")).body;
   assert.equal(list.can_delete, true);
   const row = list.engagements.find((e) => e.id === id);
-  assert.deepEqual([row.client, row.period, row.tolerance_pct, row.materiality_thb], ["บริษัท ใหม่ จำกัด", "FY2027", 2, 5000]);
+  assert.deepEqual([row.client, row.period], ["บริษัท ใหม่ จำกัด", "FY2027"]);
 
   const second = await admin.post("/api/engagements", { client: "Closed Co" });
   assert.equal((await admin.post(`/api/engagements/${second.body.engagement.id}/close`, {})).status, 200);

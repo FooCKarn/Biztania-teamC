@@ -15,9 +15,9 @@ export default function Engagements() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ client: "", period: "", tolerance_pct: "1", materiality_thb: "10000", synthetic: true });
+  const [f, setF] = useState({ client: "", period: "", synthetic: true });
   const [editId, setEditId] = useState<string | null>(null);
-  const [ef, setEf] = useState({ client: "", period: "", tolerance_pct: "1", materiality_thb: "10000" });
+  const [ef, setEf] = useState({ client: "", period: "" });
   const load = () =>
     api<List>("api/engagements")
       .then(setList)
@@ -31,7 +31,7 @@ export default function Engagements() {
     setError(null);
     try {
       const r = await api<{ engagement: Engagement }>("api/engagements", {
-        body: { ...f, tolerance_pct: Number(f.tolerance_pct), materiality_thb: Number(f.materiality_thb) },
+        body: f,
       });
       location.hash = `/e/${r.engagement.id}`;
     } catch (x) {
@@ -42,7 +42,7 @@ export default function Engagements() {
 
   const startEdit = (e: Engagement) => {
     setError(null);
-    setEf({ client: e.client, period: e.period ?? "", tolerance_pct: String(e.tolerance_pct), materiality_thb: String(e.materiality_thb) });
+    setEf({ client: e.client, period: e.period ?? "" });
     setEditId(e.id);
   };
   const saveEdit = async (ev: React.FormEvent) => {
@@ -52,7 +52,7 @@ export default function Engagements() {
     setError(null);
     try {
       await api(`api/engagements/${editId}/update`, {
-        body: { ...ef, tolerance_pct: Number(ef.tolerance_pct), materiality_thb: Number(ef.materiality_thb) },
+        body: ef,
       });
       setEditId(null);
       await load();
@@ -109,16 +109,6 @@ export default function Engagements() {
             <span>{t("งวดที่ตรวจ", "Period")}</span>
             <input value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} placeholder={t("เช่น ปี 2026", "e.g. FY2026")} maxLength={40} />
           </label>
-          <div className="row">
-            <label className="form-field">
-              <span>Tolerance (%)</span>
-              <input type="number" step="0.1" min="0" max="20" value={f.tolerance_pct} onChange={(e) => setF({ ...f, tolerance_pct: e.target.value })} />
-            </label>
-            <label className="form-field">
-              <span>Materiality (฿)</span>
-              <input type="number" min="0" value={f.materiality_thb} onChange={(e) => setF({ ...f, materiality_thb: e.target.value })} />
-            </label>
-          </div>
           <label className="check">
             <input
               type="checkbox"
@@ -168,14 +158,6 @@ export default function Engagements() {
                   <label className="form-field">
                     <span>{t("งวดที่ตรวจ", "Period")}</span>
                     <input value={ef.period} onChange={(x) => setEf({ ...ef, period: x.target.value })} maxLength={40} />
-                  </label>
-                  <label className="form-field short">
-                    <span>Tolerance (%)</span>
-                    <input type="number" step="0.1" min="0" max="20" value={ef.tolerance_pct} onChange={(x) => setEf({ ...ef, tolerance_pct: x.target.value })} />
-                  </label>
-                  <label className="form-field short">
-                    <span>Materiality (฿)</span>
-                    <input type="number" min="0" value={ef.materiality_thb} onChange={(x) => setEf({ ...ef, materiality_thb: x.target.value })} />
                   </label>
                 </div>
                 <div className="row">

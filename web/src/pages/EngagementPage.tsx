@@ -16,7 +16,7 @@ const ACTIVITY_LABEL: Record<string, string> = bi({
   run: ["เริ่มประมวลผล", "Started processing"],
   run_done: ["ประมวลผลเสร็จ", "Processing done"],
   run_failed: ["ประมวลผลไม่สำเร็จ", "Processing failed"],
-  settings: ["แก้ tolerance / materiality", "Changed tolerance / materiality"],
+  settings: ["แก้การตั้งค่า", "Changed settings"],
   close: ["ปิดงาน", "Closed company"],
   purge: ["ลบไฟล์ดิบตามนโยบาย", "Purged raw files per policy"],
 });

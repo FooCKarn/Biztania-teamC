@@ -105,12 +105,6 @@ const mustBeOpen = (e) => {
   if (e.status !== "open") throw new HttpError(409, "บริษัทปิดแล้ว แก้ไขไม่ได้");
 };
 
-const num = (v, lo, hi, label) => {
-  const n = Number(v);
-  if (!Number.isFinite(n) || n < lo || n > hi) throw new HttpError(400, `${label} ต้องอยู่ระหว่าง ${lo}–${hi}`);
-  return n;
-};
-
 const realDataAllowed = (env) => String(env.ALLOW_REAL_DATA || "false") === "true";
 
 function engagementJson(e, role) {
@@ -118,8 +112,6 @@ function engagementJson(e, role) {
     id: e.id,
     client: e.client,
     period: e.period,
-    tolerance_pct: e.tolerance_pct,
-    materiality_thb: e.materiality_thb,
     synthetic: !!e.synthetic,
     status: e.status,
     created_at: e.created_at,
@@ -184,6 +176,8 @@ async function dispatch(env, run, files, e) {
 
 // A new open engagement with its creator as manager. Synthetic unless ALLOW_REAL_DATA allows otherwise.
 const DEMO_MAX_ENGAGEMENTS = 5;
+const DEFAULT_TOLERANCE_PCT = 1;
+const DEFAULT_MATERIALITY_THB = 10000;
 
 export async function createEngagement(env, user, body) {
   const db = env.AUDIT_DB;
@@ -194,8 +188,9 @@ export async function createEngagement(env, user, body) {
     id: randomId(6),
     client,
     period: String(body.period || "").trim().slice(0, 40) || null,
-    tolerance_pct: num(body.tolerance_pct ?? 1, 0, 20, "tolerance (%)"),
-    materiality_thb: num(body.materiality_thb ?? 10000, 0, 1e12, "materiality"),
+    // Not user-editable: every company uses the same fixed thresholds.
+    tolerance_pct: DEFAULT_TOLERANCE_PCT,
+    materiality_thb: DEFAULT_MATERIALITY_THB,
     synthetic,
   };
   const at = nowIso();
@@ -440,17 +435,7 @@ export async function handleEngagements(request, env, path) {
     await log(env, id, user.initials, "remove_member", { user: u?.initials ?? rm[1] });
     return json({ ok: true });
   }
-  if (rest === "settings") {
-    const { e } = await access(env, user, id);
-    mustBeOpen(e);
-    const body = await readJson(request);
-    const t = num(body.tolerance_pct, 0, 20, "tolerance (%)");
-    const mat = num(body.materiality_thb, 0, 1e12, "materiality");
-    await db.prepare("UPDATE engagements SET tolerance_pct = ?1, materiality_thb = ?2 WHERE id = ?3").bind(t, mat, id).run();
-    await log(env, id, user.initials, "settings", { tolerance_pct: t, materiality_thb: mat });
-    return json({ ok: true });
-  }
-  // Edit the name, period and thresholds of an open company.
+  // Edit the name and period of an open company.
   if (rest === "update") {
     const { e, role } = await access(env, user, id);
     mustBeOpen(e);
@@ -458,11 +443,9 @@ export async function handleEngagements(request, env, path) {
     const client = String(body.client ?? e.client).trim();
     if (client.length < 2 || client.length > 120) throw new HttpError(400, "ชื่อลูกค้าต้องยาว 2–120 ตัวอักษร");
     const period = String(body.period ?? e.period ?? "").trim().slice(0, 40) || null;
-    const t = num(body.tolerance_pct ?? e.tolerance_pct, 0, 20, "tolerance (%)");
-    const mat = num(body.materiality_thb ?? e.materiality_thb, 0, 1e12, "materiality");
-    await db.prepare("UPDATE engagements SET client = ?1, period = ?2, tolerance_pct = ?3, materiality_thb = ?4 WHERE id = ?5").bind(client, period, t, mat, id).run();
-    await log(env, id, user.initials, "update", { client, period, tolerance_pct: t, materiality_thb: mat });
-    return json({ ok: true, engagement: { ...engagementJson({ ...e, client, period, tolerance_pct: t, materiality_thb: mat }, role) } });
+    await db.prepare("UPDATE engagements SET client = ?1, period = ?2 WHERE id = ?3").bind(client, period, id).run();
+    await log(env, id, user.initials, "update", { client, period });
+    return json({ ok: true, engagement: engagementJson({ ...e, client, period }, role) });
   }
   // Delete: hides the company from every list and removes its stored files and results. The activity log and the
   // hash-chained Audit Trail rows stay (append-only), like after a purge. Open or closed companies can be deleted.

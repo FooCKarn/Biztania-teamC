@@ -100,7 +100,7 @@ export function reportBody(report: Report, data: ConflictMap): string {
   out.push(para([[report.client, { bold: true }]]));
   out.push(
     muted(
-      `Run ${report.runId} · ${tr("จัดทำรายงาน", "Generated")} ${when(report.generatedAt)} · Materiality ${baht(report.materiality)} · Tolerance ${report.tolerancePct}%`,
+      `Run ${report.runId} · ${tr("จัดทำรายงาน", "Generated")} ${when(report.generatedAt)}`,
     ),
   );
   if (report.synthetic) out.push(para([[tr("ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "Synthetic data, no real client data"), { bold: true, color: "C93400" }]]));
