@@ -245,6 +245,7 @@ export async function handleEngagements(request, env, path) {
   // ---------- read ----------
   if (rest === "" && method === "GET") {
     const { e, role } = await access(env, user, id);
+    await expireStaleRuns(env, Date.now(), id);
     const [members, files, runs, activity] = await Promise.all([
       db
         .prepare("SELECT u.id, u.name, u.initials, u.email, m.role FROM members m JOIN users u ON u.id = m.user_id WHERE m.engagement_id = ?1 ORDER BY u.name")
@@ -370,6 +371,7 @@ export async function handleEngagements(request, env, path) {
     const { e } = await access(env, user, id, "work");
     mustBeOpen(e);
     if (!env.PIPELINE_URL || !env.PIPELINE_SECRET) throw new HttpError(503, "ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL, PIPELINE_SECRET)");
+    await expireStaleRuns(env, Date.now(), id);
     const busy = await db.prepare("SELECT id FROM runs WHERE engagement_id = ?1 AND status IN ('queued', 'running')").bind(id).first();
     if (busy) throw new HttpError(409, "กำลังประมวลผลรอบก่อนหน้าอยู่");
     const { results: files } = await db.prepare("SELECT * FROM files WHERE engagement_id = ?1 AND deleted_at IS NULL ORDER BY name").bind(id).all();
@@ -509,6 +511,19 @@ export async function handleInternal(request, env, path) {
   return json({ ok: true });
 }
 
+// A run whose callbacks never arrive (pipeline down, Worker unreachable) must not block the engagement for
+// good, so runs older than STALE_RUN_MIN are failed whenever the engagement is read or a run is started,
+// not only by the daily cron.
+export async function expireStaleRuns(env, now = Date.now(), engagementId = null) {
+  const stale = new Date(now - STALE_RUN_MIN * 60_000).toISOString();
+  const at = new Date(now).toISOString();
+  const q = "UPDATE runs SET status = 'failed', finished_at = ?1, error = 'หมดเวลาประมวลผล' WHERE status IN ('queued', 'running') AND started_at < ?2";
+  const r = engagementId
+    ? await env.AUDIT_DB.prepare(q + " AND engagement_id = ?3").bind(at, stale, engagementId).run()
+    : await env.AUDIT_DB.prepare(q).bind(at, stale).run();
+  return r?.meta?.changes ?? 0;
+}
+
 // ---------- retention (cron) ----------
 
 export const retentionDays = (env) => Number(env.RETENTION_DAYS || 90);
@@ -535,10 +550,5 @@ export async function purgeExpired(env, now = Date.now()) {
     await log(env, id, "SYSTEM", "purge", { objects: n, retention_days: retentionDays(env) });
     purged.push({ id, objects: n });
   }
-  const stale = new Date(now - STALE_RUN_MIN * 60_000).toISOString();
-  const r = await db
-    .prepare("UPDATE runs SET status = 'failed', finished_at = ?1, error = 'หมดเวลาประมวลผล' WHERE status IN ('queued', 'running') AND started_at < ?2")
-    .bind(new Date(now).toISOString(), stale)
-    .run();
-  return { purged, stale_runs: r?.meta?.changes ?? 0 };
+  return { purged, stale_runs: await expireStaleRuns(env, now) };
 }

@@ -314,3 +314,17 @@ test("demo: admin creates shared accounts and the synthetic engagement; demo pas
   const team = (await admin.get(`/api/engagements/${id}`)).body.members.map((m) => `${m.initials}:${m.role}`).sort();
   assert.deepEqual(team, ["DM:manager", "DP:preparer", "DR:reviewer", "MG:manager"]);
 });
+
+test("a run whose callbacks never arrive does not block the engagement until the daily cron", async () => {
+  const { prep, id } = await setupFirm();
+  await prep.b.post(`/api/engagements/${id}/files?name=a.pdf`, PDF);
+  globalThis.fetch = async () => new Response("{}", { status: 202 });
+  assert.equal((await prep.b.post(`/api/engagements/${id}/runs`)).status, 202);
+  assert.equal((await prep.b.post(`/api/engagements/${id}/runs`)).status, 409, "still running");
+
+  const old = new Date(Date.now() - 31 * 60_000).toISOString();
+  await env.AUDIT_DB.prepare("UPDATE runs SET started_at = ?1 WHERE engagement_id = ?2").bind(old, id).run();
+  const runs = (await prep.b.get(`/api/engagements/${id}`)).body.runs;
+  assert.equal(runs[0].status, "failed");
+  assert.equal((await prep.b.post(`/api/engagements/${id}/runs`)).status, 202, "can retry");
+});
