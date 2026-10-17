@@ -17,7 +17,8 @@ The human-readable summary is in [`README.md`](README.md).
   unclear OCR never raises a flag; ambiguous pairs go to "รอจับคู่" unchecked; bank accounts are
   tokenised at ingestion and only shown masked. Sign-offs and decisions go to an append-only, hash-chained
   Audit Trail in D1 (`worker/src/trail.js`); the server stamps time and evidence refs. `pipeline/samples/tg_company/expected.json` is the
-  answer key the tests score against.
+  answer key the tests score against; FN/FP cross-check (`auditconcierge/crosscheck.py`, seeded-error tests on
+  `samples/frozen_foods.py`) lists every skipped check in `coverage.skipped_checks` (no flag ≠ no problem).
 - **Engagements (uploads):** login with per-engagement roles preparer / reviewer / manager (the signer is the account);
   every API checks team membership; files are AES-GCM encrypted per engagement in D1 `auditpal-files`; the Python
   pipeline runs on a stateless Render container called with HMAC (`pipeline/auditconcierge/server.py`); raw files and

@@ -72,12 +72,29 @@ def _price_list(lines, method):
     return out
 
 
+def _union(a, b):
+    if not a or not b:
+        return a or b
+    l, t = min(a[0], b[0]), min(a[1], b[1])
+    return [l, t, max(a[0] + a[2], b[0] + b[2]) - l, max(a[1] + a[3], b[1] + b[3]) - t]
+
+
+def _wrapped(lines):
+    """Each pair of consecutive lines as one, for a value the PDF wrapped onto the next line
+    (e.g. a long party name: "... และ บริษัท ตัวอย่าง" / "จำกัด (ผู้ขาย)")."""
+    for (t1, l1, c1, b1), (t2, l2, c2, b2) in zip(lines, lines[1:]):
+        m1, m2 = re.match(r"(.*บรรทัด )(\d+)$", l1), re.match(r"(.*บรรทัด )(\d+)$", l2)
+        loc = f"{l1}–{m2.group(2)}" if m1 and m2 and m1.group(1) == m2.group(1) else f"{l1} + {l2}"
+        yield f"{t1.strip()} {t2.strip()}", loc, c1 and c2, _union(b1, b2)
+
+
 def _apply_template(lines, patterns, method):
-    """lines: [(text, locator, clear, bbox)] → {field: Field}; first matching line wins."""
+    """lines: [(text, locator, clear, bbox)] → {field: Field}; first matching line wins,
+    then (only if no single line matches) the first matching pair of wrapped lines."""
     out = {}
     for name, (pat, conv) in patterns.items():
         rx = re.compile(pat)
-        for text, loc, clear, bbox in lines:
+        for text, loc, clear, bbox in [*lines, *_wrapped(lines)]:
             m = rx.search(text)
             if not m:
                 continue

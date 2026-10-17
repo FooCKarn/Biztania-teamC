@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 
+from .crosscheck import blind_spots
 from .entities import VendorBook
 from .extract_llm import make_extractor
 from .matching import link_all, resolve_vendors, transactions
@@ -110,7 +111,7 @@ def build(folder: Path, out: Path | None = None, extractor: str = "template", ll
                        "template_fallback": list(llm.fallbacks) if llm else [],
                        "errors": sorted(set(llm.errors)) if llm else []},
         "coverage": {"files": len(files), "unreadable_files": skipped, "unreadable_reasons": skip_reasons, "unclear_fields": unclear,
-                     "unverified_fields": unverified},
+                     "unverified_fields": unverified, "skipped_checks": blind_spots(records, links, txns, book, cfg)},
     }
     if out:
         out.mkdir(parents=True, exist_ok=True)
@@ -129,7 +130,8 @@ def main():
     ex = res["extraction"]
     print(f"extraction: {ex['mode']} {ex['models']}" + (f" · templates for {ex['template_fallback']}" if ex["template_fallback"] else ""))
     print(f"files {res['coverage']['files']} · documents {len(res['documents'])} · transactions {len(res['transactions'])}"
-          f" · flags {len(res['flags'])} · รอจับคู่ {len(res['pending'])} · อ่านไม่ชัด {len(res['coverage']['unclear_fields'])}")
+          f" · flags {len(res['flags'])} · รอจับคู่ {len(res['pending'])} · อ่านไม่ชัด {len(res['coverage']['unclear_fields'])}"
+          f" · ตรวจไม่ได้ {len(res['coverage']['skipped_checks'])}")
     for f in res["flags"]:
         print(f"  [{f['risk']}] {f['type']:15s} {', '.join(f['docs'])} — {f['summary']}")
     for p in res["pending"]:

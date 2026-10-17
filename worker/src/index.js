@@ -58,6 +58,7 @@ export function buildContext(map) {
       files: map.coverage?.files,
       unclear_fields: (map.coverage?.unclear_fields || []).length,
       unreadable_files: map.coverage?.unreadable_files || [],
+      skipped_checks: (map.coverage?.skipped_checks || []).map((b) => ({ doc: b.doc, reason: b.reason, checks: b.checks })),
     },
   };
 }

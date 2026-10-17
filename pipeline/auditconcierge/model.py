@@ -28,8 +28,9 @@ class Record:
     page: dict | None = None  # {"image", "width", "height"}: page image for the web viewer (PDF/scan)
 
     def v(self, name, default=None):
+        """Value usable by the rules: clear and its quote found in the source (else `default`)."""
         f = self.fields.get(name)
-        return f.value if f is not None and f.clear else default
+        return f.value if f is not None and f.clear and f.verified else default
 
     def to_json(self):
         d = asdict(self)

@@ -1,5 +1,5 @@
 import type { ConflictMap, Doc } from "../types";
-import { MATCH_LABEL } from "../labels";
+import { MATCH_LABEL, TYPE_LABEL } from "../labels";
 import TxnChain from "./TxnChain";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
 
 export default function OverviewView({ data, docs, openTxn }: Props) {
   const cov = data.coverage;
+  const skipped = cov.skipped_checks ?? [];
   const sorted = [...data.transactions].sort((a, b) => b.flags.length - a.flags.length || a.id.localeCompare(b.id));
   return (
     <div className="stack">
@@ -31,6 +32,9 @@ export default function OverviewView({ data, docs, openTxn }: Props) {
         </div>
         <div className="stat">
           <b>{cov.unreadable_files.length}</b>ไฟล์อ่านไม่ได้
+        </div>
+        <div className="stat">
+          <b>{skipped.length}</b>จุดที่ตรวจไม่ได้
         </div>
       </div>
 
@@ -73,6 +77,21 @@ export default function OverviewView({ data, docs, openTxn }: Props) {
             {cov.unclear_fields.map((u) => (
               <li key={u.doc + u.field}>
                 {u.doc} · {u.field} · “{u.quote}” <span className="muted small">{u.locator}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {skipped.length > 0 && (
+        <div className="card">
+          <h3>จุดที่ระบบตรวจไม่ได้ (ไม่มีประเด็น ≠ ไม่มีปัญหา)</h3>
+          <p className="muted small">เอกสารเหล่านี้ถูกข้ามบางการตรวจ ผู้ตรวจควรดูเองหรือขอเอกสารเพิ่ม</p>
+          <ul>
+            {skipped.map((b) => (
+              <li key={b.doc + b.reason}>
+                <strong>{b.doc}</strong> · {b.reason}{" "}
+                <span className="muted small">(ไม่ได้ตรวจ: {b.checks.map((c) => TYPE_LABEL[c] ?? c).join(", ")})</span>
               </li>
             ))}
           </ul>
