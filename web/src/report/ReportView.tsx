@@ -69,8 +69,7 @@ export default function ReportView({ data, decisions, signoff }: Props) {
               <b>{report.client}</b>
             </p>
             <p className="rp-meta">
-              Run {report.runId} · {tr("จัดทำรายงาน", "Generated")} {when(report.generatedAt)} · Materiality {baht(report.materiality)} ·
-              Tolerance {report.tolerancePct}%
+              Run {report.runId} · {tr("จัดทำรายงาน", "Generated")} {when(report.generatedAt)}
             </p>
             {report.synthetic && <p className="rp-synthetic">{tr("ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "Synthetic data, no real client data")}</p>}
           </div>

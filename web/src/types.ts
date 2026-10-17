@@ -108,7 +108,7 @@ export interface Vendor {
 export interface ConflictMap {
   schema_version: string;
   run_id: string;
-  engagement: { client: string; tolerance_pct: number; materiality_thb: number; synthetic: boolean };
+  engagement: { client: string; synthetic: boolean };
   rules: Rule[];
   vendors: Vendor[];
   files: { file: string; sha256: string | null; read: boolean }[];
