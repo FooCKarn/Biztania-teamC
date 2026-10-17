@@ -36,34 +36,31 @@ KINDS = {
     "contract": CONTRACT_PATTERNS,
     "policy": {"policy_no": (None, str)},
 }
-DESCRIPTIONS = {
-    "invoice_no": "เลขที่ใบกำกับภาษี/ใบแจ้งหนี้ (invoice number)",
-    "contract_no": "เลขที่สัญญา (contract number)",
-    "policy_no": "เลขที่เอกสารนโยบาย (policy number)",
-    "date": "วันที่ของเอกสาร (document date)",
-    "vendor_name": "ชื่อผู้ขาย/ผู้ให้บริการ ไม่ใช่ผู้ซื้อ (seller name, not the buyer)",
-    "tax_id": "เลขประจำตัวผู้เสียภาษี 13 หลักของผู้ขาย (seller's tax ID)",
-    "po_ref": "เลขที่ใบสั่งซื้อที่อ้างถึง (purchase order number referenced)",
-    "subtotal": "ยอดก่อนภาษีมูลค่าเพิ่ม (amount before VAT)",
-    "vat": "จำนวนภาษีมูลค่าเพิ่ม (VAT amount)",
-    "total": "ยอดรวมทั้งสิ้นรวม VAT (grand total including VAT)",
-    "credit_days": "จำนวนวันเครดิต/ครบกำหนดชำระ (payment term in days)",
-    "item": "ชื่อสินค้าในรายการ (item name)",
-    "quantity": "จำนวนหน่วยที่ซื้อ (quantity)",
-    "unit_price": "ราคาต่อหน่วย (unit price)",
-    "start_date": "วันเริ่มต้นสัญญา (contract start date)",
-    "end_date": "วันสิ้นสุดสัญญา (contract end date)",
-    "ceiling": "วงเงินสูงสุดของสัญญา (contract value ceiling)",
+DESCRIPTIONS = {  # short on purpose: every word is sent with every document
+    "invoice_no": "invoice number",
+    "contract_no": "contract number",
+    "policy_no": "policy number",
+    "date": "document date",
+    "vendor_name": "seller name (not the buyer)",
+    "tax_id": "seller's 13-digit tax ID",
+    "po_ref": "purchase order number referenced",
+    "subtotal": "amount before VAT",
+    "vat": "VAT amount",
+    "total": "grand total incl. VAT",
+    "credit_days": "payment term in days",
+    "item": "item name",
+    "quantity": "quantity",
+    "unit_price": "unit price",
+    "start_date": "contract start date",
+    "end_date": "contract end date",
+    "ceiling": "contract value ceiling",
 }
-PRICE_LIST = ('contract also has "price_list": a list of {"item": the item name copied exactly, "line": n, '
-              '"raw": that item\'s unit price copied exactly, "quote": ...} for every item in the contract price list')
-SYSTEM = """You read one audit document and point at where each field is written. You never decide anything.
-Lines are numbered "n| text". For every field return either null (not written in the document) or
-{"line": n, "raw": the exact characters of the value copied from that line, "quote": a short exact
-snippet copied from that line that contains the label and the value}.
-Copy characters exactly as they appear (Thai included). Never compute, add up, translate, convert dates
-or currencies, or guess a value that is not written. If a value is unreadable, return null.
-Answer with JSON only: {"kind": "invoice" | "contract" | "policy" | "other", "fields": {"<field>": ... }}"""
+PRICE_LIST = ('contract also has "price_list": [{"item": item name, "line": n, "raw": its unit price, "quote": ...}] '
+              'for every item in the price list')
+SYSTEM = """Locate fields in one audit document. Lines are "n| text". For each field return null (not written) or
+{"line": n, "raw": exact characters of the value, "quote": exact snippet of <= 6 words from that line with label and value}.
+Copy characters exactly (Thai included); never compute, translate, convert or guess. Unreadable -> null.
+JSON only: {"kind": "invoice"|"contract"|"policy"|"other", "fields": {"<field>": ...}}"""
 
 # 10-12 digits in dash/space groups (a bank account or phone number); 13-digit tax IDs, ISO dates
 # and amounts with separators are left alone.
@@ -148,6 +145,19 @@ def convert(name: str, conv, raw: str):
     return s
 
 
+def guess_kind(lines):
+    """Cheap keyword guess of the document kind (same cues as the templates), None when unsure."""
+    title = lines[0][0] if lines else ""
+    flat = squash("\n".join(l[0] for l in lines))
+    if "สัญญา" in title:
+        return "contract"
+    if sum(k in flat for k in ("ใบกำกับภาษี", "ใบแจ้งหนี้", "ยอดรวมทั้งสิ้น", "ภาษีมูลค่าเพิ่ม")) >= 2:
+        return "invoice"
+    if "นโยบาย" in title:
+        return "policy"
+    return None
+
+
 class ModelError(Exception):
     def __init__(self, model, status, fatal=False):
         super().__init__(f"{model} {status}")
@@ -224,11 +234,15 @@ class LLMExtractor:
 
     def extract(self, lines, method, doc=""):
         masked = [mask_line(l[0]) for l in lines]
-        wanted = {k: list(p) for k, p in KINDS.items()}
+        hint = guess_kind(lines)
+        wanted = {hint: list(KINDS[hint])} if hint else {k: list(p) for k, p in KINDS.items()}
         spec = "\n".join(f"- {kind}: " + ", ".join(f"{f} = {DESCRIPTIONS.get(f, f)}" for f in fields)
                          for kind, fields in wanted.items())
-        prompt = (f"Fields by document kind (return only the fields of the kind you choose):\n{spec}\n{PRICE_LIST}\n\n"
-                  "DOCUMENT:\n" + "\n".join(f"{n}| {t}" for n, t in enumerate(masked, 1)))
+        # Only the document kind the keywords suggest is described (the full list when unsure); lines with no
+        # letter or digit are not sent, but keep their numbers.
+        body = "\n".join(f"{n}| {t}" for n, t in enumerate(masked, 1) if re.search(r"\w", t))
+        prompt = (f"Fields ({'kind is probably ' + hint if hint else 'choose the kind'}):\n{spec}\n"
+                  f"{PRICE_LIST + chr(10) if hint in (None, 'contract') else ''}\nDOCUMENT:\n{body}")
         got = self.ask(prompt)
         if got is None:
             self.fallbacks.append(doc)

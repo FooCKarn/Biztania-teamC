@@ -153,3 +153,25 @@ def test_backup_key_takes_over_when_main_key_is_out_of_quota_or_rejected():
     assert rejected.extract(lines_of(NEW_LAYOUT), "llm") is not None and not rejected.disabled
     both = LLMExtractor(["x", "y"], "gemini-a", post=lambda u, h, b, t: (403, None))
     assert both.extract(lines_of(NEW_LAYOUT), "llm") is None and both.disabled
+
+
+def test_prompt_only_describes_the_probable_kind_and_skips_blank_lines():
+    from auditconcierge.extract_llm import guess_kind
+
+    seen = []
+
+    def post(url, headers, body, timeout):
+        seen.append(body["contents"][0]["parts"][0]["text"])
+        return 500, None
+
+    inv = ["ใบกำกับภาษี / ใบแจ้งหนี้", "---", "ภาษีมูลค่าเพิ่ม 7% 10,500.00", "ยอดรวมทั้งสิ้น 160,500.00"]
+    assert guess_kind(lines_of(inv)) == "invoice"
+    LLMExtractor("k", "gemini-a", post=post).extract(lines_of(inv), "llm")
+    p = seen[-1]
+    assert "invoice:" in p and "contract:" not in p and "ceiling" not in p and "price_list" not in p
+    assert "2| ---" not in p and "3| ภาษี" in p, "blank-ish lines are dropped but numbering is kept"
+
+    other = ["Invoice No.: IV2569/0042", "GRAND TOTAL 160,500.00"]
+    assert guess_kind(lines_of(other)) is None
+    LLMExtractor("k", "gemini-a", post=post).extract(lines_of(other), "llm")
+    assert all(k in seen[-1] for k in ("invoice:", "contract:", "policy:")), "unsure: the full list is sent"
