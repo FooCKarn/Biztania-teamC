@@ -130,3 +130,26 @@ def test_contract_price_list_needs_item_and_price_on_one_line():
     _, fields = LLMExtractor("k", "gemini-a", post=FakeGemini(ans)).extract(lines, "llm")
     assert fields["price:ผ้าเบรก"].value == 1200.0 and fields["price:ผ้าเบรก"].clear
     assert not fields["price:หัวเทียน"].verified and not fields["price:หัวเทียน"].clear
+
+
+def test_backup_key_takes_over_when_main_key_is_out_of_quota_or_rejected():
+    from fake_llm import FakeGemini as G
+
+    seen = []
+    inner = G(new_layout_answer)
+
+    def post(url, headers, body, timeout):
+        seen.append((url.split("/models/")[1].split(":")[0], headers["x-goog-api-key"]))
+        return (429, None) if headers["x-goog-api-key"] == "main" else inner(url, headers, body, timeout)
+
+    llm = LLMExtractor(["main", "backup"], "gemini-a,gemini-b", post=post)
+    assert llm.extract(lines_of(NEW_LAYOUT), "llm") is not None
+    assert seen == [("gemini-a", "main"), ("gemini-a", "backup")], "same model on the backup key before a weaker model"
+    llm.extract(lines_of(NEW_LAYOUT), "llm")
+    assert seen[2:] == [("gemini-a", "backup")], "the exhausted (key, model) pair is not retried"
+
+    seen.clear()
+    rejected = LLMExtractor(["main", "backup"], "gemini-a", post=lambda u, h, b, t: (403, None) if h["x-goog-api-key"] == "main" else inner(u, h, b, t))
+    assert rejected.extract(lines_of(NEW_LAYOUT), "llm") is not None and not rejected.disabled
+    both = LLMExtractor(["x", "y"], "gemini-a", post=lambda u, h, b, t: (403, None))
+    assert both.extract(lines_of(NEW_LAYOUT), "llm") is None and both.disabled
