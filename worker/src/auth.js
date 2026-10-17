@@ -21,8 +21,8 @@ const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
 // may change it; the firm admin resets them from the users page instead.
 export const DEMO_DOMAIN = "demo.example.com";
 export const isDemoEmail = (email) => String(email || "").endsWith(`@${DEMO_DOMAIN}`);
-// DEMO_MODE=true turns on the one-click demo entry (worker/src/demo.js). It never applies while real data is allowed.
-export const demoEnabled = (env) => String(env.DEMO_MODE || "false") === "true" && String(env.ALLOW_REAL_DATA || "false") !== "true";
+// The one-click demo entry (worker/src/demo.js) is on unless DEMO_MODE is "false", and never while real data is allowed.
+export const demoEnabled = (env) => String(env.DEMO_MODE ?? "true") !== "false" && String(env.ALLOW_REAL_DATA || "false") !== "true";
 
 async function pbkdf2(password, saltHex, iter = PBKDF2_ITER) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
