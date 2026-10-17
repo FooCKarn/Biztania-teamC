@@ -1,4 +1,4 @@
-/* Report tab: a toolbar plus an A4-like sheet. The sheet is always paper-white (also in dark mode)
+/* Report tab: a toolbar plus an A4-like sheet. The sheet is always paper-white
    because it is what gets printed or sent. */
 .report-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 0; }
 .report-toolbar .segmented { width: auto; }

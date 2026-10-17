@@ -64,7 +64,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       {data.engagement.synthetic && (
         <div className="synthetic" role="note">
           {source.engagement
-            ? t("Engagement นี้ใช้ข้อมูลสมมติ (synthetic)", "This engagement uses synthetic data")
+            ? t("บริษัทนี้ใช้ข้อมูลสมมติ (synthetic)", "This company uses synthetic data")
             : t("ข้อมูลทั้งหมดในเดโมนี้เป็นข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "All data in this demo is synthetic. No real client data.")}
         </div>
       )}

@@ -41,10 +41,10 @@ export default function Engagements() {
   return (
     <div>
       <div className="row row between page-head">
-        <h2>{t("Engagement ของฉัน", "My engagements")}</h2>
+        <h2>{t("บริษัทของฉัน", "My companies")}</h2>
         {list.can_create && (
           <button className="btn filled" onClick={() => setCreating(!creating)}>
-            {creating ? t("ยกเลิก", "Cancel") : t("สร้าง Engagement", "New engagement")}
+            {creating ? t("ยกเลิก", "Cancel") : t("สร้างบริษัท", "New company")}
           </button>
         )}
       </div>
@@ -56,7 +56,7 @@ export default function Engagements() {
 
       {creating && (
         <form className="group-body form" onSubmit={create}>
-          <h3>{t("Engagement ใหม่", "New engagement")}</h3>
+          <h3>{t("บริษัทใหม่", "New company")}</h3>
           <label className="form-field">
             <span>{t("ชื่อลูกค้า", "Client name")}</span>
             <input value={f.client} onChange={(e) => setF({ ...f, client: e.target.value })} required minLength={2} maxLength={120} />
@@ -93,7 +93,7 @@ export default function Engagements() {
             </p>
           )}
           <p className="muted small">
-            {t("คุณจะอยู่ในทีมของ Engagement นี้โดยอัตโนมัติ", "You will be on this engagement's team automatically.")}
+            {t("คุณจะอยู่ในทีมของบริษัทนี้โดยอัตโนมัติ", "You will be on this company's team automatically.")}
           </p>
           <button className="btn filled" disabled={busy}>
             {busy ? t("กำลังสร้าง…", "Creating…") : t("สร้าง", "Create")}
@@ -106,9 +106,9 @@ export default function Engagements() {
           <span className="empty-icon" aria-hidden>
             ▤
           </span>
-          <strong>{t("ยังไม่มี Engagement ที่คุณอยู่ในทีม", "You are not on any engagement yet")}</strong>
+          <strong>{t("ยังไม่มีบริษัทที่คุณอยู่ในทีม", "You are not on any company yet")}</strong>
           <p className="muted small">
-            {list.can_create ? t("กด สร้าง Engagement เพื่อเริ่ม", "Press New engagement to start.") : t("ให้คนในทีมเพิ่มคุณเข้า Engagement", "Ask someone on the team to add you.")}
+            {list.can_create ? t("กด สร้างบริษัทเพื่อเริ่ม", "Press New company to start.") : t("ให้คนในทีมเพิ่มคุณเข้าบริษัท", "Ask someone on the team to add you.")}
           </p>
         </div>
       ) : (

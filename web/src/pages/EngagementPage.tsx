@@ -7,7 +7,7 @@ import Loading from "../components/Loading";
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.json";
 const RUN_LABEL = bi({ queued: ["รอคิว", "Queued"], running: ["กำลังประมวลผล", "Processing"], done: ["เสร็จ", "Done"], failed: ["ไม่สำเร็จ", "Failed"] });
 const ACTIVITY_LABEL: Record<string, string> = bi({
-  create: ["สร้าง Engagement", "Created engagement"],
+  create: ["สร้างบริษัท", "Created company"],
   member: ["กำหนดบทบาททีม", "Set team role"],
   remove_member: ["นำออกจากทีม", "Removed from team"],
   upload: ["อัปโหลด", "Uploaded"],
@@ -18,7 +18,7 @@ const ACTIVITY_LABEL: Record<string, string> = bi({
   run_done: ["ประมวลผลเสร็จ", "Processing done"],
   run_failed: ["ประมวลผลไม่สำเร็จ", "Processing failed"],
   settings: ["แก้ tolerance / materiality", "Changed tolerance / materiality"],
-  close: ["ปิดงาน", "Closed engagement"],
+  close: ["ปิดงาน", "Closed company"],
   purge: ["ลบไฟล์ดิบตามนโยบาย", "Purged raw files per policy"],
 });
 // Share of the bar each stage covers; the rest of a stage is filled by done/total.
@@ -193,7 +193,7 @@ export default function EngagementPage({ id }: { id: string }) {
   return (
     <div>
       <a className="back" href="#/">
-        ‹ {t("Engagement ทั้งหมด", "All engagements")}
+        ‹ {t("บริษัททั้งหมด", "All companies")}
       </a>
       <div className="between page-head">
         <div>
@@ -239,7 +239,7 @@ export default function EngagementPage({ id }: { id: string }) {
           <section className="group">
             <h3 className="group-title between row">
               <span>
-                {t("เอกสารของ Engagement", "Engagement documents")} ({d.files.length})
+                {t("เอกสารของบริษัท", "Company documents")} ({d.files.length})
               </span>
               <a className="link small" href={`#/files/${id}`}>
                 {t("จัดการไฟล์ ›", "Manage files ›")}

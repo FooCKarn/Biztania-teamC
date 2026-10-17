@@ -70,7 +70,7 @@ export async function handleConversations(request, env) {
   const url = new URL(request.url);
   const eng = url.searchParams.get("engagement") || "";
   const member = await env.AUDIT_DB.prepare("SELECT 1 AS ok FROM members WHERE engagement_id = ?1 AND user_id = ?2").bind(eng, user.id).first();
-  if (!member) throw new HttpError(403, "คุณไม่ได้อยู่ในทีมของ Engagement นี้");
+  if (!member) throw new HttpError(403, "คุณไม่ได้อยู่ในทีมของบริษัทนี้");
   const id = url.searchParams.get("id");
   if (id) {
     const conv = await loadConversation(env, eng, user.id, id);

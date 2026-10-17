@@ -71,7 +71,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
           <p className="muted small">
             {t("ตรวจในชื่อ", "Checking as")} <b>{trail.actor}</b>{" "}
             {t("จากบัญชีที่เข้าสู่ระบบ", "from the signed-in account")}
-            {trail.readOnly && ` · ${t("Engagement ปิดแล้ว ดูได้อย่างเดียว", "Engagement closed, read only")}`}
+            {trail.readOnly && ` · ${t("บริษัทปิดแล้ว ดูได้อย่างเดียว", "Company closed, read only")}`}
           </p>
         ) : (
           <label className="field-row">

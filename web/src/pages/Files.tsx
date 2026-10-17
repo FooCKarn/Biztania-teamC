@@ -65,7 +65,7 @@ function StorageMeter({ o }: { o: FilesOverview }) {
   const parts = [
     ...[...byKind.entries()].map(([k, b]) => ({ key: k, label: KIND_LABEL[k], color: KIND[k].color, bytes: b })),
     { key: "pages", label: t("ภาพหน้าเอกสารและผลการตรวจ", "Page images and results"), color: "var(--ft-pages)", bytes: s.pages },
-    { key: "others", label: t("Engagement อื่นในสำนักงาน", "Other engagements in the firm"), color: "var(--ft-others)", bytes: s.others },
+    { key: "others", label: t("บริษัทอื่นในสำนักงาน", "Other companies in the firm"), color: "var(--ft-others)", bytes: s.others },
     { key: "overhead", label: t("ระบบฐานข้อมูล", "Database"), color: "var(--ft-overhead)", bytes: s.overhead },
   ].filter((p) => p.bytes > 0);
   const pct = (n: number) => Math.min(100, (n / s.quota) * 100);
@@ -79,7 +79,7 @@ function StorageMeter({ o }: { o: FilesOverview }) {
             {t("ใช้ไป", "Used")} <strong>{bytes(s.used)}</strong> <span className="muted">{t("จาก", "of")} {bytes(s.quota)}</span>
           </p>
           <p className="muted small">
-            {t(`ไฟล์ของคุณ ${o.files.length} ไฟล์`, `Your files: ${o.files.length}`)} · {bytes(s.files)} · {t("เข้ารหัสแยกต่อ Engagement", "Encrypted per engagement")}
+            {t(`ไฟล์ของคุณ ${o.files.length} ไฟล์`, `Your files: ${o.files.length}`)} · {bytes(s.files)} · {t("เข้ารหัสแยกต่อ บริษัท", "Encrypted per company")}
           </p>
         </div>
         <span className={`pill ${level}`}>{used < 0.1 && s.used > 0 ? "<0.1" : used.toFixed(used < 10 ? 1 : 0)}%</span>
@@ -101,7 +101,7 @@ function StorageMeter({ o }: { o: FilesOverview }) {
           {t("ว่าง", "Free")} <span className="muted">{bytes(Math.max(0, s.quota - s.used))}</span>
         </li>
       </ul>
-      {level && <p className="small error">{t("พื้นที่ใกล้เต็ม ลบไฟล์ที่ไม่ใช้แล้ว หรือปิดงานที่เสร็จแล้วเพื่อให้ระบบลบไฟล์ดิบตามนโยบาย", "Storage is nearly full. Delete files you no longer need, or close finished engagements so raw files are removed under the retention policy.")}</p>}
+      {level && <p className="small error">{t("พื้นที่ใกล้เต็ม ลบไฟล์ที่ไม่ใช้แล้ว หรือปิดงานที่เสร็จแล้วเพื่อให้ระบบลบไฟล์ดิบตามนโยบาย", "Storage is nearly full. Delete files you no longer need, or close finished companies so raw files are removed under the retention policy.")}</p>}
     </section>
   );
 }
@@ -179,7 +179,7 @@ export default function Files({ engagement }: { engagement?: string }) {
             `\n\n${used} of these files are in the latest results. The results and page images stay viewable, but the next run will not have the file.`,
           )
         : "") +
-      t("\n\nการลบบันทึกไว้ในบันทึกการใช้งานของ Engagement และกู้คืนไม่ได้", "\n\nThe deletion is recorded in the engagement's usage log and cannot be undone.");
+      t("\n\nการลบบันทึกไว้ในบันทึกการใช้งานของบริษัทและกู้คืนไม่ได้", "\n\nThe deletion is recorded in the company's usage log and cannot be undone.");
     if (!confirm(msg)) return;
     setBusy(true);
     setError(null);
@@ -219,15 +219,15 @@ export default function Files({ engagement }: { engagement?: string }) {
   return (
     <div className="files-page">
       <a className="back" href={current ? `#/e/${current.id}` : "#/"}>
-        ‹ {current ? current.client : t("Engagement ทั้งหมด", "All engagements")}
+        ‹ {current ? current.client : t("บริษัททั้งหมด", "All companies")}
       </a>
       <div className="between page-head">
         <div>
           <h2>{t("จัดการไฟล์", "Files")}</h2>
           <p className="muted small">
             {t(
-              "ไฟล์ดิบของทุก Engagement ที่คุณอยู่ในทีม · ไฟล์ดิบถูกลบอัตโนมัติหลังปิดงานตามนโยบาย กระดาษทำการและ Audit Trail เก็บไว้",
-              "Raw files of every engagement you are on · Raw files are deleted automatically after closing under the retention policy; the working paper and Audit Trail are kept",
+              "ไฟล์ดิบของทุกบริษัทที่คุณอยู่ในทีม · ไฟล์ดิบถูกลบอัตโนมัติหลังปิดงานตามนโยบาย กระดาษทำการและ Audit Trail เก็บไว้",
+              "Raw files of every company you are on · Raw files are deleted automatically after closing under the retention policy; the working paper and Audit Trail are kept",
             )}
           </p>
         </div>
@@ -244,8 +244,8 @@ export default function Files({ engagement }: { engagement?: string }) {
 
       <div className="files-toolbar">
         <input className="search" type="search" placeholder={t("ค้นหาชื่อไฟล์", "Search file names")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("ค้นหาชื่อไฟล์", "Search file names")} />
-        <select value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Engagement">
-          <option value="">{t("ทุก Engagement", "All engagements")} ({o.engagements.length})</option>
+        <select value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Company">
+          <option value="">{t("ทุกบริษัท", "All companies")} ({o.engagements.length})</option>
           {o.engagements.map((e) => (
             <option key={e.id} value={e.id}>
               {e.client}
@@ -302,7 +302,7 @@ export default function Files({ engagement }: { engagement?: string }) {
       )}
 
       {shown.length === 0 ? (
-        <p className="group-body muted">{inEng.length ? t("ไม่พบไฟล์ที่ตรงกับตัวกรอง", "No files match the filter") : o.engagements.length ? t("ยังไม่มีไฟล์ อัปโหลดได้ที่หน้า Engagement", "No files yet. Upload them on the engagement page.") : t("ยังไม่มี Engagement ที่คุณอยู่ในทีม", "You are not on any engagement team yet")}</p>
+        <p className="group-body muted">{inEng.length ? t("ไม่พบไฟล์ที่ตรงกับตัวกรอง", "No files match the filter") : o.engagements.length ? t("ยังไม่มีไฟล์ อัปโหลดได้ที่หน้าบริษัท", "No files yet. Upload them on the company page.") : t("ยังไม่มีบริษัทที่คุณอยู่ในทีม", "You are not on any company team yet")}</p>
       ) : view === "list" ? (
         <div className="group-body files-list">
           <table className="fields">
@@ -387,8 +387,8 @@ export default function Files({ engagement }: { engagement?: string }) {
       )}
       <p className="muted small files-foot">
         {t(
-          "ลบได้เฉพาะ Engagement ที่ยังเปิดอยู่ · ทุกการดาวน์โหลดและลบถูกบันทึกในบันทึกการใช้งานของ Engagement",
-          "Files can be deleted only while the engagement is open · Every download and delete is recorded in the engagement's usage log",
+          "ลบได้เฉพาะบริษัทที่ยังเปิดอยู่ · ทุกการดาวน์โหลดและลบถูกบันทึกในบันทึกการใช้งานของบริษัท",
+          "Files can be deleted only while the company is open · Every download and delete is recorded in the company's usage log",
         )}
       </p>
     </div>
