@@ -224,12 +224,6 @@ export default function Files({ engagement }: { engagement?: string }) {
       <div className="between page-head">
         <div>
           <h2>{t("จัดการไฟล์", "Files")}</h2>
-          <p className="muted small">
-            {t(
-              "ไฟล์ดิบของทุกบริษัทที่คุณอยู่ในทีม · ไฟล์ดิบถูกลบอัตโนมัติหลังปิดงานตามนโยบาย กระดาษทำการและ Audit Trail เก็บไว้",
-              "Raw files of every company you are on · Raw files are deleted automatically after closing under the retention policy; the working paper and Audit Trail are kept",
-            )}
-          </p>
         </div>
       </div>
 
@@ -385,12 +379,6 @@ export default function Files({ engagement }: { engagement?: string }) {
           ))}
         </ul>
       )}
-      <p className="muted small files-foot">
-        {t(
-          "ลบได้เฉพาะบริษัทที่ยังเปิดอยู่ · ทุกการดาวน์โหลดและลบถูกบันทึกในบันทึกการใช้งานของบริษัท",
-          "Files can be deleted only while the company is open · Every download and delete is recorded in the company's usage log",
-        )}
-      </p>
     </div>
   );
 }

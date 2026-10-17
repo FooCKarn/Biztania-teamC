@@ -404,9 +404,18 @@ blockquote {
 .navbar .back { margin: 0 8px 0 0; }
 a.btn { text-decoration: none; display: inline-block; }
 .page-head { margin: 4px 0 14px; align-items: flex-start; }
-.login-head { text-align: center; margin-bottom: 18px; }
 .logo { display: block; height: 28px; width: auto; flex: none; }
-.logo-big { height: 64px; margin: 0 auto 10px; }
+.logo-hero { width: 100%; max-width: 640px; height: auto; }
+.login-split { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
+.login-side { display: flex; flex-direction: column; justify-content: center; gap: 14px; max-width: 460px; width: 100%; margin: 0 auto; padding: 24px 28px; }
+.login-side .login-lang { margin-bottom: 0; }
+.login-tag { margin: 0; }
+.login-art { display: flex; align-items: center; justify-content: center; padding: 32px; }
+@media (max-width: 800px) {
+  .login-split { grid-template-columns: 1fr; min-height: 0; }
+  .login-art { order: -1; padding: 40px 28px 0; }
+  .logo-hero { max-width: 260px; }
+}
 .navbar h1 .logo { height: 24px; }
 .center { text-align: center; margin-top: 18px; }
 .form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }

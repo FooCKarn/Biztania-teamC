@@ -387,7 +387,6 @@ export default function EngagementPage({ id }: { id: string }) {
                   </li>
                 ))}
               </ol>
-              <p className="muted small">{t("บันทึกนี้เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้", "This log is append-only; entries cannot be edited or deleted.")}</p>
             </div>
           </section>
         </div>
