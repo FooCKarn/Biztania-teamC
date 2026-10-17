@@ -329,14 +329,15 @@ test("a run whose callbacks never arrive does not block the engagement until the
   assert.equal((await prep.b.post(`/api/engagements/${id}/runs`)).status, 202, "can retry");
 });
 
-test("demo mode: off by default; on, one click enters the synthetic engagement only, scoped and resettable", async () => {
+test("demo mode: on by default, DEMO_MODE=false turns it off; one click enters the synthetic engagement only, scoped and resettable", async () => {
   const { admin, id: realId } = await setupFirm();
   const guest = browser();
-  assert.equal((await guest.post("/api/auth/demo-login", {})).status, 404, "off by default");
+  env.DEMO_MODE = "false";
+  assert.equal((await guest.post("/api/auth/demo-login", {})).status, 404, "kill switch");
   assert.equal((await guest.get("/api/auth/me")).body.demo_mode, false);
 
-  env.DEMO_MODE = "true";
-  assert.equal((await guest.get("/api/auth/me")).body.demo_mode, true);
+  delete env.DEMO_MODE;
+  assert.equal((await guest.get("/api/auth/me")).body.demo_mode, true, "on by default");
   env.ALLOW_REAL_DATA = "true";
   assert.equal((await guest.post("/api/auth/demo-login", {})).status, 404, "never while real data is allowed");
   delete env.ALLOW_REAL_DATA;

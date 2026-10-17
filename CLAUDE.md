@@ -24,7 +24,7 @@ The human-readable summary is in [`README.md`](README.md).
   page images are deleted `RETENTION_DAYS` (90) after closing, the working paper and trail stay. `ALLOW_REAL_DATA`
   stays false (synthetic only) until the AI provider is switched. Deploy steps: `docs/deploy-pipeline.md`.
   Demo for outside users: an admin button on the users page creates shared accounts `{preparer,reviewer,manager}@demo.example.com`
-  (no password change, passwords shown once, never in the repo); with the Worker var `DEMO_MODE=true` (off by default, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement only (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
+  (no password change, passwords shown once, never in the repo); with the Worker var `DEMO_MODE=true` (on by default, also in `wrangler.jsonc`; `false` turns it off, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement only (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
 
 ## Core principles (keep these consistent in any material or prototype)
 
