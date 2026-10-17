@@ -41,13 +41,17 @@
     "PIPELINE_URL": "https://auditpal-pipeline.onrender.com",
     "RETENTION_DAYS": "90",
     // Keep "false" until the AI provider is switched under a data agreement: every engagement is then synthetic.
-    "ALLOW_REAL_DATA": "false"
+    "ALLOW_REAL_DATA": "false",
+    // One-click demo entry on the login page (role picker, synthetic engagement only; worker/src/demo.js).
+    // On by default so no dashboard step is needed. "false" turns it off; it is also forced off while ALLOW_REAL_DATA is "true".
+    "DEMO_MODE": "true"
   },
   // PR preview builds (Workers Builds runs `wrangler preview` on non-production branches).
   // Lower limits so a preview link cannot drain the demo's free Gemini quota.
   "previews": {
     "vars": {
       "GEMINI_MODELS": "gemma-4-26b-a4b-it,gemma-4-31b-it,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.8-flash,gemini-2.5-flash",
+      "DEMO_MODE": "true",
       "DAILY_LIMIT_PER_IP": "5",
       "DAILY_LIMIT_TOTAL": "50"
     }
