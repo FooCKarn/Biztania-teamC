@@ -1,6 +1,6 @@
 import type { Flag, Rule } from "../types";
-import { fieldLabel } from "../labels";
-import { locale, t } from "../i18n";
+import { amount, fieldLabel } from "../labels";
+import { t } from "../i18n";
 import type { Mark } from "./DocViewer";
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
   onPick: (key: string) => void;
 }
 
-const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? v.toLocaleString(locale(), { minimumFractionDigits: 2 }) : v);
+const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? amount(v) : v);
 
 // Every flag carries the exact quotes it was raised from, with file + location. Each row is a
 // "snip": pick it and the viewer opens the source with a box on that value, so the auditor checks

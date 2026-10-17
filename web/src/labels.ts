@@ -71,5 +71,8 @@ export const FIELD_LABEL: Record<string, string> = bi({
 export const fieldLabel = (k: string) =>
   FIELD_LABEL[k] ?? (k.startsWith("price:") ? t(`ราคาต่อหน่วยตามสัญญา (${k.slice(6)})`, `Contract unit price (${k.slice(6)})`) : k);
 
+// One money format everywhere: always two decimals so columns line up.
+export const amount = (n: number) => n.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 export const baht = (n: number | null | undefined) =>
   n == null ? "-" : n.toLocaleString(locale(), { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " ฿";
