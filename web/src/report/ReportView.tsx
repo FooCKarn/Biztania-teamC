@@ -61,7 +61,7 @@ export default function ReportView({ data, decisions, signoff }: Props) {
       <article className="report" aria-label={report.title}>
         <header className="rp-head">
           <div>
-            <p className="rp-kicker">AI Audit Concierge · {tr("กระดาษทำการ", "Working paper")}</p>
+            <p className="rp-kicker">AuditPal · {tr("กระดาษทำการ", "Working paper")}</p>
             <h2>{report.title}</h2>
             <p>
               <b>{report.client}</b>

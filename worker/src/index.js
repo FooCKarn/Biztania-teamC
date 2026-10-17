@@ -1,4 +1,4 @@
-// AI Audit Concierge Worker.
+// AuditPal Worker.
 //  /*              static web app (ASSETS)
 //  /api/ask        Q&A over conflict_map.json (Gemini, key only here)
 //  /api/trail      demo Audit Trail (trail.js)
@@ -20,7 +20,7 @@ import { handleFiles } from "./files.js";
 const MAX_QUESTION = 300;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
 
-const SYSTEM = `คุณคือผู้ช่วยของผู้สอบบัญชี (AI Audit Concierge)
+const SYSTEM = `คุณคือผู้ช่วยของผู้สอบบัญชี (AuditPal)
 ตอบเป็นภาษาไทย สั้น กระชับ โดยใช้เฉพาะข้อมูลใน CONTEXT เท่านั้น
 - ห้ามสรุปว่าเป็นการทุจริตหรือผิดแน่นอน ให้บอกว่า "ควรตรวจ" และผู้สอบบัญชีเป็นผู้ตัดสิน
 - อ้างรหัสรายการ (เช่น F001) ทุกครั้งที่พูดถึงประเด็น

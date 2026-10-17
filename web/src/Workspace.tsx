@@ -11,6 +11,7 @@ import SignoffBar from "./components/SignoffBar";
 import ReportView from "./report/ReportView";
 import { exportTrailCsv } from "./export";
 import { LangToggle, t } from "./i18n";
+import { ThemeToggle } from "./theme";
 import { amount } from "./labels";
 import Loading from "./components/Loading";
 
@@ -73,7 +74,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
             ✓
           </span>
           <div>
-            <h1>AI Audit Concierge</h1>
+            <h1>AuditPal</h1>
             <p className="sub">
               {data.engagement.client} · {data.coverage.files} {t("ไฟล์", "files")} · {data.documents.length} {t("เอกสาร", "documents")} ·{" "}
               {data.transactions.length} {t("ธุรกรรม", "transactions")}
@@ -92,6 +93,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
           <button className="btn" disabled={!trail.events.length} onClick={() => exportTrailCsv(data.run_id, trail.events)}>
             Audit Trail
           </button>
+          <ThemeToggle />
           <LangToggle />
         </div>
       </header>

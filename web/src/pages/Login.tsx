@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api } from "../api";
 import { LangToggle, t } from "../i18n";
+import { ThemeToggle } from "../theme";
 
 function useSubmit(fn: () => Promise<void>) {
   const [busy, setBusy] = useState(false);
@@ -57,13 +58,14 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
   return (
     <div className="shell narrow">
       <div className="login-lang">
+        <ThemeToggle />
         <LangToggle />
       </div>
       <div className="login-head">
         <span className="app-icon big" aria-hidden>
           ✓
         </span>
-        <h1>AI Audit Concierge</h1>
+        <h1>AuditPal</h1>
         <p className="muted">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
       </div>
       {demoMode && (

@@ -8,6 +8,7 @@ import EngagementPage from "./pages/EngagementPage";
 import Users from "./pages/Users";
 import Files from "./pages/Files";
 import { LangToggle, t, useLang } from "./i18n";
+import { ThemeToggle } from "./theme";
 import Loading from "./components/Loading";
 
 // Hash routes: #/demo, #/, #/e/<id>, #/e/<id>/review, #/files[/<id>], #/users, #/account
@@ -93,7 +94,7 @@ export default function App() {
         <span className="app-icon" aria-hidden>
           ✓
         </span>
-        <span className="brand-name">AI Audit Concierge</span>
+        <span className="brand-name">AuditPal</span>
       </a>
       <nav className="topnav" aria-label={t("เมนู", "Menu")}>
         <a href="#/" aria-current={hash === "/" || hash.startsWith("/e/") ? "page" : undefined}>
@@ -114,6 +115,7 @@ export default function App() {
         )}
       </nav>
       <div className="row topbar-end">
+        <ThemeToggle />
         <LangToggle />
         <span className="avatar" title={user.name} aria-hidden>
           {user.initials}

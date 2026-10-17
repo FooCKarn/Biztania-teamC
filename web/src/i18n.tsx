@@ -20,7 +20,7 @@ const subs = new Set<() => void>();
 
 function apply() {
   document.documentElement.lang = current;
-  document.title = t("AI Audit Concierge · แผนที่เอกสารขัดแย้ง", "AI Audit Concierge · Document conflict map");
+  document.title = t("AuditPal · แผนที่เอกสารขัดแย้ง", "AuditPal · Document conflict map");
 }
 
 export const getLang = () => current;
