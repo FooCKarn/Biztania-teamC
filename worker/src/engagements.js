@@ -90,7 +90,7 @@ async function log(env, engagementId, actor, action, detail = null) {
 async function loadEngagement(env, id) {
   if (!ID_RE.test(id)) throw new HttpError(404, "ไม่พบ บริษัท");
   const e = await env.AUDIT_DB.prepare("SELECT * FROM engagements WHERE id = ?1").bind(id).first();
-  if (!e) throw new HttpError(404, "ไม่พบ บริษัท");
+  if (!e || e.deleted_at) throw new HttpError(404, "ไม่พบ บริษัท");
   return e;
 }
 
@@ -231,13 +231,14 @@ export async function handleEngagements(request, env, path) {
   if (path === "/api/engagements") {
     if (method === "GET") {
       const { results } = await db
-        .prepare("SELECT e.*, m.role FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 ORDER BY e.created_at DESC")
+        .prepare("SELECT e.*, m.role FROM engagements e JOIN members m ON m.engagement_id = e.id AND m.user_id = ?1 WHERE e.deleted_at IS NULL ORDER BY e.created_at DESC")
         .bind(user.id)
         .all();
       const signoffs = await Promise.all(results.map((e) => signoffOf(env, e.id)));
       return json({
         engagements: results.map((e, i) => ({ ...engagementJson(e, e.role), signoff: signoffs[i] })),
         can_create: true,
+        can_delete: !isDemoEmail(user.email),
         real_data_allowed: realDataAllowed(env),
       });
     }
@@ -418,8 +419,8 @@ export async function handleEngagements(request, env, path) {
 
   // ---------- team and settings ----------
   // Shared demo accounts cannot change the team or close the engagement (the demo reset does that).
-  if (isDemoEmail(user.email) && (rest === "members" || rest === "close" || /^members\//.test(rest)))
-    throw new HttpError(403, "บัญชีทดลองเปลี่ยนทีมหรือปิดงานไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
+  if (isDemoEmail(user.email) && (rest === "members" || rest === "close" || rest === "delete" || /^members\//.test(rest)))
+    throw new HttpError(403, "บัญชีทดลองเปลี่ยนทีม ปิดงาน หรือลบบริษัทไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
   if (rest === "members") {
     const { e } = await access(env, user, id);
     mustBeOpen(e);
@@ -447,6 +448,35 @@ export async function handleEngagements(request, env, path) {
     const mat = num(body.materiality_thb, 0, 1e12, "materiality");
     await db.prepare("UPDATE engagements SET tolerance_pct = ?1, materiality_thb = ?2 WHERE id = ?3").bind(t, mat, id).run();
     await log(env, id, user.initials, "settings", { tolerance_pct: t, materiality_thb: mat });
+    return json({ ok: true });
+  }
+  // Edit the name, period and thresholds of an open company.
+  if (rest === "update") {
+    const { e } = await access(env, user, id);
+    mustBeOpen(e);
+    const body = await readJson(request);
+    const client = String(body.client ?? e.client).trim();
+    if (client.length < 2 || client.length > 120) throw new HttpError(400, "ชื่อลูกค้าต้องยาว 2–120 ตัวอักษร");
+    const period = String(body.period ?? e.period ?? "").trim().slice(0, 40) || null;
+    const t = num(body.tolerance_pct ?? e.tolerance_pct, 0, 20, "tolerance (%)");
+    const mat = num(body.materiality_thb ?? e.materiality_thb, 0, 1e12, "materiality");
+    await db.prepare("UPDATE engagements SET client = ?1, period = ?2, tolerance_pct = ?3, materiality_thb = ?4 WHERE id = ?5").bind(client, period, t, mat, id).run();
+    await log(env, id, user.initials, "update", { client, period, tolerance_pct: t, materiality_thb: mat });
+    return json({ ok: true, engagement: { ...engagementJson({ ...e, client, period, tolerance_pct: t, materiality_thb: mat }, role) } });
+  }
+  // Delete: hides the company from every list and removes its stored files and results. The activity log and the
+  // hash-chained Audit Trail rows stay (append-only), like after a purge. Open or closed companies can be deleted.
+  if (rest === "delete") {
+    const { e } = await access(env, user, id);
+    const busy = await db.prepare("SELECT id FROM runs WHERE engagement_id = ?1 AND status IN ('queued', 'running')").bind(id).first();
+    if (busy) throw new HttpError(409, "กำลังประมวลผลอยู่ ลบบริษัทไม่ได้ในตอนนี้");
+    const n = await deleteWhere(env, id, () => false);
+    const at = nowIso();
+    await db.batch([
+      db.prepare("UPDATE files SET deleted_at = ?1 WHERE engagement_id = ?2 AND deleted_at IS NULL").bind(at, id),
+      db.prepare("UPDATE engagements SET deleted_at = ?1 WHERE id = ?2").bind(at, id),
+    ]);
+    await log(env, id, user.initials, "delete", { client: e.client, objects: n });
     return json({ ok: true });
   }
   if (rest === "close") {

@@ -496,3 +496,31 @@ test("a database made before the single Auditor role is migrated: demo entry wor
   assert.equal(env.AUDIT_DB.sql.prepare("SELECT COUNT(*) n FROM members_legacy").get().n, 2, "old table kept aside, nothing deleted");
   assert.doesNotMatch(env.AUDIT_DB.sql.prepare("SELECT sql FROM sqlite_master WHERE name = 'members'").get().sql, /preparer/);
 });
+
+test("edit and delete a company: team members only, closed ones cannot be edited, delete hides it but keeps the log", async () => {
+  const { admin, prep, out, id } = await setupFirm();
+  const base = `/api/engagements/${id}`;
+
+  assert.equal((await out.b.post(`${base}/update`, { client: "Hacked" })).status, 403, "not on the team");
+  assert.equal((await out.b.post(`${base}/delete`, {})).status, 403, "not on the team");
+  assert.equal((await admin.post(`${base}/update`, { client: "x" })).status, 400, "name too short");
+
+  const up = await prep.b.post(`${base}/update`, { client: "บริษัท ใหม่ จำกัด", period: "FY2027", tolerance_pct: 2, materiality_thb: 5000 });
+  assert.equal(up.status, 200);
+  const list = (await admin.get("/api/engagements")).body;
+  assert.equal(list.can_delete, true);
+  const row = list.engagements.find((e) => e.id === id);
+  assert.deepEqual([row.client, row.period, row.tolerance_pct, row.materiality_thb], ["บริษัท ใหม่ จำกัด", "FY2027", 2, 5000]);
+
+  const second = await admin.post("/api/engagements", { client: "Closed Co" });
+  assert.equal((await admin.post(`/api/engagements/${second.body.engagement.id}/close`, {})).status, 200);
+  assert.equal((await admin.post(`/api/engagements/${second.body.engagement.id}/update`, { client: "Renamed" })).status, 409, "closed is read only");
+
+  assert.equal((await prep.b.post(`${base}/delete`, {})).status, 200);
+  assert.equal((await admin.get("/api/engagements")).body.engagements.some((e) => e.id === id), false);
+  assert.equal((await admin.get(base)).status, 404);
+  assert.equal((await admin.post(`${base}/update`, { client: "Back again" })).status, 404);
+  const acts = env.AUDIT_DB.sql.prepare("SELECT action FROM activity WHERE engagement_id = ? ORDER BY seq").all(id).map((a) => a.action);
+  assert.ok(acts.includes("update") && acts.includes("delete"), "activity log is kept");
+  assert.equal((await admin.post(`/api/engagements/${second.body.engagement.id}/delete`, {})).status, 200, "closed company can be deleted");
+});
