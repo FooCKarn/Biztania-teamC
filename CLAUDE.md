@@ -23,7 +23,7 @@ The human-readable summary is in [`README.md`](README.md).
   signed-off run. `pipeline/samples/tg_company/expected.json` is the
   answer key the tests score against; FN/FP cross-check (`auditconcierge/crosscheck.py`, seeded-error tests on
   `samples/frozen_foods.py`) lists every skipped check in `coverage.skipped_checks` (no flag ≠ no problem).
-- **Engagements (uploads):** login; every engagement has a team of Auditors with equal access (upload,
+- **Engagements (uploads):** login; any signed-in user can create an engagement from the list page (creator joins the team; the demo account is capped at 5 and always synthetic); every engagement has a team of Auditors with equal access (upload,
   process, check, sign off, manage the team, settings, close) — the signer on every Audit Trail entry is
   the signed-in account, never a typed name; every API checks team membership; files up to 100 MB are
   gzip-compressed then AES-GCM encrypted per engagement in D1 `auditpal-files`; the Python
@@ -33,7 +33,7 @@ The human-readable summary is in [`README.md`](README.md).
   File manager `#/files` (`worker/src/files.js`, `web/src/pages/Files.tsx`): storage meter against `STORAGE_QUOTA_MB` (500), files of the user's
   engagements filtered by extension, manual download/delete only; other engagements' usage is one number; page images are never listed for deletion.
   Demo for outside users: an admin button on the users page creates a shared account `auditor@demo.example.com`
-  (no password change, password shown once, never in the repo); with the Worker var `DEMO_MODE=true` (on by default, also in `wrangler.jsonc`; `false` turns it off, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement only (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
+  (no password change, password shown once, never in the repo); with the Worker var `DEMO_MODE=true` (on by default, also in `wrangler.jsonc`; `false` turns it off, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement plus up to 4 more it creates itself (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
 
 ## Core principles (keep these consistent in any material or prototype)
 
