@@ -417,7 +417,7 @@ a.btn { text-decoration: none; display: inline-block; }
 .login-art { display: flex; align-items: center; justify-content: center; padding: 32px; }
 @media (max-width: 800px) {
   .login-split { grid-template-columns: 1fr; min-height: 0; }
-  .login-art { order: -1; padding: 40px 28px 0; }
+  .login-art { order: -1; padding: 64px 28px 0; }
   .logo-hero { max-width: 260px; }
 }
 .navbar h1 .logo { height: 24px; }
@@ -506,7 +506,7 @@ h2 { font-weight: 650; letter-spacing: -0.025em; }
 .who { color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Login: language at the top, the three demo roles as tappable cards */
-.login-lang { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+.login-lang { position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); z-index: 20; display: flex; gap: 8px; }
 .role-picker { display: grid; gap: 8px; }
 .role-card {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
