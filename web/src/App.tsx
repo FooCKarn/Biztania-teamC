@@ -6,12 +6,14 @@ import Login, { ChangePassword } from "./pages/Login";
 import Engagements from "./pages/Engagements";
 import EngagementPage from "./pages/EngagementPage";
 import Users from "./pages/Users";
+import Files from "./pages/Files";
 
 // Hash routes, so the static build works on any host:
 //   #/demo                 public demo (synthetic sample, no login)
 //   #/                     engagements of the signed-in user (or the login page)
 //   #/e/<id>               one engagement: files, runs, team, activity
 //   #/e/<id>/review        the review workspace on that engagement's latest results
+//   #/files[/<id>]         file manager and storage used (optionally opened on one engagement)
 //   #/users                accounts (firm admin)
 //   #/account              change password
 function useHash() {
@@ -157,6 +159,9 @@ export default function App() {
         <span className="muted small">
           {user.name} ({user.initials})
         </span>
+        <a className="btn" href="#/files">
+          ไฟล์
+        </a>
         {user.firm_role === "admin" && (
           <a className="btn" href="#/users">
             ผู้ใช้
@@ -183,8 +188,10 @@ export default function App() {
       </>
     );
   const eng = hash.match(/^\/e\/([a-f0-9]{12})$/);
+  const files = hash.match(/^\/files(?:\/([a-f0-9]{12}))?$/);
   let page;
   if (eng) page = <EngagementPage id={eng[1]} me={user} />;
+  else if (files) page = <Files engagement={files[1]} />;
   else if (hash === "/users" && user.firm_role === "admin") page = <Users me={user} />;
   else if (hash === "/account") page = <ChangePassword onDone={() => (location.hash = "/")} />;
   else page = <Engagements />;

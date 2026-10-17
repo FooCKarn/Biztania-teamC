@@ -220,7 +220,12 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
       <div className="eng-grid">
         <div>
           <section className="group">
-            <h3 className="group-title">เอกสารของ Engagement ({d.files.length})</h3>
+            <h3 className="group-title between row">
+              เอกสารของ Engagement ({d.files.length})
+              <a className="link small" href={`#/files/${id}`}>
+                จัดการไฟล์ ›
+              </a>
+            </h3>
             <div className="group-body">
               {!d.store_configured && <p className="small error">ยังไม่ได้ตั้งค่ากุญแจเข้ารหัสไฟล์ (FILES_KEY) จึงอัปโหลดไม่ได้</p>}
               {open && role && (

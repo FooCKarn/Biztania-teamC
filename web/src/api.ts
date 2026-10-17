@@ -95,4 +95,30 @@ export interface EngagementDetail {
   store_configured: boolean;
 }
 
+export interface ManagedFile {
+  id: string;
+  engagement_id: string;
+  name: string;
+  ext: string;
+  size: number;
+  sha256: string;
+  uploaded_at: string;
+  uploaded_by: string;
+  in_latest_run: boolean;
+}
+
+export interface FilesOverview {
+  storage: {
+    quota: number;
+    used: number;
+    files: number;
+    pages: number;
+    others: number;
+    overhead: number;
+    by_type: { ext: string; bytes: number; count: number }[];
+  };
+  engagements: { id: string; client: string; period: string | null; status: "open" | "closed"; purged: boolean; my_role: Role; can_delete: boolean }[];
+  files: ManagedFile[];
+}
+
 export const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });

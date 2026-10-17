@@ -5,6 +5,7 @@
 //  - /api/auth/*, /api/users*      → login, sessions, accounts (auth.js)
 //  - /api/engagements*             → engagements, team roles, encrypted uploads, pipeline runs,
 //                                    results and their Audit Trail (engagements.js)
+//  - /api/files                    → file manager: files of the user's engagements, storage used (files.js)
 //  - /api/internal/*               → callbacks from the Python pipeline host, HMAC-signed
 //  - cron                          → deletes raw files 90 days after an engagement closes
 //
@@ -22,6 +23,7 @@ import { handleAuth, handleUsers, requireUser } from "./auth.js";
 import { handleEngagements, handleInternal, loadEngagementMap, purgeExpired } from "./engagements.js";
 import { ensureAppSchema } from "./schema.js";
 import { handleDemo, handleDemoEntry } from "./demo.js";
+import { handleFiles } from "./files.js";
 
 const MAX_QUESTION = 300;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
@@ -232,7 +234,7 @@ const needsCsrfHeader = (request, path) =>
   request.method !== "GET" && /^\/api\/(auth|users|engagements)/.test(path) && request.headers.get("x-ac-csrf") !== "1";
 
 async function route(request, env, path) {
-  if (/^\/api\/(auth|users|engagements|internal)/.test(path) && !env.AUDIT_DB)
+  if (/^\/api\/(auth|users|engagements|files|internal)/.test(path) && !env.AUDIT_DB)
     return json({ error: "ยังไม่ได้ผูกฐานข้อมูล (D1 binding AUDIT_DB)" }, 503);
   if (needsCsrfHeader(request, path)) return json({ error: "คำขอไม่ถูกต้อง (CSRF)" }, 403);
   if (path === "/api/auth/demo-login" || path === "/api/auth/demo-reset") return handleDemoEntry(request, env, path);
@@ -240,6 +242,7 @@ async function route(request, env, path) {
   if (path.startsWith("/api/users/demo/")) return handleDemo(request, env, path);
   if (path === "/api/users" || path.startsWith("/api/users/")) return handleUsers(request, env, path);
   if (path === "/api/engagements" || path.startsWith("/api/engagements/")) return handleEngagements(request, env, path);
+  if (path === "/api/files") return handleFiles(request, env, path);
   if (path.startsWith("/api/internal/")) return handleInternal(request, env, path);
   return null;
 }
