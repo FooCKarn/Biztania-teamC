@@ -9,8 +9,6 @@ import OverviewView from "./components/OverviewView";
 import AskBox from "./components/AskBox";
 import SignoffBar from "./components/SignoffBar";
 import ReportView from "./report/ReportView";
-import { buildReport } from "./report/model";
-import { downloadWorkbook } from "./report/workbook";
 import { exportTrailCsv } from "./export";
 import { LangToggle, locale, t } from "./i18n";
 import Loading from "./components/Loading";
@@ -92,9 +90,6 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
           ))}
         </nav>
         <div className="nav-actions">
-          <button className="btn" onClick={() => downloadWorkbook(buildReport(data, decisions, trail.signoff, "manager"), data)}>
-            Export Excel
-          </button>
           <button className="btn" disabled={!trail.events.length} onClick={() => exportTrailCsv(data.run_id, trail.events)}>
             Audit Trail
           </button>

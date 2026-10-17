@@ -39,60 +39,6 @@ const Back = ({ to, label }: { to: string; label: string }) => (
   </a>
 );
 
-// Shown for the shared demo account (DEMO_MODE): synthetic data only, and a way to wipe the demo engagement.
-function DemoBanner({ onChange }: { onChange: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const run = async (fn: () => Promise<void>) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-      onChange();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
-  const reset = () => {
-    if (
-      !confirm(
-        t(
-          "รีเซ็ตเดโม: ลบไฟล์และผลการตรวจของ Engagement เดโมทั้งหมดแล้วเริ่มใหม่ ทุกคนที่ใช้เดโมร่วมกันจะเห็นผลนี้ ต้องการดำเนินการต่อหรือไม่?",
-          "Reset the demo: delete every file and result in the demo engagement and start over. Everyone sharing the demo will see this. Continue?",
-        ),
-      )
-    )
-      return;
-    return run(async () => {
-      const r = await api<{ engagement: { id: string } }>("api/auth/demo-reset", { method: "POST" });
-      location.hash = `/e/${r.engagement.id}`;
-    });
-  };
-  return (
-    <div className="banner demo-banner" role="status">
-      <p>
-        <strong>{t("โหมดเดโม", "Demo mode")}</strong> ·{" "}
-        {t(
-          "ข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง ทุกคนที่เข้าเดโมใช้ Engagement เดียวกัน",
-          "Synthetic data only, never upload real documents. Everyone in the demo shares one engagement.",
-        )}
-      </p>
-      <div className="row">
-        <button className="btn" disabled={busy} onClick={reset}>
-          {t("รีเซ็ตเดโม", "Reset demo")}
-        </button>
-      </div>
-      {error && (
-        <p className="small error" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
 function EngagementReview({ id }: { id: string }) {
   const [src, setSrc] = useState<Source | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +137,6 @@ export default function App() {
   if (review)
     return (
       <>
-        {user.demo && <DemoBanner onChange={refresh} />}
         <EngagementReview id={review[1]} />
       </>
     );
@@ -206,7 +151,6 @@ export default function App() {
   return (
     <div className="shell">
       {bar}
-      {user.demo && <DemoBanner onChange={refresh} />}
       {page}
     </div>
   );

@@ -3,7 +3,6 @@ import type { ConflictMap, Decision, Signoff } from "../types";
 import { baht, fieldLabel, KIND_LABEL, RISK_LABEL } from "../labels";
 import { t as tr, useLang } from "../i18n";
 import { buildReport, when, type Audience } from "./model";
-import { downloadWorkbook } from "./workbook";
 import { downloadDocx } from "./docx";
 import "./report.css";
 
@@ -15,7 +14,7 @@ interface Props {
 
 const RISK_CLASS = { สูง: "risk-high", กลาง: "risk-mid", ต่ำ: "risk-low" } as const;
 
-// Printable working paper, also downloadable as Excel and Word (editable copy). "บันทึก PDF" uses the browser's print-to-PDF, so Thai text renders with
+// Printable working paper, also downloadable as Word (editable copy). "บันทึก PDF" uses the browser's print-to-PDF, so Thai text renders with
 // the system fonts and nothing leaves the browser.
 export default function ReportView({ data, decisions, signoff }: Props) {
   const [audience, setAudience] = useState<Audience>("manager");
@@ -53,9 +52,6 @@ export default function ReportView({ data, decisions, signoff }: Props) {
             : tr("ทุกรายการพร้อมผลการพิจารณาและการตรวจสอบ", "Every item with its conclusion and check")}
         </span>
         <span className="grow" />
-        <button className="btn" onClick={() => downloadWorkbook(report, data)}>
-          Export Excel
-        </button>
         <button className="btn" onClick={() => downloadDocx(report, data)}>
           Export Word
         </button>
