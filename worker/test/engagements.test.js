@@ -231,6 +231,17 @@ test("full engagement: upload → pipeline run → check an item → close → p
   assert.equal(ask.status, 200);
   assert.equal(ask.body.configured, false);
   assert.equal((await out.b.post("/api/ask", { question: "x", engagement: id, run: MAP.run_id })).status, 403);
+  // Conversations are saved per user; a follow-up joins the same one, and others cannot read or continue it.
+  assert.ok(ask.body.conversation);
+  const follow = await rev.b.post("/api/ask", { question: "แล้วรายการถัดไป", engagement: id, run: MAP.run_id, conversation: ask.body.conversation });
+  assert.equal(follow.body.conversation, ask.body.conversation);
+  const list = await rev.b.get(`/api/ask/conversations?engagement=${id}`);
+  assert.equal(list.body.conversations.length, 1);
+  const one = await rev.b.get(`/api/ask/conversations?engagement=${id}&id=${ask.body.conversation}`);
+  assert.deepEqual(one.body.conversation.messages.map((m) => m.role), ["user", "assistant", "user", "assistant"]);
+  assert.equal((await prep.b.get(`/api/ask/conversations?engagement=${id}`)).body.conversations.length, 0, "own conversations only");
+  assert.equal((await prep.b.post("/api/ask", { question: "x", engagement: id, run: MAP.run_id, conversation: ask.body.conversation })).status, 404);
+  assert.equal((await out.b.get(`/api/ask/conversations?engagement=${id}`)).status, 403);
 
   // Close: any team member, not an outsider; then read-only.
   assert.equal((await out.b.post(`/api/engagements/${id}/close`)).status, 403);

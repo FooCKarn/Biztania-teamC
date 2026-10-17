@@ -30,6 +30,7 @@ The human-readable summary is in [`README.md`](README.md).
   pipeline runs on a stateless Render container called with HMAC (`pipeline/auditconcierge/server.py`); raw files and
   page images are deleted `RETENTION_DAYS` (90) after closing, the working paper and trail stay. `ALLOW_REAL_DATA`
   stays false (synthetic only) until the AI provider is switched. Deploy steps: `docs/deploy-pipeline.md`.
+  AI chat (`web/src/components/AskBox.tsx`): a tall side panel; the open flag's follow-up questions are tappable chips; inside an engagement the chat is saved per user in D1 (`ask_conversations`/`ask_messages`, `worker/src/ask-history.js`), with a history list, and the model gets only the last 6 turns plus a one-line digest of older questions. The Engagement page UI has no settings/close section (tolerance and materiality are set at creation; the API endpoints remain).
   File manager `#/files` (`worker/src/files.js`, `web/src/pages/Files.tsx`): storage meter against `STORAGE_QUOTA_MB` (500), files of the user's
   engagements filtered by extension, manual download/delete only; other engagements' usage is one number; page images are never listed for deletion.
   Demo for outside users: an admin button on the users page creates a shared account `auditor@demo.example.com`
