@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, ROLE_LABEL, type Role, type User } from "../api";
+import { api, type User } from "../api";
 import { t } from "../i18n";
 
 // Firm admin: create accounts (each gets a one-time password to hand over in person), disable, reset.
@@ -88,8 +88,8 @@ export default function Users({ me }: { me: User }) {
         <button className="btn filled">{t("เพิ่มผู้ใช้", "Add user")}</button>
         <p className="muted small">
           {t(
-            "บทบาทผู้จัดทำ / ผู้สอบทาน / Manager กำหนดแยกในแต่ละ Engagement · ผู้ดูแลระบบไม่เห็นข้อมูลของ Engagement ที่ตนไม่ได้อยู่ในทีม",
-            "Preparer / reviewer / manager roles are set per engagement · Admins cannot see engagements they are not on.",
+            "ทุกคนที่อยู่ในทีมของ Engagement เป็นผู้สอบบัญชี (Auditor) ที่เข้าถึงเท่ากัน · ผู้ดูแลระบบไม่เห็นข้อมูลของ Engagement ที่ตนไม่ได้อยู่ในทีม",
+            "Everyone on an engagement's team is an Auditor with the same access · Admins cannot see engagements they are not on.",
           )}
         </p>
       </form>
@@ -124,10 +124,10 @@ export default function Users({ me }: { me: User }) {
   );
 }
 
-type DemoLogin = { role: Role; email: string; password: string };
+type DemoLogin = { email: string; password: string };
 
-// Shared demo logins plus a synthetic engagement with the sample documents (worker/src/demo.js).
-// One request per step: three accounts, the engagement, each sample file, then a pipeline run.
+// A shared demo login plus a synthetic engagement with the sample documents (worker/src/demo.js).
+// One request per step: the account, the engagement, each sample file, then a pipeline run.
 function DemoSetup({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -135,18 +135,14 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
   const [note, setNote] = useState<string | null>(null);
 
   const start = async () => {
-    if (!confirm(t("สร้างหรือรีเซ็ตบัญชีทดลอง 3 บัญชี? ถ้ามีอยู่แล้ว รหัสผ่านเดิมจะใช้ไม่ได้อีก", "Create or reset the 3 trial accounts? Existing passwords will stop working."))) return;
+    if (!confirm(t("สร้างหรือรีเซ็ตบัญชีทดลอง? ถ้ามีอยู่แล้ว รหัสผ่านเดิมจะใช้ไม่ได้อีก", "Create or reset the trial account? An existing password will stop working."))) return;
     setError(null);
     setLogins(null);
     setNote(null);
     try {
-      const out: DemoLogin[] = [];
-      for (const role of ["preparer", "reviewer", "manager"] as Role[]) {
-        setBusy(t(`สร้างบัญชี${ROLE_LABEL[role]}`, `Creating ${ROLE_LABEL[role]} account`));
-        const r = await api<{ user: User; password: string }>(`api/users/demo/account/${role}`, { method: "POST" });
-        out.push({ role, email: r.user.email, password: r.password });
-      }
-      setLogins(out);
+      setBusy(t("สร้างบัญชีทดลอง", "Creating the trial account"));
+      const r = await api<{ user: User; password: string }>("api/users/demo/account", { method: "POST" });
+      setLogins([{ email: r.user.email, password: r.password }]);
       setBusy(t("เตรียม Engagement ทดลอง", "Preparing the trial engagement"));
       const d = await api<{ engagement: { id: string }; files: string[]; has_run: boolean }>("api/users/demo/engagement", { method: "POST" });
       const id = d.engagement.id;
@@ -184,14 +180,14 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
     }
   };
 
-  const text = logins?.map((l) => `${ROLE_LABEL[l.role]}: ${l.email} / ${l.password}`).join("\n") ?? "";
+  const text = logins?.map((l) => `${l.email} / ${l.password}`).join("\n") ?? "";
   return (
     <div className="group-body form">
-      <h3>{t("บัญชีทดลองสำหรับ demo", "Demo trial accounts")}</h3>
+      <h3>{t("บัญชีทดลองสำหรับ demo", "Demo trial account")}</h3>
       <p className="muted small">
         {t(
-          "สร้างบัญชีผู้จัดทำ / ผู้สอบทาน / Manager ที่ใช้ร่วมกันได้ และ Engagement ข้อมูลสมมติพร้อมเอกสารตัวอย่าง · กดซ้ำเพื่อรีเซ็ตรหัสผ่านและเติมเอกสารที่ถูกลบ",
-          "Creates shared preparer / reviewer / manager accounts and a synthetic engagement with sample documents · Press again to reset passwords and restore deleted documents.",
+          "สร้างบัญชีผู้สอบบัญชีที่ใช้ร่วมกันได้ และ Engagement ข้อมูลสมมติพร้อมเอกสารตัวอย่าง · กดซ้ำเพื่อรีเซ็ตรหัสผ่านและเติมเอกสารที่ถูกลบ",
+          "Creates a shared Auditor account and a synthetic engagement with sample documents · Press again to reset the password and restore deleted documents.",
         )}
       </p>
       {error && (
@@ -201,7 +197,7 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
       )}
       {logins && (
         <div className="banner" role="status">
-          <p>{t("รหัสผ่านแสดงครั้งเดียว คัดลอกเก็บไว้ก่อนปิดหน้านี้", "Passwords are shown once. Copy them before leaving this page.")}</p>
+          <p>{t("รหัสผ่านแสดงครั้งเดียว คัดลอกเก็บไว้ก่อนปิดหน้านี้", "Password is shown once. Copy it before leaving this page.")}</p>
           <pre className="mono small">{text}</pre>
           <button className="link" onClick={() => navigator.clipboard?.writeText(`${location.origin}${location.pathname}\n${text}`)}>
             {t("คัดลอก", "Copy")}
@@ -210,7 +206,7 @@ function DemoSetup({ onDone }: { onDone: () => void }) {
       )}
       {note && <p className="small">{note}</p>}
       <button className="btn filled" onClick={start} disabled={!!busy}>
-        {busy ?? t("สร้าง / รีเซ็ตบัญชีทดลอง", "Create / reset trial accounts")}
+        {busy ?? t("สร้าง / รีเซ็ตบัญชีทดลอง", "Create / reset trial account")}
       </button>
     </div>
   );

@@ -30,18 +30,17 @@ export function reportSheets(report: Report, data: ConflictMap): Sheet[] {
       ...(client
         ? []
         : [
-            [tr("สอบทานแล้ว", "Reviewed"), ...report.byRisk.map((r) => r.reviewed), t.reviewed],
+            [tr("ตรวจสอบแล้ว", "Checked"), ...report.byRisk.map((r) => r.checked), t.checked],
             [tr("สรุปว่าเป็นประเด็น", "Concluded as issue"), ...report.byRisk.map((r) => r.issues), t.issues],
           ]),
       [tr("ยอดที่เกี่ยวข้อง (บาท)", "Amount at stake (THB)"), ...report.byRisk.map((r) => r.atStake), report.byRisk.reduce((s, r) => s + r.atStake, 0)],
       ...(client
         ? []
         : [
-            [tr("จัดทำแล้ว", "Prepared"), "", "", "", t.prepared],
             [tr("สรุปว่าไม่เป็นประเด็น", "Concluded not an issue"), "", "", "", t.notIssues],
             [tr("รอจับคู่ (ยังไม่นำไปตรวจ)", "Unmatched (not yet checked)"), "", "", "", t.pending],
-            [tr("ผู้จัดทำ", "Preparer"), "", "", "", report.preparers.join(", ") || "-"],
-            [tr("ผู้สอบทาน", "Reviewer"), "", "", "", report.reviewers.join(", ") || "-"],
+            [tr("ตรวจสอบโดย", "Checked by"), "", "", "", report.checkedBy.join(", ") || "-"],
+            [tr("ลงนามยืนยันผลโดย", "Signed off by"), "", "", "", report.signoff ? `${report.signoff.by} · ${when(report.signoff.at)}` : "-"],
           ]),
     ],
   };
@@ -63,10 +62,8 @@ export function reportSheets(report: Report, data: ConflictMap): Sheet[] {
             { header: tr("สถานะ", "Status"), width: 18 },
             { header: tr("ผลการพิจารณา", "Conclusion"), width: 14 },
             { header: tr("เหตุผล", "Reason"), width: 44 },
-            { header: tr("ผู้จัดทำ", "Preparer"), width: 9 },
-            { header: tr("วันที่จัดทำ", "Prepared on"), width: 18 },
-            { header: tr("ผู้สอบทาน", "Reviewer"), width: 9 },
-            { header: tr("วันที่สอบทาน", "Reviewed on"), width: 18 },
+            { header: tr("ตรวจสอบโดย", "Checked by"), width: 9 },
+            { header: tr("วันที่ตรวจสอบ", "Checked on"), width: 18 },
           ]),
     ],
     rows: report.flags.map((r) => [
@@ -85,8 +82,6 @@ export function reportSheets(report: Report, data: ConflictMap): Sheet[] {
             r.decision?.reason ?? "",
             r.decision?.by ?? "",
             r.decision ? when(r.decision.at) : "",
-            r.decision?.review?.by ?? "",
-            r.decision?.review ? when(r.decision.review.at) : "",
           ]),
     ]),
   };

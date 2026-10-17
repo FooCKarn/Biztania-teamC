@@ -7,6 +7,7 @@ import FlagsView from "./components/FlagsView";
 import PendingView from "./components/PendingView";
 import OverviewView from "./components/OverviewView";
 import AskBox from "./components/AskBox";
+import SignoffBar from "./components/SignoffBar";
 import ReportView from "./report/ReportView";
 import { buildReport } from "./report/model";
 import { downloadWorkbook } from "./report/workbook";
@@ -15,18 +16,6 @@ import { LangToggle, locale, t } from "./i18n";
 import Loading from "./components/Loading";
 
 type Tab = "flags" | "pending" | "overview" | "report";
-
-// Sign-off progress as a small bar, so the count reads at a glance.
-const Meter = ({ label, n, of }: { label: string; n: number; of: number }) => (
-  <span className="meter">
-    <span>
-      {label} <b>{n}</b>/{of}
-    </span>
-    <span className="meter-track" aria-hidden>
-      <span className="meter-fill" style={{ width: `${of ? (n / of) * 100 : 0}%` }} />
-    </span>
-  </span>
-);
 
 // The three-pane review workspace for one set of results: the public demo or an engagement's latest run.
 export default function Workspace({ source, back }: { source: Source; back?: ReactNode }) {
@@ -43,7 +32,13 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       .catch((e) => setError(String(e)));
   }, [source.base]);
 
-  const trail = useTrail(data?.run_id ?? "none", source);
+  // Switching tabs (via the nav or a link from Overview) should land at the top of the new tab's
+  // content, not wherever the previous tab had been scrolled to.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tab]);
+
+  const trail = useTrail(data?.run_id ?? "none", source, data?.flags.length ?? 0);
   const { decisions } = trail;
   const docs = useMemo(() => new Map((data?.documents ?? []).map((d) => [d.id, d])), [data]);
 
@@ -56,8 +51,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
     );
   if (!data) return <Loading />;
 
-  const prepared = data.flags.filter((f) => decisions[f.id]).length;
-  const reviewed = data.flags.filter((f) => decisions[f.id]?.review).length;
+  const checked = data.flags.filter((f) => decisions[f.id]).length;
   const TABS: [Tab, string, number | null][] = [
     ["flags", t("ควรตรวจ", "To check"), data.flags.length],
     ["pending", t("รอจับคู่", "Unmatched"), data.pending.length],
@@ -98,11 +92,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
           ))}
         </nav>
         <div className="nav-actions">
-          <div className="progress" title={t("ลงนามผู้จัดทำ / ผู้สอบทาน", "Preparer / reviewer sign-offs")}>
-            <Meter label={t("จัดทำ", "Prepared")} n={prepared} of={data.flags.length} />
-            <Meter label={t("สอบทาน", "Reviewed")} n={reviewed} of={data.flags.length} />
-          </div>
-          <button className="btn" onClick={() => downloadWorkbook(buildReport(data, decisions, "manager"), data)}>
+          <button className="btn" onClick={() => downloadWorkbook(buildReport(data, decisions, trail.signoff, "manager"), data)}>
             Export Excel
           </button>
           <button className="btn" disabled={!trail.events.length} onClick={() => exportTrailCsv(data.run_id, trail.events)}>
@@ -112,6 +102,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
         </div>
       </header>
       <p className="principle">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
+      <SignoffBar trail={trail} total={data.flags.length} checked={checked} />
 
       <ReadProblems data={data} />
       <main>
@@ -129,7 +120,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
             }}
           />
         )}
-        {tab === "report" && <ReportView data={data} decisions={decisions} />}
+        {tab === "report" && <ReportView data={data} decisions={decisions} signoff={trail.signoff} />}
       </main>
 
       <AskBox run={data.run_id} />

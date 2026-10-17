@@ -5,10 +5,10 @@
 // (store.js), stored under eng/<id>/, and the pipeline can fetch a file only while a run of the same
 // engagement that lists it is in progress.
 //
-// Roles per engagement:
-//   preparer  upload/delete files, run the pipeline, sign as preparer, confirm pairs
-//   reviewer  everything a preparer can, plus sign as reviewer (never on an item they prepared)
-//   manager   everything, plus team, settings and closing the engagement
+// One role per engagement: everyone on the team is an auditor, with full access to that engagement
+// (upload, run, check items, sign off, manage the team and settings, close). This is a platform for
+// a single auditor role right now; the account that owns a login is what distinguishes people, not
+// a role within an engagement.
 // A closed engagement is read-only. RETENTION_DAYS (default 90) after closing, the raw files and the
 // page images rendered from them are deleted (purgeExpired, run daily by the cron trigger); the
 // working paper (conflict_map.json with its quotes) and the Audit Trail stay.
@@ -19,15 +19,9 @@ import { requireUser, isDemoEmail } from "./auth.js";
 import { putBlob, getBlob, deleteBlob, deleteWhere, isConfigured as storeConfigured } from "./store.js";
 import { readTrail, appendEvent, parseAction } from "./trail.js";
 
-const ROLES = ["preparer", "reviewer", "manager"];
-const CAN = {
-  work: new Set(["preparer", "reviewer", "manager"]), // upload, run, prepare, pair, reopen
-  review: new Set(["reviewer", "manager"]),
-  manage: new Set(["manager"]),
-};
-const ACTION_NEEDS = { prepare: "work", pair: "work", reopen: "work", review: "review", unreview: "review" };
+const ROLE = "auditor";
 
-const MAX_FILE = 10 * 1024 * 1024;
+const MAX_FILE = 100 * 1024 * 1024;
 const MAX_FILES = 200;
 const DEMO_MAX_FILE = 3 * 1024 * 1024; // shared demo accounts: smaller limits, the storage is shared by every visitor
 const DEMO_MAX_FILES = 30;
@@ -108,13 +102,13 @@ async function loadEngagement(env, id) {
   return e;
 }
 
-// The user's role in this engagement, or 403. Not being a member looks the same as not existing
-// to the caller only in the message; the list endpoint never shows other engagements' details.
-async function access(env, user, id, need = null) {
+// Checks the signed-in user is on this engagement's team, or 403. Not being a member looks the same
+// as not existing to the caller only in the message; the list endpoint never shows other
+// engagements' details. Every team member has the same access, so there is nothing else to check.
+async function access(env, user, id) {
   const e = await loadEngagement(env, id);
   const m = await env.AUDIT_DB.prepare("SELECT role FROM members WHERE engagement_id = ?1 AND user_id = ?2").bind(id, user.id).first();
   if (!m) throw new HttpError(403, "คุณไม่ได้อยู่ในทีมของ Engagement นี้");
-  if (need && !CAN[need].has(m.role)) throw new HttpError(403, "บทบาทของคุณใน Engagement นี้ทำรายการนี้ไม่ได้");
   return { e, role: m.role };
 }
 const mustBeOpen = (e) => {
@@ -206,21 +200,21 @@ export async function createEngagement(env, user, body) {
         "INSERT INTO engagements (id, client, period, tolerance_pct, materiality_thb, synthetic, status, created_by, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'open', ?7, ?8)",
       )
       .bind(e.id, e.client, e.period, e.tolerance_pct, e.materiality_thb, e.synthetic, user.id, at),
-    db.prepare("INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, 'manager', ?2, ?3)").bind(e.id, user.id, at),
+    db.prepare("INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, ?3, ?2, ?4)").bind(e.id, user.id, ROLE, at),
   ]);
   await log(env, e.id, user.initials, "create", { client, synthetic: !!synthetic });
   return { ...e, status: "open", created_at: at };
 }
 
-// Adds a user to the team, or changes their role.
-export async function setMember(env, id, by, u, role) {
+// Adds a user to the team. Every member has the same access, so there is no role to set.
+export async function setMember(env, id, by, u) {
   await env.AUDIT_DB
     .prepare(
-      "INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (engagement_id, user_id) DO UPDATE SET role = excluded.role",
+      "INSERT INTO members (engagement_id, user_id, role, added_by, added_at) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT (engagement_id, user_id) DO NOTHING",
     )
-    .bind(id, u.id, role, by.id, nowIso())
+    .bind(id, u.id, ROLE, by.id, nowIso())
     .run();
-  await log(env, id, by.initials, "member", { user: u.initials, role });
+  await log(env, id, by.initials, "member", { user: u.initials });
 }
 
 export async function handleEngagements(request, env, path) {
@@ -240,7 +234,7 @@ export async function handleEngagements(request, env, path) {
     if (method !== "POST") throw new HttpError(405, "ใช้ GET หรือ POST");
     if (user.firm_role !== "admin") throw new HttpError(403, "เฉพาะผู้ดูแลระบบของสำนักงานสร้าง Engagement ได้");
     const e = await createEngagement(env, user, await readJson(request));
-    return json({ engagement: engagementJson(e, "manager") }, 201);
+    return json({ engagement: engagementJson(e, ROLE) }, 201);
   }
 
   const m = path.match(/^\/api\/engagements\/([^/]+)(?:\/(.*))?$/);
@@ -303,9 +297,6 @@ export async function handleEngagements(request, env, path) {
     mustBeOpen(e);
     const body = await readJson(request);
     const a = parseAction(body, user.initials); // the account signs, whatever the body says
-    const need = ACTION_NEEDS[a.action];
-    if (need && !CAN[need].has(role))
-      throw new HttpError(403, need === "review" ? "ต้องมีบทบาทผู้สอบทานหรือ Manager จึงลงนามสอบทานได้" : "บทบาทของคุณทำรายการนี้ไม่ได้");
     const current = await latestDone(env, id);
     if (!current || String(body.run || "") !== current.result_run_id) throw new HttpError(409, "ผลการตรวจถูกรันใหม่แล้ว กรุณาโหลดหน้าใหม่");
     const map = await loadEngagementMap(env, id, current.result_run_id);
@@ -317,7 +308,7 @@ export async function handleEngagements(request, env, path) {
 
   // ---------- files ----------
   if (rest === "files") {
-    const { e } = await access(env, user, id, "work");
+    const { e } = await access(env, user, id);
     mustBeOpen(e);
     const url = new URL(request.url);
     const name = (url.searchParams.get("name") || "").normalize("NFC").trim();
@@ -325,10 +316,10 @@ export async function handleEngagements(request, env, path) {
       throw new HttpError(400, "ชื่อไฟล์หรือนามสกุลไม่รองรับ (PDF, PNG, JPG, TIFF, CSV, XLSX, remember.json)");
     if (name.toLowerCase().endsWith(".json") && name !== "remember.json") throw new HttpError(400, "ไฟล์ JSON รับเฉพาะ remember.json (กฎของบริษัท)");
     const len = Number(request.headers.get("content-length") || 0);
-    if (len > MAX_FILE) throw new HttpError(413, "ไฟล์ใหญ่เกิน 10 MB");
+    if (len > MAX_FILE) throw new HttpError(413, "ไฟล์ใหญ่เกิน 100 MB");
     const bytes = new Uint8Array(await request.arrayBuffer());
     if (!bytes.length) throw new HttpError(400, "ไฟล์ว่าง");
-    if (bytes.length > MAX_FILE) throw new HttpError(413, "ไฟล์ใหญ่เกิน 10 MB");
+    if (bytes.length > MAX_FILE) throw new HttpError(413, "ไฟล์ใหญ่เกิน 100 MB");
     const ext = name.split(".").pop().toLowerCase();
     if (!looksLike(ext, bytes)) throw new HttpError(415, "เนื้อไฟล์ไม่ตรงกับนามสกุล");
     const count = await db.prepare("SELECT COUNT(*) AS n FROM files WHERE engagement_id = ?1 AND deleted_at IS NULL").bind(id).first();
@@ -356,7 +347,7 @@ export async function handleEngagements(request, env, path) {
   const fileOp = rest.match(/^files\/([a-f0-9]{16})(?:\/(delete))?$/);
   if (fileOp) {
     const [, fid, op] = fileOp;
-    const { e } = await access(env, user, id, op ? "work" : null);
+    const { e } = await access(env, user, id);
     const f = await db.prepare("SELECT * FROM files WHERE id = ?1 AND engagement_id = ?2 AND deleted_at IS NULL").bind(fid, id).first();
     if (!f) throw new HttpError(404, "ไม่พบไฟล์");
     if (!op) {
@@ -381,7 +372,7 @@ export async function handleEngagements(request, env, path) {
 
   // ---------- pipeline runs ----------
   if (rest === "runs") {
-    const { e } = await access(env, user, id, "work");
+    const { e } = await access(env, user, id);
     mustBeOpen(e);
     if (!env.PIPELINE_URL || !env.PIPELINE_SECRET) throw new HttpError(503, "ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL, PIPELINE_SECRET)");
     await expireStaleRuns(env, Date.now(), id);
@@ -406,34 +397,31 @@ export async function handleEngagements(request, env, path) {
     return json({ run: { id: run.id, status: "running" } }, 202);
   }
 
-  // ---------- team and settings (manager) ----------
+  // ---------- team and settings ----------
   // Shared demo accounts cannot change the team or close the engagement (the demo reset does that).
   if (isDemoEmail(user.email) && (rest === "members" || rest === "close" || /^members\//.test(rest)))
     throw new HttpError(403, "บัญชีทดลองเปลี่ยนทีมหรือปิดงานไม่ได้ (ใช้ปุ่มรีเซ็ตเดโมแทน)");
   if (rest === "members") {
-    const { e } = await access(env, user, id, "manage");
+    const { e } = await access(env, user, id);
     mustBeOpen(e);
     const body = await readJson(request);
-    const role = String(body.role || "");
-    if (!ROLES.includes(role)) throw new HttpError(400, "บทบาทไม่ถูกต้อง");
     const u = await db.prepare("SELECT * FROM users WHERE id = ?1 AND disabled = 0").bind(String(body.user_id || "")).first();
     if (!u) throw new HttpError(404, "ไม่พบผู้ใช้");
-    if (u.id === user.id && role !== "manager") await keepAManager(db, id, u.id);
-    await setMember(env, id, user, u, role);
+    await setMember(env, id, user, u);
     return json({ ok: true });
   }
   const rm = rest.match(/^members\/([a-f0-9]{16})\/remove$/);
   if (rm) {
-    const { e } = await access(env, user, id, "manage");
+    const { e } = await access(env, user, id);
     mustBeOpen(e);
-    await keepAManager(db, id, rm[1]);
+    await keepAMember(db, id, rm[1]);
     const u = await db.prepare("SELECT initials FROM users WHERE id = ?1").bind(rm[1]).first();
     await db.prepare("DELETE FROM members WHERE engagement_id = ?1 AND user_id = ?2").bind(id, rm[1]).run();
     await log(env, id, user.initials, "remove_member", { user: u?.initials ?? rm[1] });
     return json({ ok: true });
   }
   if (rest === "settings") {
-    const { e } = await access(env, user, id, "manage");
+    const { e } = await access(env, user, id);
     mustBeOpen(e);
     const body = await readJson(request);
     const t = num(body.tolerance_pct, 0, 20, "tolerance (%)");
@@ -443,7 +431,7 @@ export async function handleEngagements(request, env, path) {
     return json({ ok: true });
   }
   if (rest === "close") {
-    const { e } = await access(env, user, id, "manage");
+    const { e } = await access(env, user, id);
     mustBeOpen(e);
     const at = nowIso();
     await db.prepare("UPDATE engagements SET status = 'closed', closed_at = ?1, closed_by = ?2 WHERE id = ?3").bind(at, user.id, id).run();
@@ -454,12 +442,13 @@ export async function handleEngagements(request, env, path) {
   throw new HttpError(404, "ไม่มีบริการนี้");
 }
 
-async function keepAManager(db, id, leavingUserId) {
+// Keeps an engagement from ever ending up with no one on its team.
+async function keepAMember(db, id, leavingUserId) {
   const r = await db
-    .prepare("SELECT COUNT(*) AS n FROM members WHERE engagement_id = ?1 AND role = 'manager' AND user_id != ?2")
+    .prepare("SELECT COUNT(*) AS n FROM members WHERE engagement_id = ?1 AND user_id != ?2")
     .bind(id, leavingUserId)
     .first();
-  if (r.n === 0) throw new HttpError(409, "ต้องมี Manager อย่างน้อย 1 คน");
+  if (r.n === 0) throw new HttpError(409, "Engagement ต้องมีคนในทีมอย่างน้อย 1 คน");
 }
 
 // ---------- pipeline callbacks (signed with PIPELINE_SECRET, no cookie) ----------

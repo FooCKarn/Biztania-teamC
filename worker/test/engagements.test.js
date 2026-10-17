@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import worker from "../src/index.js";
-import { _resetSchemaCache } from "../src/trail.js";
+import { _resetSchemaCache, SIGNOFF_TARGET } from "../src/trail.js";
 import { purgeExpired } from "../src/engagements.js";
 import { signRequest } from "../src/http.js";
 
@@ -126,8 +126,8 @@ async function setupFirm() {
   assert.equal(e.status, 201);
   assert.equal(e.body.engagement.synthetic, true, "real data stays off until ALLOW_REAL_DATA");
   const id = e.body.engagement.id;
-  assert.equal((await admin.post(`/api/engagements/${id}/members`, { user_id: people.prep.id, role: "preparer" })).status, 200);
-  assert.equal((await admin.post(`/api/engagements/${id}/members`, { user_id: people.rev.id, role: "reviewer" })).status, 200);
+  assert.equal((await admin.post(`/api/engagements/${id}/members`, { user_id: people.prep.id })).status, 200);
+  assert.equal((await admin.post(`/api/engagements/${id}/members`, { user_id: people.rev.id })).status, 200);
   return { admin, ...people, id };
 }
 
@@ -148,7 +148,7 @@ test("login: wrong password is refused, state changes need the CSRF header, logo
   assert.equal((await admin.get("/api/engagements")).status, 200, "other sessions are unaffected");
 });
 
-test("full engagement: upload → pipeline run → sign-off by role → close → purge after 90 days", async () => {
+test("full engagement: upload → pipeline run → check an item → close → purge after 90 days", async () => {
   const { admin, prep, rev, out, id } = await setupFirm();
 
   // Isolation: someone outside the team sees nothing.
@@ -212,18 +212,17 @@ test("full engagement: upload → pipeline run → sign-off by role → close �
   assert.equal(data.body.run_id, MAP.run_id);
   assert.equal((await out.b.get(`/api/engagements/${id}/data/${MAP.run_id}/conflict_map.json`)).status, 403);
 
-  // Sign-off: the account signs (body actor ignored); review needs the reviewer role and another person.
+  // Sign-off: the account signs, whatever the body says; any team member can check an item (one role, no
+  // separate preparer/reviewer step). The one engagement-level sign-off needs every item checked first.
   const trail = `/api/engagements/${id}/trail?run=${MAP.run_id}`;
-  const p1 = await prep.b.post(trail, { run: MAP.run_id, action: "prepare", target: FLAG, value: "issue", reason: "ไม่มีใบอนุมัติ", actor: "ZZ" });
+  const p1 = await prep.b.post(trail, { run: MAP.run_id, action: "check", target: FLAG, value: "issue", reason: "ไม่มีใบอนุมัติ", actor: "ZZ" });
   assert.equal(p1.status, 201);
   assert.equal(p1.body.event.actor, "PR");
-  assert.equal((await prep.b.post(trail, { run: MAP.run_id, action: "review", target: FLAG })).status, 403, "preparer role cannot review");
-  const r1 = await rev.b.post(trail, { run: MAP.run_id, action: "review", target: FLAG });
-  assert.equal(r1.status, 201);
-  assert.equal(r1.body.event.actor, "RV");
   const t = await rev.b.get(trail);
   assert.equal(t.body.chain_ok, true);
-  assert.equal(t.body.state.flags[FLAG].review.by, "RV");
+  assert.equal(t.body.state.flags[FLAG].by, "PR");
+  const early = await rev.b.post(trail, { run: MAP.run_id, action: "signoff", target: SIGNOFF_TARGET, actor: "RV" });
+  assert.equal(early.status, 409, "cannot sign off until every flagged item is checked");
   // The demo route cannot read or write an engagement's trail.
   assert.equal((await worker.fetch(new Request(`https://app.test/api/trail?ws=eng-${id}&run=${MAP.run_id}`), env)).status, 403);
 
@@ -233,9 +232,9 @@ test("full engagement: upload → pipeline run → sign-off by role → close �
   assert.equal(ask.body.configured, false);
   assert.equal((await out.b.post("/api/ask", { question: "x", engagement: id, run: MAP.run_id })).status, 403);
 
-  // Close: manager only; then read-only.
-  assert.equal((await prep.b.post(`/api/engagements/${id}/close`)).status, 403);
-  assert.equal((await admin.post(`/api/engagements/${id}/close`)).status, 200);
+  // Close: any team member, not an outsider; then read-only.
+  assert.equal((await out.b.post(`/api/engagements/${id}/close`)).status, 403);
+  assert.equal((await prep.b.post(`/api/engagements/${id}/close`)).status, 200);
   assert.equal((await prep.b.post(`/api/engagements/${id}/files?name=INV-2.pdf`, PDF)).status, 409);
   assert.equal((await prep.b.post(trail, { run: MAP.run_id, action: "reopen", target: FLAG })).status, 409);
 
@@ -247,7 +246,7 @@ test("full engagement: upload → pipeline run → sign-off by role → close �
   assert.equal((await rev.b.get(`/api/engagements/${id}/files/${fid}`)).status, 404);
   assert.equal((await rev.b.get(`/api/engagements/${id}/data/${MAP.run_id}/${page}`)).status, 404);
   assert.equal((await rev.b.get(`/api/engagements/${id}/data/${MAP.run_id}/conflict_map.json`)).status, 200);
-  assert.equal((await rev.b.get(trail)).body.events.length, 2, "Audit Trail is kept");
+  assert.equal((await rev.b.get(trail)).body.events.length, 1, "Audit Trail is kept");
   const after = await rev.b.get(`/api/engagements/${id}`);
   assert.ok(after.body.engagement.purged_at);
   assert.deepEqual(after.body.files, []);
@@ -289,19 +288,17 @@ test("a failed dispatch marks the run failed, stale runs time out, uploads need 
   assert.equal((await prep.b.post(`/api/engagements/${id}/files?name=b.pdf`, PDF)).status, 503);
 });
 
-test("demo: admin creates shared accounts and the synthetic engagement; demo passwords cannot be changed", async () => {
+test("demo: admin creates a shared account and the synthetic engagement; demo password cannot be changed", async () => {
   const { admin, prep } = await setupFirm();
-  assert.equal((await prep.b.post("/api/users/demo/account/preparer")).status, 403, "admins only");
-  assert.equal((await admin.post("/api/users/demo/engagement")).status, 409, "accounts first");
+  assert.equal((await prep.b.post("/api/users/demo/account")).status, 403, "admins only");
+  assert.equal((await admin.post("/api/users/demo/engagement")).status, 409, "account first");
 
-  const pw = {};
-  for (const role of ["preparer", "reviewer", "manager"]) {
-    const r = await admin.post(`/api/users/demo/account/${role}`);
-    assert.equal(r.status, 201);
-    assert.equal(r.body.user.firm_role, "member");
-    assert.equal(r.body.user.must_change, false);
-    pw[role] = r.body.password;
-  }
+  const r = await admin.post("/api/users/demo/account");
+  assert.equal(r.status, 201);
+  assert.equal(r.body.user.firm_role, "member");
+  assert.equal(r.body.user.must_change, false);
+  const pw = r.body.password;
+
   const e = await admin.post("/api/users/demo/engagement");
   assert.equal(e.status, 201);
   const id = e.body.engagement.id;
@@ -309,24 +306,24 @@ test("demo: admin creates shared accounts and the synthetic engagement; demo pas
   assert.equal((await admin.post(`/api/engagements/${id}/files?name=INV-TG-101.pdf`, PDF)).status, 201);
 
   const dm = browser();
-  assert.equal((await dm.post("/api/auth/login", { email: "manager@demo.example.com", password: pw.manager })).status, 200);
+  assert.equal((await dm.post("/api/auth/login", { email: "auditor@demo.example.com", password: pw })).status, 200);
   const list = (await dm.get("/api/engagements")).body.engagements;
   assert.equal(list.length, 1);
-  assert.equal(list[0].my_role, "manager");
+  assert.equal(list[0].my_role, "auditor");
   assert.equal(list[0].synthetic, true);
-  assert.equal((await dm.post("/api/auth/password", { current: pw.manager, next: "someone else's password" })).status, 403);
+  assert.equal((await dm.post("/api/auth/password", { current: pw, next: "someone else's password" })).status, 403);
 
   // Again: the same engagement (with its files), a new password, old sessions signed out.
-  const again = await admin.post("/api/users/demo/account/manager");
+  const again = await admin.post("/api/users/demo/account");
   assert.equal(again.status, 200);
-  assert.notEqual(again.body.password, pw.manager);
+  assert.notEqual(again.body.password, pw);
   assert.equal((await dm.get("/api/engagements")).status, 401);
   const e2 = await admin.post("/api/users/demo/engagement");
   assert.equal(e2.status, 200);
   assert.equal(e2.body.engagement.id, id);
   assert.deepEqual(e2.body.files, ["INV-TG-101.pdf"]);
   const team = (await admin.get(`/api/engagements/${id}`)).body.members.map((m) => `${m.initials}:${m.role}`).sort();
-  assert.deepEqual(team, ["DM:manager", "DP:preparer", "DR:reviewer", "MG:manager"]);
+  assert.deepEqual(team, ["DA:auditor", "MG:auditor"]);
 });
 
 test("a run whose callbacks never arrive does not block the engagement until the daily cron", async () => {
@@ -358,7 +355,7 @@ test("demo mode: on by default, DEMO_MODE=false turns it off; one click enters t
 
   const r = await guest.post("/api/auth/demo-login", {});
   assert.equal(r.status, 200);
-  assert.equal(r.body.user.email, "manager@demo.example.com");
+  assert.equal(r.body.user.email, "auditor@demo.example.com");
   assert.equal(r.body.user.demo, true);
   const demoId = r.body.engagement.id;
   assert.notEqual(demoId, realId);
@@ -377,8 +374,8 @@ test("demo mode: on by default, DEMO_MODE=false turns it off; one click enters t
   assert.ok(detail.members.every((m) => m.email.endsWith("@demo.example.com")));
 
   // The demo account cannot log in with a password; it cannot change the team or close.
-  assert.equal((await browser().post("/api/auth/login", { email: "manager@demo.example.com", password: "anything-at-all" })).status, 401);
-  assert.equal((await guest.post(`/api/engagements/${demoId}/members`, { user_id: users[0].id, role: "preparer" })).status, 403);
+  assert.equal((await browser().post("/api/auth/login", { email: "auditor@demo.example.com", password: "anything-at-all" })).status, 401);
+  assert.equal((await guest.post(`/api/engagements/${demoId}/members`, { user_id: users[0].id })).status, 403);
   assert.equal((await guest.post(`/api/engagements/${demoId}/close`)).status, 403);
 
   // Core feature: upload (size-capped), then reset wipes it into a fresh engagement.
@@ -393,15 +390,15 @@ test("demo mode: on by default, DEMO_MODE=false turns it off; one click enters t
   assert.deepEqual(fresh.files, []);
   assert.equal((await guest.post(`/api/engagements/${demoId}/files?name=b.pdf`, PDF)).status, 409, "old one is closed");
 
-  // Reviewer role: another entry as a different demo account.
-  const rev = browser();
-  assert.equal((await rev.post("/api/auth/demo-login", { role: "reviewer" })).body.user.initials, "DR");
-  assert.equal((await rev.get("/api/engagements")).body.engagements[0].my_role, "reviewer");
+  // A second visitor enters with the same shared demo account.
+  const second = browser();
+  assert.equal((await second.post("/api/auth/demo-login", {})).body.user.initials, "DA");
+  assert.equal((await second.get("/api/engagements")).body.engagements[0].my_role, "auditor");
   assert.equal((await browser().post("/api/auth/demo-reset")).status, 401, "reset needs a demo session");
   assert.equal((await admin.post("/api/auth/demo-reset")).status, 403, "real accounts cannot reset");
 });
 
-test("file manager: only the user's engagements, storage per kind, other clients as one number, delete by role", async () => {
+test("file manager: only the user's engagements, storage per kind, other clients as one number, delete by any team member", async () => {
   const { admin, prep, rev, out, id } = await setupFirm();
   const other = (await admin.post("/api/engagements", { client: "บริษัท อื่น จำกัด", tolerance_pct: 1, materiality_thb: 1 })).body.engagement.id;
   assert.equal((await admin.post(`/api/engagements/${other}/files?name=secret.pdf`, PDF)).status, 201);

@@ -95,8 +95,6 @@ h3 { margin: 0; font-size: 15px; font-weight: 600; }
 }
 .sub { margin: 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; }
-.progress { display: flex; gap: 10px; font-size: 12px; color: var(--muted); }
-.progress b { color: var(--text); font-variant-numeric: tabular-nums; }
 .principle { margin: 10px 0 14px; color: var(--muted); font-size: 13px; text-align: center; }
 
 /* Segmented control */
@@ -323,10 +321,28 @@ blockquote {
 .card ul { padding-left: 20px; }
 .card li + li { margin-top: 6px; }
 
-.ask { margin-top: 24px; }
+.signoff-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--surface); border-radius: var(--radius); padding: 10px 16px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.signoff-bar.done .pill { font-weight: 600; }
+.signoff-initials { width: 70px; }
 .ask input { flex: 1; min-width: 200px; }
 .answer { margin-top: 10px; white-space: pre-wrap; }
 .foot { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
+
+.ask-fab-wrap { position: fixed; right: 20px; bottom: 20px; z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.ask-fab {
+  display: flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 18px;
+  background: var(--text); color: var(--bg); font-weight: 600; font-size: 14px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22), 0 0 0 1px var(--sep);
+}
+.ask-fab:hover { opacity: 0.9; }
+.ask-fab-label { white-space: nowrap; }
+.ask-panel { width: min(380px, calc(100vw - 40px)); max-height: min(70vh, 560px); overflow: auto; margin: 0; animation: rise 0.2s var(--ease) both; }
+.ask-panel-head { align-items: center; margin-bottom: 10px; }
+.ask-panel-head h3 { margin: 0; }
+@media (max-width: 480px) {
+  .ask-fab-wrap { right: 12px; bottom: 12px; }
+  .ask-fab-label { display: none; }
+}
 
 @media (max-width: 1200px) {
   .workspace { grid-template-columns: 300px minmax(0, 1fr); }

@@ -13,6 +13,7 @@ export default function Engagements() {
   const [list, setList] = useState<List | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [f, setF] = useState({ client: "", period: "", tolerance_pct: "1", materiality_thb: "10000", synthetic: true });
   const load = () =>
     api<List>("api/engagements")
@@ -22,6 +23,8 @@ export default function Engagements() {
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return; // a double click or double Enter must not create two engagements
+    setBusy(true);
     setError(null);
     try {
       const r = await api<{ engagement: Engagement }>("api/engagements", {
@@ -30,6 +33,7 @@ export default function Engagements() {
       location.hash = `/e/${r.engagement.id}`;
     } catch (x) {
       setError((x as Error).message);
+      setBusy(false);
     }
   };
 
@@ -89,9 +93,11 @@ export default function Engagements() {
             </p>
           )}
           <p className="muted small">
-            {t("คุณจะเป็น Manager ของ Engagement นี้ แล้วเพิ่มทีมได้ในหน้าถัดไป", "You will be this engagement's manager and can add the team on the next page.")}
+            {t("คุณจะอยู่ในทีมของ Engagement นี้ แล้วเพิ่มคนอื่นเข้าทีมได้ในหน้าถัดไป", "You will be on this engagement's team and can add others on the next page.")}
           </p>
-          <button className="btn filled">{t("สร้าง", "Create")}</button>
+          <button className="btn filled" disabled={busy}>
+            {busy ? t("กำลังสร้าง…", "Creating…") : t("สร้าง", "Create")}
+          </button>
         </form>
       )}
 
@@ -102,7 +108,7 @@ export default function Engagements() {
           </span>
           <strong>{t("ยังไม่มี Engagement ที่คุณอยู่ในทีม", "You are not on any engagement yet")}</strong>
           <p className="muted small">
-            {list.can_create ? t("กด สร้าง Engagement เพื่อเริ่ม", "Press New engagement to start.") : t("ให้ Manager เพิ่มคุณเข้าทีม", "Ask a manager to add you to a team.")}
+            {list.can_create ? t("กด สร้าง Engagement เพื่อเริ่ม", "Press New engagement to start.") : t("ให้คนในทีมเพิ่มคุณเข้า Engagement", "Ask someone on the team to add you.")}
           </p>
         </div>
       ) : (

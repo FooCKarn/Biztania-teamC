@@ -114,7 +114,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
     setDocFocus(null);
   };
 
-  const prepared = data.flags.filter((f) => decisions[f.id]).length;
+  const checkedCount = data.flags.filter((f) => decisions[f.id]).length;
 
   return (
     <div className="workspace">
@@ -174,11 +174,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
                     </span>
                     <span className="flag-sum">{f.summary}</span>
                     <span className="flag-meta">
-                      <span className={"so" + (d ? " done" : "")} title={t("ผู้จัดทำ", "Preparer")}>
-                        P{d ? ` ${d.by ?? "✓"}` : ""}
-                      </span>
-                      <span className={"so" + (d?.review ? " done" : "")} title={t("ผู้สอบทาน", "Reviewer")}>
-                        R{d?.review ? ` ${d.review.by}` : ""}
+                      <span className={"so" + (d ? " done" : "")} title={t("ตรวจสอบแล้ว", "Checked")}>
+                        ✓{d ? ` ${d.by ?? ""}` : ""}
                       </span>
                       {f.match === "likely" && <span className="pill warn">{MATCH_LABEL.likely}</span>}
                       {f.ocr && <span className="pill">OCR</span>}
@@ -190,7 +187,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
           })}
         </ul>
         <p className="sidebar-foot muted small">
-          {t("ลงนามแล้ว", "Signed")} {prepared}/{data.flags.length} · {t("กด", "Press")} <kbd>J</kbd> / <kbd>K</kbd>{" "}
+          {t("ตรวจสอบแล้ว", "Checked")} {checkedCount}/{data.flags.length} · {t("กด", "Press")} <kbd>J</kbd> / <kbd>K</kbd>{" "}
           {t("เพื่อเลื่อนรายการ", "to move through the list")}
         </p>
       </aside>

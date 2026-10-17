@@ -7,8 +7,13 @@
 // hand (e.g. from the dashboard console) breaks the chain and GET reports chain_ok: false.
 //
 // The server, not the browser, decides: the time stamp, whether the action is allowed in the
-// current state (review needs a different person than the preparer), and the evidence reference,
-// which it copies from the published conflict_map.json (doc, file, locator, file SHA-256).
+// current state, and the evidence reference, which it copies from the published conflict_map.json
+// (doc, file, locator, file SHA-256).
+//
+// Sign-off model: each flagged item gets one "check" (verdict + reason, by whoever on the team did
+// it — this is a single-auditor platform, there is no separate preparer/reviewer step). Once every
+// flag is checked, the engagement is signed off once with "signoff", confirming the whole set was
+// reviewed. A signed-off run is locked for per-flag edits until "unsignoff" reopens it.
 //
 // Public demo (/api/trail): small JSON bodies only, a daily write limit per IP, and each browser
 // gets its own workspace unless a ?ws= link is shared; initials there are typed, not verified.
@@ -23,7 +28,9 @@ const MAX_BODY = 2048;
 const MAX_REASON = 500;
 const WS_RE = /^[a-z0-9-]{4,40}$/;
 const ACTOR_RE = /^[A-Z0-9ก-ฮ]{2,4}$/;
-const ACTIONS = new Set(["prepare", "review", "unreview", "reopen", "pair"]);
+const ACTIONS = new Set(["check", "reopen", "pair", "signoff", "unsignoff"]);
+// Fixed target for the one engagement-level sign-off, so it can never collide with a flag id.
+export const SIGNOFF_TARGET = "__engagement__";
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS trail_events (
@@ -82,16 +89,15 @@ export async function verifyChain(events) {
 export function replay(events) {
   const flags = {};
   const pairs = {};
+  let signoff = null;
   for (const e of events) {
     if (e.action === "pair") pairs[e.target.replace(/^pair:/, "")] = e.value;
-    else if (e.action === "prepare") flags[e.target] = { verdict: e.value, reason: e.reason, at: e.at, by: e.actor };
-    else if (e.action === "review" && flags[e.target]) flags[e.target] = { ...flags[e.target], review: { by: e.actor, at: e.at } };
-    else if (e.action === "unreview" && flags[e.target]) {
-      const { review, ...rest } = flags[e.target];
-      flags[e.target] = rest;
-    } else if (e.action === "reopen") delete flags[e.target];
+    else if (e.action === "check") flags[e.target] = { verdict: e.value, reason: e.reason, at: e.at, by: e.actor };
+    else if (e.action === "reopen") delete flags[e.target];
+    else if (e.action === "signoff") signoff = { by: e.actor, at: e.at };
+    else if (e.action === "unsignoff") signoff = null;
   }
-  return { flags, pairs };
+  return { flags, pairs, signoff };
 }
 
 // Returns an error message (Thai, shown to the auditor) or null when the action fits the current state.
@@ -107,23 +113,26 @@ export function checkAction(a, state, map) {
     return null;
   }
 
+  if (a.action === "signoff") {
+    if (state.signoff) return "ลงนามยืนยันผลแล้ว";
+    const total = (map.flags || []).length;
+    const checked = Object.keys(state.flags).length;
+    if (checked < total) return `ยังตรวจสอบไม่ครบทุกจุด (${checked}/${total})`;
+    return null;
+  }
+  if (a.action === "unsignoff") return state.signoff ? null : "ยังไม่ได้ลงนามยืนยันผล";
+
   if (!(map.flags || []).some((f) => f.id === a.target)) return "ไม่พบรายการนี้ในผลการตรวจ";
+  if (state.signoff) return "ลงนามยืนยันผลแล้ว ต้องยกเลิกการลงนามก่อนจึงจะแก้ไขรายการได้";
   const cur = state.flags[a.target];
   switch (a.action) {
-    case "prepare":
-      if (cur) return "รายการนี้ลงนามผู้จัดทำแล้ว ต้องกดแก้ไขก่อน";
+    case "check":
+      if (cur) return "รายการนี้ตรวจสอบแล้ว ต้องกดแก้ไขก่อน";
       if (a.value !== "issue" && a.value !== "not_issue") return "ผลการพิจารณาไม่ถูกต้อง";
       if (a.reason.length < 5) return "ต้องใส่เหตุผลอย่างน้อย 5 ตัวอักษร";
       return null;
-    case "review":
-      if (!cur) return "ต้องให้ผู้จัดทำลงนามก่อน";
-      if (cur.review) return "รายการนี้สอบทานแล้ว";
-      if (cur.by === a.actor) return "ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ";
-      return null;
-    case "unreview":
-      return cur?.review ? null : "รายการนี้ยังไม่ได้สอบทาน";
     case "reopen":
-      return cur ? null : "รายการนี้ยังไม่ได้ลงนาม";
+      return cur ? null : "รายการนี้ยังไม่ได้ตรวจสอบ";
   }
   return "ไม่รู้จักการกระทำนี้";
 }
@@ -135,6 +144,7 @@ export function evidenceRef(a, map) {
     const doc = a.target.replace(/^pair:/, "");
     return [doc, a.value].map((id) => ({ doc: id, sha256: sha.get(id) ?? null }));
   }
+  if (a.action === "signoff" || a.action === "unsignoff") return [];
   const flag = map.flags.find((f) => f.id === a.target);
   return (flag.evidence || []).map((e) => ({ doc: e.doc, file: e.file, locator: e.locator, sha256: sha.get(e.doc) ?? null }));
 }

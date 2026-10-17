@@ -39,8 +39,9 @@ export interface User {
   demo?: boolean;
 }
 
-export type Role = "preparer" | "reviewer" | "manager";
-export const ROLE_LABEL: Record<string, string> = bi({ preparer: ["ผู้จัดทำ", "Preparer"], reviewer: ["ผู้สอบทาน", "Reviewer"], manager: ["Manager", "Manager"] });
+// One role: everyone on an engagement's team is an auditor with the same access.
+export type Role = "auditor";
+export const ROLE_LABEL: Record<string, string> = bi({ auditor: ["ผู้สอบบัญชี", "Auditor"] });
 
 export interface Engagement {
   id: string;

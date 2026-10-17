@@ -11,11 +11,16 @@ interface Answer {
 
 // Q&A goes through the Worker (/api/ask). The Gemini key lives only in the Worker;
 // the browser never sees it. The Worker answers only from conflict_map.json.
+//
+// Shown as a floating chat bubble (fixed to the viewport) so the question box is visible the
+// moment this page opens, not only after scrolling to the bottom.
 export default function AskBox({ run }: { run?: string }) {
   const { engagement } = useSource();
+  const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Answer | null>(null);
+  const disabledForRealData = !!engagement && !engagement.synthetic;
 
   const ask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,44 +42,57 @@ export default function AskBox({ run }: { run?: string }) {
     }
   };
 
-  if (engagement && !engagement.synthetic)
-    return (
-      <section className="card ask" aria-label={t("ถามระบบ", "Ask")}>
-        <h3>{t("ถามจากผลการตรวจ", "Ask about these results")}</h3>
-        <p className="muted small">
-          {t("ปิดการถาม AI สำหรับข้อมูลจริง จนกว่าจะเปลี่ยนผู้ให้บริการ AI ตามสัญญาข้อมูล", "AI Q&A is off for real data until the AI provider is switched under a data agreement.")}
-        </p>
-      </section>
-    );
   return (
-    <section className="card ask" aria-label={t("ถามระบบ", "Ask")}>
-      <h3>{t("ถามจากผลการตรวจ", "Ask about these results")}</h3>
-      <form onSubmit={ask} className="row">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t("เช่น รายการไหนจ่ายเงินเข้าบัญชีที่ไม่ใช่ของ vendor", "e.g. Which payments went to an account that is not the vendor's?")}
-          maxLength={300}
-          aria-label={t("คำถาม", "Question")}
-        />
-        <button className="btn" disabled={busy || !q.trim()}>
-          {busy ? t("กำลังถาม…", "Asking…") : t("ถาม", "Ask")}
-        </button>
-      </form>
-      {res && (
-        <div className="answer">
-          <p>{res.answer}</p>
-          {res.cited && res.cited.length > 0 && <p className="muted small">
-              {t("อ้างอิง", "Cited")}: {res.cited.join(", ")}
-            </p>}
-          {res.model && <p className="muted small">
-              {t("ตอบโดย", "Answered by")} {res.model}
-            </p>}
-        </div>
+    <div className="ask-fab-wrap">
+      {open && (
+        <section className="card ask ask-panel" aria-label={t("ถามระบบ", "Ask")}>
+          <div className="between ask-panel-head">
+            <h3>{t("ถามจากผลการตรวจ", "Ask about these results")}</h3>
+            <button className="link" onClick={() => setOpen(false)} aria-label={t("ปิด", "Close")}>
+              ✕
+            </button>
+          </div>
+          {disabledForRealData ? (
+            <p className="muted small">
+              {t("ปิดการถาม AI สำหรับข้อมูลจริง จนกว่าจะเปลี่ยนผู้ให้บริการ AI ตามสัญญาข้อมูล", "AI Q&A is off for real data until the AI provider is switched under a data agreement.")}
+            </p>
+          ) : (
+            <>
+              <form onSubmit={ask} className="row">
+                <input
+                  autoFocus
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t("เช่น รายการไหนจ่ายเงินเข้าบัญชีที่ไม่ใช่ของ vendor", "e.g. Which payments went to an account that is not the vendor's?")}
+                  maxLength={300}
+                  aria-label={t("คำถาม", "Question")}
+                />
+                <button className="btn" disabled={busy || !q.trim()}>
+                  {busy ? t("กำลังถาม…", "Asking…") : t("ถาม", "Ask")}
+                </button>
+              </form>
+              {res && (
+                <div className="answer">
+                  <p>{res.answer}</p>
+                  {res.cited && res.cited.length > 0 && <p className="muted small">
+                      {t("อ้างอิง", "Cited")}: {res.cited.join(", ")}
+                    </p>}
+                  {res.model && <p className="muted small">
+                      {t("ตอบโดย", "Answered by")} {res.model}
+                    </p>}
+                </div>
+              )}
+              <p className="muted small">
+                {t("คำตอบสร้างจากผลในหน้านี้เท่านั้น และเป็นข้อเสนอให้ตรวจ ไม่ใช่ข้อสรุป", "Answers use only the results on this page and are suggestions to check, not conclusions.")}
+              </p>
+            </>
+          )}
+        </section>
       )}
-      <p className="muted small">
-        {t("คำตอบสร้างจากผลในหน้านี้เท่านั้น และเป็นข้อเสนอให้ตรวจ ไม่ใช่ข้อสรุป", "Answers use only the results on this page and are suggestions to check, not conclusions.")}
-      </p>
-    </section>
+      <button className="ask-fab" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={t("ถาม AI", "Ask AI")}>
+        <span aria-hidden>{open ? "✕" : "💬"}</span>
+        <span className="ask-fab-label">{t("ถาม AI", "Ask AI")}</span>
+      </button>
+    </div>
   );
 }

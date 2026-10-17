@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api, ROLE_LABEL } from "../api";
+import { api } from "../api";
 import { LangToggle, t } from "../i18n";
 
 function useSubmit(fn: () => Promise<void>) {
@@ -27,13 +27,6 @@ const Field = ({ label, ...p }: { label: string } & React.InputHTMLAttributes<HT
   </label>
 );
 
-const demoChoices = () =>
-  [
-    ["preparer", "P", t("อัปโหลด ประมวลผล และลงนามจัดทำ", "Upload, process and sign as preparer")],
-    ["reviewer", "R", t("สอบทานและลงนามรับรองผลของผู้จัดทำ", "Review and sign off the preparer's work")],
-    ["manager", "M", t("ทำได้ทุกอย่างในเดโม", "Everything in the demo")],
-  ] as const;
-
 export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: boolean; demoMode?: boolean; onDone: () => void }) {
   const [setup, setSetup] = useState(setupNeeded);
   const [f, setF] = useState({ email: "", password: "", token: "", name: "", initials: "" });
@@ -44,21 +37,22 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
     onDone();
   });
 
-  // With the demo entry on, the page shows only the role choices. The real form stays reachable (not linked) at
-  // ?login=1 for firm admins, and shows itself while the first admin account still has to be created.
+  // With the demo entry on, the page shows only the "try it" button. The real form stays reachable
+  // (not linked) at ?login=1 for firm admins, and shows itself while the first admin account still
+  // has to be created.
   const showForm = !demoMode || setupNeeded || new URLSearchParams(location.search).has("login");
-  const [demoBusy, setDemoBusy] = useState<string | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);
-  const enterDemo = async (role: string) => {
-    setDemoBusy(role);
+  const enterDemo = async () => {
+    setDemoBusy(true);
     setDemoError(null);
     try {
-      await api("api/auth/demo-login", { body: { role } });
+      await api("api/auth/demo-login", { method: "POST" });
       location.hash = "/";
       onDone();
     } catch (x) {
       setDemoError((x as Error).message);
-      setDemoBusy(null);
+      setDemoBusy(false);
     }
   };
 
@@ -76,11 +70,11 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
       </div>
       {demoMode && (
         <div className="group-body form">
-          <h3>{t("เลือกมุมมองเพื่อลองใช้ (ไม่ต้องเข้าสู่ระบบ)", "Pick a role to try it (no sign-in)")}</h3>
+          <h3>{t("ลองใช้งาน (ไม่ต้องเข้าสู่ระบบ)", "Try it out (no sign-in)")}</h3>
           <p className="muted small">
             {t(
-              "เข้าด้วยบัญชีทดลองตามบทบาทที่เลือก ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง สลับบทบาทได้ภายหลังจากแบนเนอร์",
-              "You enter with a shared trial account for that role: upload, process, review flagged items, ask questions and sign off. Synthetic data only, never upload real documents. You can switch roles later from the banner.",
+              "เข้าด้วยบัญชีทดลองที่ใช้ร่วมกัน ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง",
+              "You enter with a shared trial account: upload, process, review flagged items, ask questions and sign off. Synthetic data only, never upload real documents.",
             )}
           </p>
           {demoError && (
@@ -88,22 +82,9 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
               {demoError}
             </p>
           )}
-          <div className="role-picker">
-            {demoChoices().map(([role, letter, hint]) => (
-              <button key={role} type="button" className="role-card" onClick={() => enterDemo(role)} disabled={demoBusy !== null}>
-                <span className="avatar big" aria-hidden>
-                  {letter}
-                </span>
-                <span className="role-text">
-                  <strong>{demoBusy === role ? t("กำลังเข้า…", "Signing in…") : t(`เข้าเป็น${ROLE_LABEL[role]}`, `Enter as ${ROLE_LABEL[role]}`)}</strong>
-                  <span className="muted small">{hint}</span>
-                </span>
-                <span className="chev" aria-hidden>
-                  ›
-                </span>
-              </button>
-            ))}
-          </div>
+          <button type="button" className="btn filled wide" onClick={enterDemo} disabled={demoBusy}>
+            {demoBusy ? t("กำลังเข้า…", "Signing in…") : t("เข้าใช้งานเดโม", "Enter the demo")}
+          </button>
         </div>
       )}
       {showForm && (

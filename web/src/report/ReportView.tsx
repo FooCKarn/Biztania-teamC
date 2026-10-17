@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { ConflictMap, Decision } from "../types";
+import type { ConflictMap, Decision, Signoff } from "../types";
 import { baht, fieldLabel, KIND_LABEL, RISK_LABEL } from "../labels";
 import { t as tr, useLang } from "../i18n";
 import { buildReport, when, type Audience } from "./model";
@@ -10,17 +10,18 @@ import "./report.css";
 interface Props {
   data: ConflictMap;
   decisions: Record<string, Decision>;
+  signoff: Signoff | null;
 }
 
 const RISK_CLASS = { สูง: "risk-high", กลาง: "risk-mid", ต่ำ: "risk-low" } as const;
 
 // Printable working paper, also downloadable as Excel and Word (editable copy). "บันทึก PDF" uses the browser's print-to-PDF, so Thai text renders with
 // the system fonts and nothing leaves the browser.
-export default function ReportView({ data, decisions }: Props) {
+export default function ReportView({ data, decisions, signoff }: Props) {
   const [audience, setAudience] = useState<Audience>("manager");
   const lang = useLang();
   // lang is a dependency because the labels inside the report follow the language.
-  const report = useMemo(() => buildReport(data, decisions, audience), [data, decisions, audience, lang]);
+  const report = useMemo(() => buildReport(data, decisions, signoff, audience), [data, decisions, signoff, audience, lang]);
   const client = audience === "client";
   const t = report.totals;
 
@@ -48,8 +49,8 @@ export default function ReportView({ data, decisions }: Props) {
         </div>
         <span className="muted small">
           {client
-            ? tr("เฉพาะรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น ไม่มีเหตุผลภายในของทีม", "Only items a reviewer signed off as issues, without the team's internal notes")
-            : tr("ทุกรายการพร้อมผลการพิจารณาและการลงนาม", "Every item with its conclusion and sign-offs")}
+            ? tr("เฉพาะรายการจากผลที่ลงนามยืนยันแล้วว่าเป็นประเด็น ไม่มีเหตุผลภายในของทีม", "Only items from a signed-off run marked as issues, without the team's internal notes")
+            : tr("ทุกรายการพร้อมผลการพิจารณาและการตรวจสอบ", "Every item with its conclusion and check")}
         </span>
         <span className="grow" />
         <button className="btn" onClick={() => downloadWorkbook(report, data)}>
@@ -80,16 +81,12 @@ export default function ReportView({ data, decisions }: Props) {
           <table className="rp-sign">
             <tbody>
               <tr>
-                <th>{tr("จัดทำโดย", "Prepared by")}</th>
-                <td>{report.preparers.join(", ") || " "}</td>
+                <th>{tr("ตรวจสอบโดย", "Checked by")}</th>
+                <td>{report.checkedBy.join(", ") || " "}</td>
               </tr>
               <tr>
-                <th>{tr("สอบทานโดย", "Reviewed by")}</th>
-                <td>{report.reviewers.join(", ") || " "}</td>
-              </tr>
-              <tr>
-                <th>{tr("อนุมัติ (Manager)", "Approved (manager)")}</th>
-                <td> </td>
+                <th>{tr("ลงนามยืนยันผลโดย", "Signed off by")}</th>
+                <td>{report.signoff ? `${report.signoff.by} · ${when(report.signoff.at)}` : " "}</td>
               </tr>
             </tbody>
           </table>
@@ -125,11 +122,11 @@ export default function ReportView({ data, decisions }: Props) {
               {!client && (
                 <>
                   <tr>
-                    <th>{tr("สอบทานแล้ว", "Reviewed")}</th>
+                    <th>{tr("ตรวจสอบแล้ว", "Checked")}</th>
                     {report.byRisk.map((r) => (
-                      <td key={r.risk}>{r.reviewed}</td>
+                      <td key={r.risk}>{r.checked}</td>
                     ))}
-                    <td>{t.reviewed}</td>
+                    <td>{t.checked}</td>
                   </tr>
                   <tr>
                     <th>{tr("สรุปว่าเป็นประเด็น", "Concluded as issue")}</th>
@@ -151,8 +148,8 @@ export default function ReportView({ data, decisions }: Props) {
           </table>
           {!client && (
             <p className="rp-meta">
-              {tr("จัดทำแล้ว", "Prepared")} {t.prepared}/{t.flags} · {tr("สอบทานแล้ว", "Reviewed")} {t.reviewed}/{t.flags} ·{" "}
-              {tr("ไม่เป็นประเด็น", "Not an issue")} {t.notIssues} · {tr("รอจับคู่", "Unmatched")} {t.pending} ({tr("ยังไม่นำไปตรวจ", "not yet checked")})
+              {tr("ตรวจสอบแล้ว", "Checked")} {t.checked}/{t.flags} · {tr("ไม่เป็นประเด็น", "Not an issue")} {t.notIssues} ·{" "}
+              {tr("รอจับคู่", "Unmatched")} {t.pending} ({tr("ยังไม่นำไปตรวจ", "not yet checked")})
             </p>
           )}
         </section>
@@ -162,7 +159,7 @@ export default function ReportView({ data, decisions }: Props) {
           {report.flags.length === 0 && (
             <p className="rp-meta">
               {client
-                ? tr("ยังไม่มีรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น", "No item has been signed off as an issue yet")
+                ? tr("ยังไม่มีรายการจากผลที่ลงนามยืนยันแล้วว่าเป็นประเด็น", "No item from a signed-off run has been marked as an issue yet")
                 : tr("ไม่มีรายการที่ควรตรวจ", "Nothing to check")}
             </p>
           )}
@@ -207,12 +204,8 @@ export default function ReportView({ data, decisions }: Props) {
                       </td>
                     </tr>
                     <tr>
-                      <th>{tr("ผู้จัดทำ", "Preparer")}</th>
+                      <th>{tr("ตรวจสอบโดย", "Checked by")}</th>
                       <td>{r.decision ? `${r.decision.by ?? "-"} · ${when(r.decision.at)}` : "-"}</td>
-                    </tr>
-                    <tr>
-                      <th>{tr("ผู้สอบทาน", "Reviewer")}</th>
-                      <td>{r.decision?.review ? `${r.decision.review.by} · ${when(r.decision.review.at)}` : "-"}</td>
                     </tr>
                   </tbody>
                 </table>
