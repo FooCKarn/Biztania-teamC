@@ -198,7 +198,7 @@ export default function App() {
   const eng = hash.match(/^\/e\/([a-f0-9]{12})$/);
   const files = hash.match(/^\/files(?:\/([a-f0-9]{12}))?$/);
   let page;
-  if (eng) page = <EngagementPage id={eng[1]} me={user} />;
+  if (eng) page = <EngagementPage id={eng[1]} />;
   else if (files) page = <Files engagement={files[1]} />;
   else if (hash === "/users" && user.firm_role === "admin") page = <Users me={user} />;
   else if (hash === "/account") page = <ChangePassword onDone={() => (location.hash = "/")} />;
