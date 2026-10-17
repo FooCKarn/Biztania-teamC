@@ -17,6 +17,10 @@ const PBKDF2_ITER = 100_000;
 const MIN_PASSWORD = 10;
 export const INITIALS_RE = /^[A-Z0-9ก-ฮ]{2,4}$/;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}$/;
+// Shared demo accounts (worker/src/demo.js). Many people log in with the same password, so nobody
+// may change it; the firm admin resets them from the users page instead.
+export const DEMO_DOMAIN = "demo.example.com";
+export const isDemoEmail = (email) => String(email || "").endsWith(`@${DEMO_DOMAIN}`);
 
 async function pbkdf2(password, saltHex, iter = PBKDF2_ITER) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
@@ -39,14 +43,14 @@ function checkPassword(pw) {
 }
 
 // Readable one-time password, e.g. "kq7m-2xpw-h9ra" (no 0/o/1/l).
-function tempPassword() {
+export function tempPassword() {
   const abc = "abcdefghijkmnpqrstuvwxyz23456789";
   const b = crypto.getRandomValues(new Uint8Array(12));
   const s = [...b].map((x) => abc[x % abc.length]).join("");
   return `${s.slice(0, 4)}-${s.slice(4, 8)}-${s.slice(8, 12)}`;
 }
 
-const publicUser = (u) => ({
+export const publicUser = (u) => ({
   id: u.id,
   email: u.email,
   name: u.name,
@@ -121,7 +125,7 @@ function cleanNewUser(body) {
   return u;
 }
 
-async function insertUser(env, u, firmRole, pw, mustChange) {
+export async function insertUser(env, u, firmRole, pw, mustChange) {
   const row = { id: randomId(8), ...u, firm_role: firmRole, ...(await hashPassword(pw, env)), must_change: mustChange ? 1 : 0, disabled: 0, created_at: nowIso() };
   try {
     await env.AUDIT_DB.prepare(
@@ -185,6 +189,7 @@ export async function handleAuth(request, env, path) {
 
   if (path === "/api/auth/password") {
     const u = await requireUser(request, env, { allowMustChange: true });
+    if (isDemoEmail(u.email)) throw new HttpError(403, "บัญชีทดลองใช้ร่วมกันหลายคน จึงเปลี่ยนรหัสผ่านไม่ได้");
     const body = await readJson(request);
     if (!sameString(await pbkdf2(String(body.current || ""), u.pw_salt, u.pw_iter), u.pw_hash))
       throw new HttpError(403, "รหัสผ่านเดิมไม่ถูกต้อง");
@@ -233,11 +238,12 @@ export async function handleUsers(request, env, path) {
   if (op === "reset") {
     const pw = tempPassword();
     const h = await hashPassword(pw, env);
+    const mustChange = isDemoEmail(target.email) ? 0 : 1; // a demo account cannot change its password
     await db.batch([
-      db.prepare("UPDATE users SET pw_salt = ?1, pw_hash = ?2, pw_iter = ?3, must_change = 1 WHERE id = ?4").bind(h.pw_salt, h.pw_hash, h.pw_iter, id),
+      db.prepare("UPDATE users SET pw_salt = ?1, pw_hash = ?2, pw_iter = ?3, must_change = ?4 WHERE id = ?5").bind(h.pw_salt, h.pw_hash, h.pw_iter, mustChange, id),
       db.prepare("DELETE FROM sessions WHERE user_id = ?1").bind(id),
     ]);
-    return json({ user: publicUser({ ...target, must_change: 1 }), temp_password: pw });
+    return json({ user: publicUser({ ...target, must_change: mustChange }), temp_password: pw });
   }
   const disabled = op === "disable" ? 1 : 0;
   const stmts = [db.prepare("UPDATE users SET disabled = ?1 WHERE id = ?2").bind(disabled, id)];

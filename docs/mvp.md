@@ -137,7 +137,7 @@ deploy ครั้งถัดไปใช้ได้ทันที Worker �
 
 ## ใช้งานจริง: ล็อกอิน · Engagement · อัปโหลด (ทดลองกับข้อมูลสมมติ)
 
-ขั้นตอน deploy และค่าที่ต้องตั้งอยู่ใน [`docs/deploy-pipeline.md`](deploy-pipeline.md)
+ขั้นตอน deploy และค่าที่ต้องตั้งอยู่ใน [`docs/deploy-pipeline.md`](deploy-pipeline.md) · บัญชีทดลองและเส้นทาง demo สำหรับผู้ใช้ภายนอกอยู่ใน [`docs/demo.md`](demo.md)
 
 ```
 เบราว์เซอร์ ──(cookie, x-ac-csrf)──▶ Cloudflare Worker ──▶ D1 auditpal-trail  (ผู้ใช้, Engagement, ทีม, Audit Trail, บันทึกการใช้งาน)

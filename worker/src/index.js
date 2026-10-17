@@ -21,6 +21,7 @@ import { HttpError } from "./http.js";
 import { handleAuth, handleUsers, requireUser } from "./auth.js";
 import { handleEngagements, handleInternal, loadEngagementMap, purgeExpired } from "./engagements.js";
 import { ensureAppSchema } from "./schema.js";
+import { handleDemo } from "./demo.js";
 
 const MAX_QUESTION = 300;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
@@ -234,6 +235,7 @@ async function route(request, env, path) {
     return json({ error: "ยังไม่ได้ผูกฐานข้อมูล (D1 binding AUDIT_DB)" }, 503);
   if (needsCsrfHeader(request, path)) return json({ error: "คำขอไม่ถูกต้อง (CSRF)" }, 403);
   if (path.startsWith("/api/auth/")) return handleAuth(request, env, path);
+  if (path.startsWith("/api/users/demo/")) return handleDemo(request, env, path);
   if (path === "/api/users" || path.startsWith("/api/users/")) return handleUsers(request, env, path);
   if (path === "/api/engagements" || path.startsWith("/api/engagements/")) return handleEngagements(request, env, path);
   if (path.startsWith("/api/internal/")) return handleInternal(request, env, path);
