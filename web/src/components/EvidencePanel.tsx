@@ -1,5 +1,5 @@
 import type { Flag, Rule } from "../types";
-import { FIELD_LABEL } from "../labels";
+import { fieldLabel } from "../labels";
 import type { Mark } from "./DocViewer";
 
 interface Props {
@@ -48,7 +48,7 @@ export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }:
                     </span>
                   </td>
                   <td>
-                    {FIELD_LABEL[e.field] ?? e.field}
+                    {fieldLabel(e.field)}
                     {e.method === "ocr" && <span className="pill warn">OCR</span>}
                     <span className="src-inline muted small">
                       {e.file} · {e.locator}

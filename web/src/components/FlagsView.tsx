@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ConflictMap, Doc, Flag } from "../types";
 import type { Trail } from "../decisions";
-import { FIELD_LABEL, MATCH_LABEL, RISK_ORDER, TYPE_LABEL, baht } from "../labels";
+import { fieldLabel, MATCH_LABEL, RISK_ORDER, TYPE_LABEL, baht } from "../labels";
 import TxnChain from "./TxnChain";
 import EvidencePanel from "./EvidencePanel";
 import DecisionBox from "./DecisionBox";
@@ -79,7 +79,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
   const flagMarks: Mark[] = (flag?.evidence ?? []).map((e, i) => ({
     key: String(i),
     doc: resolve(e.doc)?.id ?? e.doc,
-    label: FIELD_LABEL[e.field] ?? e.field,
+    label: fieldLabel(e.field),
     value: e.value,
     quote: e.quote,
     locator: e.locator,
@@ -99,7 +99,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
       : Object.values(viewerDoc.fields).map((f) => ({
           key: "f:" + f.name,
           doc: viewerDoc.id,
-          label: FIELD_LABEL[f.name] ?? f.name,
+          label: fieldLabel(f.name),
           value: f.value,
           quote: f.quote,
           locator: f.locator,
