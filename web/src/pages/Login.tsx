@@ -26,6 +26,12 @@ const Field = ({ label, ...p }: { label: string } & React.InputHTMLAttributes<HT
   </label>
 );
 
+const DEMO_CHOICES = [
+  ["preparer", "ผู้จัดทำ", "อัปโหลด ประมวลผล และลงนามจัดทำ"],
+  ["reviewer", "ผู้สอบทาน", "สอบทานและลงนามรับรองผลของผู้จัดทำ"],
+  ["manager", "Manager", "ทำได้ทุกอย่างในเดโม"],
+] as const;
+
 export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: boolean; demoMode?: boolean; onDone: () => void }) {
   const [setup, setSetup] = useState(setupNeeded);
   const [f, setF] = useState({ email: "", password: "", token: "", name: "", initials: "" });
@@ -36,18 +42,18 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
     onDone();
   });
 
-  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState<string | null>(null);
   const [demoError, setDemoError] = useState<string | null>(null);
-  const enterDemo = async () => {
-    setDemoBusy(true);
+  const enterDemo = async (role: string) => {
+    setDemoBusy(role);
     setDemoError(null);
     try {
-      await api("api/auth/demo-login", { body: { role: "manager" } });
+      await api("api/auth/demo-login", { body: { role } });
       location.hash = "/";
       onDone();
     } catch (x) {
       setDemoError((x as Error).message);
-      setDemoBusy(false);
+      setDemoBusy(null);
     }
   };
 
@@ -62,18 +68,20 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
       </div>
       {demoMode && (
         <div className="group-body form">
-          <h3>ลองใช้ฟีเจอร์หลักทันที</h3>
+          <h3>เลือกมุมมองเพื่อลองใช้ (ไม่ต้องเข้าสู่ระบบ)</h3>
           <p className="muted small">
-            เข้าด้วยบัญชีทดลอง (บทบาท Manager) ไม่ต้องกรอกอีเมลหรือรหัสผ่าน ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง
+            เข้าด้วยบัญชีทดลองตามบทบาทที่เลือก ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง สลับบทบาทได้ภายหลังจากแบนเนอร์
           </p>
           {demoError && (
             <p className="small error" role="alert">
               {demoError}
             </p>
           )}
-          <button type="button" className="btn filled wide" onClick={enterDemo} disabled={demoBusy}>
-            {demoBusy ? "กำลังเข้า…" : "เข้าโหมดเดโม (ไม่ต้องเข้าสู่ระบบ)"}
-          </button>
+          {DEMO_CHOICES.map(([role, label, hint]) => (
+            <button key={role} type="button" className="btn wide" onClick={() => enterDemo(role)} disabled={demoBusy !== null}>
+              {demoBusy === role ? "กำลังเข้า…" : `เข้าเป็น${label}`} <span className="muted small">· {hint}</span>
+            </button>
+          ))}
         </div>
       )}
       <form className="group-body form" onSubmit={submit}>

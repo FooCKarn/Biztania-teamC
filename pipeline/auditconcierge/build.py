@@ -48,7 +48,7 @@ def build(folder: Path, out: Path | None = None, extractor: str = "template", ll
     """extractor: template (default here, offline and deterministic for tests) | llm | auto.
     llm: an already made LLMExtractor (tests pass one with a fake transport)."""
     llm = llm or make_extractor(extractor)
-    records, skipped = read_engagement(folder, llm)
+    records, skipped, skip_reasons = read_engagement(folder, llm)
     boxes = save_pages(folder, records, out) if out else {}
     cfg = load_remember(folder, records)
     book = VendorBook([r for r in records if r.kind == "vendor"])
@@ -105,7 +105,7 @@ def build(folder: Path, out: Path | None = None, extractor: str = "template", ll
         "extraction": {"mode": "llm" if llm else "template", "models": dict(llm.used) if llm else {},
                        "template_fallback": list(llm.fallbacks) if llm else [],
                        "errors": sorted(set(llm.errors)) if llm else []},
-        "coverage": {"files": len(files), "unreadable_files": skipped, "unclear_fields": unclear,
+        "coverage": {"files": len(files), "unreadable_files": skipped, "unreadable_reasons": skip_reasons, "unclear_fields": unclear,
                      "unverified_fields": unverified},
     }
     if out:
