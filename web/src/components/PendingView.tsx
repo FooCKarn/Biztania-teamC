@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import type { Trail } from "../decisions";
 import type { ConflictMap, Doc } from "../types";
 import { fieldLabel, KIND_LABEL } from "../labels";
 
@@ -19,24 +20,18 @@ function Facts({ doc }: { doc: Doc }) {
 
 // Documents whose partner is ambiguous are NOT checked for conflicts until the auditor
 // confirms the pair; guessing would create false flags or hide real ones.
-export default function PendingView({ data, docs, runId }: { data: ConflictMap; docs: Map<string, Doc>; runId: string }) {
-  const key = `ac-pairs-${runId}`;
-  const [picked, setPicked] = useState<Record<string, string>>({});
-  useEffect(() => {
+export default function PendingView({ data, docs, trail }: { data: ConflictMap; docs: Map<string, Doc>; trail: Trail }) {
+  const picked = trail.pairs;
+  const [error, setError] = useState<string | null>(null);
+  const pick = async (doc: string, cand: string) => {
+    let actor = "";
     try {
-      setPicked(JSON.parse(localStorage.getItem(key) || "{}"));
-    } catch {
-      setPicked({});
-    }
-  }, [key]);
-  const pick = (doc: string, cand: string) => {
-    const next = { ...picked, [doc]: cand };
-    setPicked(next);
-    try {
-      localStorage.setItem(key, JSON.stringify(next));
+      actor = (localStorage.getItem("ac-initials") ?? "").trim().toUpperCase();
     } catch {
       /* ignore */
     }
+    if (actor.length < 2) return setError("ใส่ชื่อย่อในช่องลงนามของหน้า ควรตรวจ ก่อนยืนยันคู่");
+    setError(await trail.act({ action: "pair", target: `pair:${doc}`, value: cand, actor }));
   };
 
   if (!data.pending.length) return <p className="muted pad">ไม่มีเอกสารที่รอจับคู่</p>;
@@ -45,6 +40,11 @@ export default function PendingView({ data, docs, runId }: { data: ConflictMap; 
       <p className="muted">
         เอกสารที่ระบบไม่แน่ใจว่าคู่กับเอกสารใด จะ<strong>ยังไม่ถูกนำไปตรวจขัดแย้ง</strong>จนกว่าผู้สอบบัญชีจะยืนยันคู่
       </p>
+      {error && (
+        <p className="small error" role="alert">
+          {error}
+        </p>
+      )}
       {data.pending.map((p) => {
         const doc = docs.get(p.doc);
         return (
@@ -75,7 +75,8 @@ export default function PendingView({ data, docs, runId }: { data: ConflictMap; 
             </div>
             {picked[p.doc] && (
               <p className="small muted">
-                เดโม: บันทึกคู่ {p.doc} ↔ {picked[p.doc]} ไว้ในเบราว์เซอร์แล้ว ระบบจริงจะรันตรวจขัดแย้งของคู่นี้ใหม่ทันที
+                บันทึกคู่ {p.doc} ↔ {picked[p.doc]} ไว้ใน Audit Trail {trail.mode === "server" ? "บน server" : "ของเบราว์เซอร์นี้"} แล้ว
+                ระบบจริงจะรันตรวจขัดแย้งของคู่นี้ใหม่ทันที
               </p>
             )}
           </div>
