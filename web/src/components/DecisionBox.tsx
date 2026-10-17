@@ -65,14 +65,10 @@ export default function DecisionBox({ flagId, trail }: Props) {
 
   return (
     <section className="group" aria-label={t("ตรวจสอบ", "Check")}>
-      <h3 className="group-title">{t("ตรวจสอบรายการ", "Check this item")}</h3>
+      <h3 className="group-title review-title">{t("ผลการตรวจสอบ", "Review result")}</h3>
       <div className="group-body signoff">
         {signedIn ? (
-          <p className="muted small">
-            {t("ตรวจในชื่อ", "Checking as")} <b>{trail.actor}</b>{" "}
-            {t("จากบัญชีที่เข้าสู่ระบบ", "from the signed-in account")}
-            {trail.readOnly && ` · ${t("บริษัทปิดแล้ว ดูได้อย่างเดียว", "Company closed, read only")}`}
-          </p>
+          trail.readOnly && <p className="muted small">{t("บริษัทปิดแล้ว ดูได้อย่างเดียว", "Company closed, read only")}</p>
         ) : (
           <label className="field-row">
             <span>{t("ชื่อย่อของคุณ", "Your initials")}</span>
@@ -168,17 +164,15 @@ export default function DecisionBox({ flagId, trail }: Props) {
             </ol>
           </details>
         )}
-        <p className="muted small">
-          {trail.mode === "server"
-            ? `${t("บันทึกเป็น Audit Trail บน server (เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้)", "Recorded in the server Audit Trail (append-only)")} · ${
-                trail.chainOk
-                  ? t("สายแฮชครบ ไม่ถูกแก้ไข", "hash chain intact")
-                  : t("สายแฮชไม่ตรง ควรตรวจว่ามีการแก้ข้อมูล", "hash chain broken, check whether data was altered")
-              }${trail.actor ? "" : ` · workspace ${trail.workspace}`}`
-            : trail.mode === "local"
-              ? t("เดโม: ยังไม่ได้เชื่อมฐานข้อมูล จึงบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น", "Demo: no database connected, so this is kept in this browser only")
-              : t("กำลังโหลด Audit Trail…", "Loading Audit Trail…")}
-        </p>
+        {!(trail.mode === "server" && trail.chainOk) && (
+          <p className="muted small">
+            {trail.mode === "server"
+              ? `${t("สายแฮชไม่ตรง ควรตรวจว่ามีการแก้ข้อมูล", "Hash chain broken, check whether data was altered")}${trail.actor ? "" : ` · workspace ${trail.workspace}`}`
+              : trail.mode === "local"
+                ? t("เดโม: ยังไม่ได้เชื่อมฐานข้อมูล จึงบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น", "Demo: no database connected, so this is kept in this browser only")
+                : t("กำลังโหลด Audit Trail…", "Loading Audit Trail…")}
+          </p>
+        )}
       </div>
     </section>
   );
