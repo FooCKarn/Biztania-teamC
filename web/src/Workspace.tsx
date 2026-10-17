@@ -1,3 +1,4 @@
+import ReadProblems from "./components/ReadProblems";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ConflictMap } from "./types";
 import { SourceContext, type Source } from "./source";
@@ -100,6 +101,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       </header>
       <p className="principle">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
 
+      <ReadProblems data={data} />
       <main>
         {tab === "flags" && (
           <FlagsView data={data} docs={docs} trail={trail} focusTxn={focusTxn} />

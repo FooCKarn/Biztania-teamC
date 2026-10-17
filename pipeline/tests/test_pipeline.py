@@ -68,3 +68,18 @@ def test_no_raw_bank_account_in_output(result):
 
 def test_rules_are_backed_by_policy_quotes(result):
     assert all(r["verified"] for r in result["rules"])
+
+
+def test_csv_saved_by_excel_still_reads_and_unknown_csv_is_reported(tmp_path):
+    """A BOM, CRLF and odd header spacing must not hide a known layout; an unknown layout must be listed
+    as unreadable with a reason, never silently produce an empty run."""
+    (tmp_path / "po.csv").write_bytes(
+        "﻿PO_No , po_date,vendor_code,vendor_name,description,amount_excl_vat,approved_by,approver_role\r\n"
+        "PO-9,2026-02-02,V001,TG,x,80000.00,A,Manager\r\n".encode("utf-8")
+    )
+    (tmp_path / "other.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    (tmp_path / "remember.json").write_text(json.dumps({"rules": [], "client": "t", "tolerance_pct": 1, "materiality_thb": 1}), encoding="utf-8")
+    out = build(tmp_path)
+    assert [d["id"] for d in out["documents"]] == ["PO-9"]
+    assert out["coverage"]["unreadable_files"] == ["other.csv"]
+    assert "po_no" in out["coverage"]["unreadable_reasons"]["other.csv"]

@@ -119,6 +119,7 @@ export interface ConflictMap {
   coverage: {
     files: number;
     unreadable_files: string[];
+    unreadable_reasons?: Record<string, string>;
     unclear_fields: { doc: string; field: string; locator: string; quote: string }[];
     unverified_fields: { doc: string; field: string }[];
   };

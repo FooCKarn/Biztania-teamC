@@ -155,10 +155,24 @@ def _template_fields(lines, text, method):
 
 # ---------- tables ----------
 
+def _read_text(path: Path) -> str:
+    """CSVs saved by Excel in Thai locales are often UTF-8 with a BOM or Windows-874; both must still read."""
+    data = path.read_bytes()
+    for enc in ("utf-8-sig", "cp874"):
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="replace")
+
+
 def _csv_rows(path: Path):
-    raw = path.read_text(encoding="utf-8")
+    raw = _read_text(path)
     lines = raw.splitlines()
-    rows = list(csv.DictReader(io.StringIO(raw)))
+    reader = csv.DictReader(io.StringIO(raw))
+    # Header names are compared as written in the ERP layouts; stray spaces and capitals must not hide them.
+    reader.fieldnames = [(h or "").strip().lower() for h in reader.fieldnames or []]
+    rows = [r for r in reader if any((v or "").strip() for v in r.values() if isinstance(v, str))]
     return rows, lines
 
 
@@ -242,24 +256,44 @@ def _read_xlsx(path: Path, rel: str):
     return recs
 
 
+CSV_LAYOUTS = "ต้องมีคอลัมน์ po_no (ใบสั่งซื้อ), withdrawal (รายการเดินบัญชี) หรือ vendor_code+tax_id (Vendor master)"
+
+
 def read_engagement(folder: Path, llm=None):
-    """Return (records, unreadable_files). llm: an extract_llm.LLMExtractor, or None for templates only."""
-    records, skipped = [], []
+    """Return (records, unreadable_files, reasons). reasons maps an unreadable file to why, in Thai.
+    llm: an extract_llm.LLMExtractor, or None for templates only."""
+    records, skipped, reasons = [], [], {}
     for path in sorted(p for p in folder.rglob("*") if p.is_file()):
         rel = path.relative_to(folder).as_posix()
         if path.name in ("expected.json", "remember.json"):
             continue
         ext = path.suffix.lower()
         if ext == ".csv":
-            records += _read_csv(path, rel)
+            try:
+                got = _read_csv(path, rel)
+            except Exception as e:  # a malformed table must be reported, not silently dropped
+                got, reasons[rel] = [], f"อ่านไฟล์ CSV ไม่ได้ ({type(e).__name__})"
+            if not got:
+                skipped.append(rel)
+                reasons.setdefault(rel, f"ไม่รู้จักรูปแบบคอลัมน์หรือไม่มีแถวข้อมูล: {CSV_LAYOUTS}")
+            records += got
         elif ext == ".xlsx":
-            records += _read_xlsx(path, rel)
+            try:
+                got = _read_xlsx(path, rel)
+            except Exception as e:
+                got, reasons[rel] = [], f"อ่านไฟล์ Excel ไม่ได้ ({type(e).__name__})"
+            if not got:
+                skipped.append(rel)
+                reasons.setdefault(rel, "ไม่รู้จักรูปแบบ: ต้องมีคอลัมน์ 'อ้างอิง PO' (ใบรับของ) ในชีตแรก")
+            records += got
         elif ext in (".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff"):
             rec = _text_record(path, rel, "pdf" if ext == ".pdf" else "scan", llm)
             if rec:
                 records.append(rec)
             else:
                 skipped.append(rel)
+                reasons[rel] = "อ่านข้อความหรือแยกประเภทเอกสารไม่ได้ (ไม่ตรงแม่แบบที่รู้จัก)"
         else:
             skipped.append(rel)
-    return records, skipped
+            reasons[rel] = "ชนิดไฟล์ไม่รองรับ"
+    return records, skipped, reasons

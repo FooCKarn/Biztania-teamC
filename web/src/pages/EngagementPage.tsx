@@ -222,6 +222,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                           {" "}
                           · {r.summary.flags} จุดควรตรวจ · รอจับคู่ {r.summary.pending} · {r.summary.documents} เอกสาร
                           {r.summary.unreadable > 0 && ` · อ่านไม่ได้ ${r.summary.unreadable} ไฟล์`}
+                          {r.summary.documents === 0 && " · ไม่พบเอกสารที่อ่านได้ (เปิดหน้าผลเพื่อดูสาเหตุรายไฟล์)"}
                         </span>
                       )}
                       {r.error && <span className="small error"> · {r.error}</span>}
