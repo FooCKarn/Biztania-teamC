@@ -17,12 +17,15 @@ The human-readable summary is in [`README.md`](README.md).
   unclear OCR never raises a flag; ambiguous pairs go to "รอจับคู่" unchecked; bank accounts are
   tokenised at ingestion and only shown masked. Sign-offs and decisions go to an append-only, hash-chained
   Audit Trail in D1 (`worker/src/trail.js`); the server stamps time and evidence refs. `pipeline/samples/tg_company/expected.json` is the
-  answer key the tests score against.
+  answer key the tests score against; FN/FP cross-check (`auditconcierge/crosscheck.py`, seeded-error tests on
+  `samples/frozen_foods.py`) lists every skipped check in `coverage.skipped_checks` (no flag ≠ no problem).
 - **Engagements (uploads):** login with per-engagement roles preparer / reviewer / manager (the signer is the account);
   every API checks team membership; files are AES-GCM encrypted per engagement in D1 `auditpal-files`; the Python
   pipeline runs on a stateless Render container called with HMAC (`pipeline/auditconcierge/server.py`); raw files and
   page images are deleted `RETENTION_DAYS` (90) after closing, the working paper and trail stay. `ALLOW_REAL_DATA`
   stays false (synthetic only) until the AI provider is switched. Deploy steps: `docs/deploy-pipeline.md`.
+  File manager `#/files` (`worker/src/files.js`, `web/src/pages/Files.tsx`): storage meter against `STORAGE_QUOTA_MB` (500), files of the user's
+  engagements filtered by extension, manual download/delete only; other engagements' usage is one number; page images are never listed for deletion.
   Demo for outside users: an admin button on the users page creates shared accounts `{preparer,reviewer,manager}@demo.example.com`
   (no password change, passwords shown once, never in the repo); with the Worker var `DEMO_MODE=true` (on by default, also in `wrangler.jsonc`; `false` turns it off, ignored while `ALLOW_REAL_DATA=true`) the login page also has a one-click demo entry with no password, scoped to the demo engagement only (`handleDemoEntry` in `worker/src/demo.js`) and a synthetic engagement with the sample set (`worker/src/demo.js`, `docs/demo.md`).
 
@@ -95,4 +98,7 @@ reconciliation, follow-up, dashboards, ERP/accounting integration, custom risk r
 
 - The team writes in **Thai**; keep user-facing docs in Thai, with English for technical/business terms
   (as the deck does). Code, identifiers and commit messages in English.
+- The web UI is bilingual (Thai default, English via the ไทย/EN switch, kept in localStorage `ac-lang`).
+  Write every user-facing string as a pair, `t("ไทย", "English")`, or a `bi({...})` label table (`web/src/i18n.tsx`).
+  Text produced by the pipeline (flag titles, summaries, questions, locators) stays Thai.
 - When adding numbers or claims, keep them consistent with this file or update this file in the same change.

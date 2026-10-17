@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ConflictMap, Doc, Flag } from "../types";
 import type { Trail } from "../decisions";
-import { fieldLabel, MATCH_LABEL, RISK_ORDER, TYPE_LABEL, baht } from "../labels";
+import { fieldLabel, MATCH_LABEL, RISK_ORDER, TYPE_LABEL, baht, riskText } from "../labels";
+import { t } from "../i18n";
 import TxnChain from "./TxnChain";
 import EvidencePanel from "./EvidencePanel";
 import DecisionBox from "./DecisionBox";
@@ -117,21 +118,21 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
 
   return (
     <div className="workspace">
-      <aside className="sidebar" aria-label="รายการที่ควรตรวจ">
+      <aside className="sidebar" aria-label={t("รายการที่ควรตรวจ", "Items to check")}>
         <div className="sidebar-head">
           <input
             className="search"
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ค้นหา เลขเอกสาร หรือ ประเด็น"
-            aria-label="ค้นหา"
+            placeholder={t("ค้นหา เลขเอกสาร หรือ ประเด็น", "Search document no. or issue")}
+            aria-label={t("ค้นหา", "Search")}
           />
-          <div className="segmented small-seg" role="radiogroup" aria-label="สถานะ">
+          <div className="segmented small-seg" role="radiogroup" aria-label={t("สถานะ", "Status")}>
             {[
-              ["open", "ยังไม่ลงนาม"],
-              ["done", "ลงนามแล้ว"],
-              ["all", "ทั้งหมด"],
+              ["open", t("ยังไม่ลงนาม", "Unsigned")],
+              ["done", t("ลงนามแล้ว", "Signed")],
+              ["all", t("ทั้งหมด", "All")],
             ].map(([v, l]) => (
               <button key={v} role="radio" aria-checked={state === v} onClick={() => setState(v)}>
                 {l}
@@ -139,16 +140,16 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
             ))}
           </div>
           <div className="row">
-            <select value={risk} onChange={(e) => setRisk(e.target.value)} aria-label="ระดับความเสี่ยง">
-              <option value="all">ทุกระดับความเสี่ยง</option>
+            <select value={risk} onChange={(e) => setRisk(e.target.value)} aria-label={t("ระดับความเสี่ยง", "Risk level")}>
+              <option value="all">{t("ทุกระดับความเสี่ยง", "All risk levels")}</option>
               {RISK_ORDER.map((r) => (
                 <option key={r} value={r}>
-                  เสี่ยง{r}
+                  {riskText(r)}
                 </option>
               ))}
             </select>
-            <select value={type} onChange={(e) => setType(e.target.value)} aria-label="ประเภท">
-              <option value="all">ทุกประเภท</option>
+            <select value={type} onChange={(e) => setType(e.target.value)} aria-label={t("ประเภท", "Type")}>
+              <option value="all">{t("ทุกประเภท", "All types")}</option>
               {types.map((t) => (
                 <option key={t} value={t}>
                   {TYPE_LABEL[t] ?? t}
@@ -157,14 +158,14 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
             </select>
           </div>
         </div>
-        {list.length === 0 && <p className="muted pad small">ไม่มีรายการตามตัวกรองนี้</p>}
+        {list.length === 0 && <p className="muted pad small">{t("ไม่มีรายการตามตัวกรองนี้", "Nothing matches these filters")}</p>}
         <ul className="flag-list">
           {list.map((f) => {
             const d = decisions[f.id];
             return (
               <li key={f.id}>
                 <button className={"flag-row" + (flag?.id === f.id ? " active" : "")} onClick={() => select(f.id)}>
-                  <span className={`dot risk-${RISK_KEY[f.risk]}`} aria-label={`เสี่ยง${f.risk}`} />
+                  <span className={`dot risk-${RISK_KEY[f.risk]}`} aria-label={riskText(f.risk)} />
                   <span className="flag-main">
                     <span className="flag-top">
                       <span className="ref">{f.id}</span>
@@ -173,10 +174,10 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
                     </span>
                     <span className="flag-sum">{f.summary}</span>
                     <span className="flag-meta">
-                      <span className={"so" + (d ? " done" : "")} title="ผู้จัดทำ">
+                      <span className={"so" + (d ? " done" : "")} title={t("ผู้จัดทำ", "Preparer")}>
                         P{d ? ` ${d.by ?? "✓"}` : ""}
                       </span>
-                      <span className={"so" + (d?.review ? " done" : "")} title="ผู้สอบทาน">
+                      <span className={"so" + (d?.review ? " done" : "")} title={t("ผู้สอบทาน", "Reviewer")}>
                         R{d?.review ? ` ${d.review.by}` : ""}
                       </span>
                       {f.match === "likely" && <span className="pill warn">{MATCH_LABEL.likely}</span>}
@@ -189,33 +190,38 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
           })}
         </ul>
         <p className="sidebar-foot muted small">
-          ลงนามแล้ว {prepared}/{data.flags.length} · กด J / K เพื่อเลื่อนรายการ
+          {t("ลงนามแล้ว", "Signed")} {prepared}/{data.flags.length} · {t("กด", "Press")} <kbd>J</kbd> / <kbd>K</kbd>{" "}
+          {t("เพื่อเลื่อนรายการ", "to move through the list")}
         </p>
       </aside>
 
-      <section className="paper" aria-label="กระดาษทำการ">
-        {!flag && !txn && <p className="muted pad">เลือกรายการทางซ้ายเพื่อดูแผนที่และหลักฐาน</p>}
+      <section className="paper" aria-label={t("กระดาษทำการ", "Working paper")}>
+        {!flag && !txn && <p className="muted pad">{t("เลือกรายการทางซ้ายเพื่อดูแผนที่และหลักฐาน", "Pick an item on the left to see its map and evidence")}</p>}
         {flag && (
           <header className="paper-head">
             <div className="row">
               <span className="ref big">{flag.id}</span>
-              <span className={`pill risk-${RISK_KEY[flag.risk]}`}>เสี่ยง{flag.risk}</span>
+              <span className={`pill risk-${RISK_KEY[flag.risk]}`}>{riskText(flag.risk)}</span>
               <span className="pill">{TYPE_LABEL[flag.type] ?? flag.type}</span>
               {!!flag.at_stake_thb && <span className="pill">{baht(flag.at_stake_thb)}</span>}
             </div>
             <h2>{flag.title}</h2>
             <p className="lead">{flag.summary}</p>
             <p className="muted small">
-              สถานะ: {flag.status} · ไม่ใช่ข้อสรุปว่าผิด
-              {flag.match === "likely" && " · ธุรกรรมนี้จับคู่โดยอนุมาน (ไม่มีเลขอ้างอิงระหว่างเอกสาร) จึงลดระดับความเสี่ยงลงหนึ่งขั้น"}
-              {flag.basis && data.rules.some((r) => r.id === flag.basis) && ` · อ้างกฎ ${flag.basis}`}
+              {t("สถานะ", "Status")}: {flag.status === "ควรตรวจ" ? t("ควรตรวจ", "to check") : flag.status} · {t("ไม่ใช่ข้อสรุปว่าผิด", "not a conclusion that anything is wrong")}
+              {flag.match === "likely" &&
+                ` · ${t(
+                  "ธุรกรรมนี้จับคู่โดยอนุมาน (ไม่มีเลขอ้างอิงระหว่างเอกสาร) จึงลดระดับความเสี่ยงลงหนึ่งขั้น",
+                  "this transaction was matched by inference (no cross-reference between documents), so the risk is lowered one level",
+                )}`}
+              {flag.basis && data.rules.some((r) => r.id === flag.basis) && ` · ${t("อ้างกฎ", "rule")} ${flag.basis}`}
             </p>
           </header>
         )}
         {txn && (
-          <section className="group" aria-label="แผนที่ธุรกรรม">
+          <section className="group" aria-label={t("แผนที่ธุรกรรม", "Transaction map")}>
             <h3 className="group-title">
-              แผนที่ธุรกรรม {txn.id.replace(/^T-/, "")} · {MATCH_LABEL[txn.match]}
+              {t("แผนที่ธุรกรรม", "Transaction map")} {txn.id.replace(/^T-/, "")} · {MATCH_LABEL[txn.match]}
             </h3>
             <div className="group-body">
               <TxnChain
@@ -235,8 +241,8 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
         {flag && (
           <>
             <EvidencePanel flag={flag} marks={marks} rules={data.rules} activeKey={activeKey} onPick={pickMark} />
-            <section className="group" aria-label="คำถามที่ควรถามต่อ">
-              <h3 className="group-title">คำถามที่ควรถามต่อ</h3>
+            <section className="group" aria-label={t("คำถามที่ควรถามต่อ", "Follow-up questions")}>
+              <h3 className="group-title">{t("คำถามที่ควรถามต่อ", "Follow-up questions")}</h3>
               <ul className="group-body questions">
                 {flag.questions.map((qq) => (
                   <li key={qq}>{qq}</li>
@@ -248,7 +254,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
         )}
       </section>
 
-      <aside className="viewer-pane" aria-label="เอกสารต้นฉบับ">
+      <aside className="viewer-pane" aria-label={t("เอกสารต้นฉบับ", "Source document")}>
         {viewerDoc ? (
           <DocViewer
             doc={viewerDoc}
@@ -257,7 +263,7 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
             onPick={pickMark}
           />
         ) : (
-          <p className="muted pad small">เลือกหลักฐานหรือเอกสารในแผนที่เพื่อเปิดต้นฉบับ</p>
+          <p className="muted pad small">{t("เลือกหลักฐานหรือเอกสารในแผนที่เพื่อเปิดต้นฉบับ", "Pick evidence or a document on the map to open the source")}</p>
         )}
       </aside>
     </div>

@@ -40,6 +40,8 @@
     // Pipeline host (Python + OCR), e.g. https://auditpal-pipeline.onrender.com. Empty = uploads work, runs are off.
     "PIPELINE_URL": "https://auditpal-pipeline.onrender.com",
     "RETENTION_DAYS": "90",
+    // What the file manager's storage meter shows as full (D1 free plan: 500 MB per database; paid: 10 GB).
+    "STORAGE_QUOTA_MB": "500",
     // Keep "false" until the AI provider is switched under a data agreement: every engagement is then synthetic.
     "ALLOW_REAL_DATA": "false",
     // One-click demo entry on the login page (role picker, synthetic engagement only; worker/src/demo.js).

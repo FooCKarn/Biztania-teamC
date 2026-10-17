@@ -24,7 +24,7 @@ def test_quote_check_ignores_spacing_but_not_content():
 
 def _vendor(code, th, en, tax, acct):
     from auditconcierge.entities import account_token as tok
-    fs = {k: Field(k, v, "", "") for k, v in
+    fs = {k: Field(k, v, "", "", verified=True) for k, v in
           {"vendor_code": code, "name_th": th, "name_en": en, "tax_id": tax, "account": acct, "account_token": tok(acct)}.items()}
     return Record(f"VENDOR-{code}", "vendor", "vendor_master.csv", "csv", "", "", fs)
 

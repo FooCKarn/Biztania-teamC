@@ -400,3 +400,52 @@ test("demo mode: on by default, DEMO_MODE=false turns it off; one click enters t
   assert.equal((await browser().post("/api/auth/demo-reset")).status, 401, "reset needs a demo session");
   assert.equal((await admin.post("/api/auth/demo-reset")).status, 403, "real accounts cannot reset");
 });
+
+test("file manager: only the user's engagements, storage per kind, other clients as one number, delete by role", async () => {
+  const { admin, prep, rev, out, id } = await setupFirm();
+  const other = (await admin.post("/api/engagements", { client: "บริษัท อื่น จำกัด", tolerance_pct: 1, materiality_thb: 1 })).body.engagement.id;
+  assert.equal((await admin.post(`/api/engagements/${other}/files?name=secret.pdf`, PDF)).status, 201);
+
+  const a = await prep.b.post(`/api/engagements/${id}/files?name=INV-1.pdf`, PDF);
+  const b = await prep.b.post(`/api/engagements/${id}/files?name=scan.png`, PNG);
+  const csv = new TextEncoder().encode("date,amount\n2026-01-01,100\n");
+  await prep.b.post(`/api/engagements/${id}/files?name=bank.csv`, csv);
+  assert.equal((await worker.fetch(new Request("https://app.test/api/files"), env)).status, 401);
+
+  const r = await rev.b.get("/api/files");
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.engagements.map((e) => e.id), [id]);
+  assert.deepEqual(r.body.files.map((f) => f.name).sort(), ["INV-1.pdf", "bank.csv", "scan.png"]);
+  assert.ok(!JSON.stringify(r.body).includes("secret.pdf"), "other engagements' files are not listed");
+  const s = r.body.storage;
+  assert.equal(s.files, PDF.length + PNG.length + csv.length);
+  assert.equal(s.others, PDF.length, "other clients' usage is one number");
+  assert.equal(s.quota, 500 * 1024 * 1024);
+  assert.ok(s.used >= s.files + s.others);
+  assert.deepEqual(s.by_type.map((t) => [t.ext, t.count]).sort(), [["csv", 1], ["pdf", 1], ["png", 1]]);
+  assert.equal(r.body.engagements[0].can_delete, true);
+  assert.deepEqual((await out.b.get("/api/files")).body.files, []);
+
+  // A run marks the files it used; page images count as pages, not as files.
+  await prep.b.post(`/api/engagements/${id}/runs`);
+  const job = jobs.at(-1).body;
+  await internal("POST", `/api/internal/runs/${job.run}/asset?path=pages/INV-1.png&result=${MAP.run_id}`, PNG);
+  await internal("POST", `/api/internal/runs/${job.run}/done`, new TextEncoder().encode(JSON.stringify(MAP)));
+  const r2 = (await rev.b.get("/api/files")).body;
+  assert.ok(r2.files.every((f) => f.in_latest_run));
+  assert.ok(r2.storage.pages >= PNG.length);
+  assert.equal(r2.storage.files, s.files);
+
+  // Delete goes through the engagement route: outsiders cannot, members can while open.
+  assert.equal((await out.b.post(`/api/engagements/${id}/files/${b.body.file.id}/delete`)).status, 403);
+  assert.equal((await rev.b.post(`/api/engagements/${id}/files/${b.body.file.id}/delete`)).status, 200);
+  const r3 = (await rev.b.get("/api/files")).body;
+  assert.deepEqual(r3.files.map((f) => f.name).sort(), ["INV-1.pdf", "bank.csv"]);
+  assert.equal(r3.storage.files, PDF.length + csv.length);
+  assert.ok(a.body.file.id);
+
+  await admin.post(`/api/engagements/${id}/close`);
+  assert.equal((await rev.b.get("/api/files")).body.engagements.find((e) => e.id === id).can_delete, false);
+  env.STORAGE_QUOTA_MB = "10240";
+  assert.equal((await rev.b.get("/api/files")).body.storage.quota, 10240 * 1024 * 1024);
+});

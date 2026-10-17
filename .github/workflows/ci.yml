@@ -13,8 +13,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Tesseract (Thai + English)
-        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-tha
+      - name: Install Tesseract (Thai + English) and the Loma font the seeded-error tests write PDFs with
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-tha fonts-tlwg-loma-otf
       - run: pip install -r pipeline/requirements.txt
       - name: Pipeline tests (planted conflicts found, no false flags, no raw bank accounts)
         working-directory: pipeline

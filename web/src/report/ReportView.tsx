@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import type { ConflictMap, Decision } from "../types";
-import { baht, fieldLabel, KIND_LABEL } from "../labels";
+import { baht, fieldLabel, KIND_LABEL, RISK_LABEL } from "../labels";
+import { t as tr, useLang } from "../i18n";
 import { buildReport, when, type Audience } from "./model";
 import { downloadWorkbook } from "./workbook";
+import { downloadDocx } from "./docx";
 import "./report.css";
 
 interface Props {
@@ -12,11 +14,13 @@ interface Props {
 
 const RISK_CLASS = { สูง: "risk-high", กลาง: "risk-mid", ต่ำ: "risk-low" } as const;
 
-// Printable working paper. "บันทึก PDF" uses the browser's print-to-PDF, so Thai text renders with
+// Printable working paper, also downloadable as Excel and Word (editable copy). "บันทึก PDF" uses the browser's print-to-PDF, so Thai text renders with
 // the system fonts and nothing leaves the browser.
 export default function ReportView({ data, decisions }: Props) {
   const [audience, setAudience] = useState<Audience>("manager");
-  const report = useMemo(() => buildReport(data, decisions, audience), [data, decisions, audience]);
+  const lang = useLang();
+  // lang is a dependency because the labels inside the report follow the language.
+  const report = useMemo(() => buildReport(data, decisions, audience), [data, decisions, audience, lang]);
   const client = audience === "client";
   const t = report.totals;
 
@@ -30,11 +34,11 @@ export default function ReportView({ data, decisions }: Props) {
   return (
     <div className="stack">
       <div className="report-toolbar card">
-        <div className="segmented small-seg" role="radiogroup" aria-label="ฉบับรายงาน">
+        <div className="segmented small-seg" role="radiogroup" aria-label={tr("ฉบับรายงาน", "Report version")}>
           {(
             [
-              ["manager", "ฉบับ Manager"],
-              ["client", "ฉบับส่งลูกค้า"],
+              ["manager", tr("ฉบับ Manager", "Manager copy")],
+              ["client", tr("ฉบับส่งลูกค้า", "Client copy")],
             ] as const
           ).map(([v, label]) => (
             <button key={v} role="radio" aria-checked={audience === v} onClick={() => setAudience(v)}>
@@ -44,44 +48,47 @@ export default function ReportView({ data, decisions }: Props) {
         </div>
         <span className="muted small">
           {client
-            ? "เฉพาะรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น ไม่มีเหตุผลภายในของทีม"
-            : "ทุกรายการพร้อมผลการพิจารณาและการลงนาม"}
+            ? tr("เฉพาะรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น ไม่มีเหตุผลภายในของทีม", "Only items a reviewer signed off as issues, without the team's internal notes")
+            : tr("ทุกรายการพร้อมผลการพิจารณาและการลงนาม", "Every item with its conclusion and sign-offs")}
         </span>
         <span className="grow" />
         <button className="btn" onClick={() => downloadWorkbook(report, data)}>
           Export Excel
         </button>
+        <button className="btn" onClick={() => downloadDocx(report, data)}>
+          Export Word
+        </button>
         <button className="btn filled" onClick={savePdf}>
-          บันทึก PDF
+          {tr("บันทึก PDF", "Save PDF")}
         </button>
       </div>
 
       <article className="report" aria-label={report.title}>
         <header className="rp-head">
           <div>
-            <p className="rp-kicker">AI Audit Concierge · กระดาษทำการ</p>
+            <p className="rp-kicker">AI Audit Concierge · {tr("กระดาษทำการ", "Working paper")}</p>
             <h2>{report.title}</h2>
             <p>
               <b>{report.client}</b>
             </p>
             <p className="rp-meta">
-              Run {report.runId} · จัดทำรายงาน {when(report.generatedAt)} · Materiality {baht(report.materiality)} ·
+              Run {report.runId} · {tr("จัดทำรายงาน", "Generated")} {when(report.generatedAt)} · Materiality {baht(report.materiality)} ·
               Tolerance {report.tolerancePct}%
             </p>
-            {report.synthetic && <p className="rp-synthetic">ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง</p>}
+            {report.synthetic && <p className="rp-synthetic">{tr("ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "Synthetic data, no real client data")}</p>}
           </div>
           <table className="rp-sign">
             <tbody>
               <tr>
-                <th>จัดทำโดย</th>
+                <th>{tr("จัดทำโดย", "Prepared by")}</th>
                 <td>{report.preparers.join(", ") || " "}</td>
               </tr>
               <tr>
-                <th>สอบทานโดย</th>
+                <th>{tr("สอบทานโดย", "Reviewed by")}</th>
                 <td>{report.reviewers.join(", ") || " "}</td>
               </tr>
               <tr>
-                <th>อนุมัติ (Manager)</th>
+                <th>{tr("อนุมัติ (Manager)", "Approved (manager)")}</th>
                 <td> </td>
               </tr>
             </tbody>
@@ -89,24 +96,27 @@ export default function ReportView({ data, decisions }: Props) {
         </header>
 
         <p className="rp-principle">
-          ระบบชี้จุดที่ควรตรวจพร้อมหลักฐานจากเอกสารต้นฉบับ ข้อสรุปทุกข้อเป็นดุลยพินิจของผู้สอบบัญชี ไม่ใช่การตัดสินของระบบ
+          {tr(
+            "ระบบชี้จุดที่ควรตรวจพร้อมหลักฐานจากเอกสารต้นฉบับ ข้อสรุปทุกข้อเป็นดุลยพินิจของผู้สอบบัญชี ไม่ใช่การตัดสินของระบบ",
+            "The system points out items to check with evidence from the source documents. Every conclusion is the auditor's professional judgment, not the system's.",
+          )}
         </p>
 
         <section>
-          <h3>สรุป</h3>
+          <h3>{tr("สรุป", "Summary")}</h3>
           <table className="rp-table rp-summary">
             <thead>
               <tr>
                 <th />
                 {report.byRisk.map((r) => (
-                  <th key={r.risk}>{r.risk}</th>
+                  <th key={r.risk}>{RISK_LABEL[r.risk]}</th>
                 ))}
-                <th>รวม</th>
+                <th>{tr("รวม", "Total")}</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <th>{client ? "ประเด็นที่พบ" : "รายการที่ควรตรวจ"}</th>
+                <th>{client ? tr("ประเด็นที่พบ", "Issues found") : tr("รายการที่ควรตรวจ", "Items to check")}</th>
                 {report.byRisk.map((r) => (
                   <td key={r.risk}>{r.total}</td>
                 ))}
@@ -115,14 +125,14 @@ export default function ReportView({ data, decisions }: Props) {
               {!client && (
                 <>
                   <tr>
-                    <th>สอบทานแล้ว</th>
+                    <th>{tr("สอบทานแล้ว", "Reviewed")}</th>
                     {report.byRisk.map((r) => (
                       <td key={r.risk}>{r.reviewed}</td>
                     ))}
                     <td>{t.reviewed}</td>
                   </tr>
                   <tr>
-                    <th>สรุปว่าเป็นประเด็น</th>
+                    <th>{tr("สรุปว่าเป็นประเด็น", "Concluded as issue")}</th>
                     {report.byRisk.map((r) => (
                       <td key={r.risk}>{r.issues}</td>
                     ))}
@@ -131,7 +141,7 @@ export default function ReportView({ data, decisions }: Props) {
                 </>
               )}
               <tr>
-                <th>ยอดที่เกี่ยวข้อง</th>
+                <th>{tr("ยอดที่เกี่ยวข้อง", "Amount at stake")}</th>
                 {report.byRisk.map((r) => (
                   <td key={r.risk}>{baht(r.atStake)}</td>
                 ))}
@@ -141,24 +151,26 @@ export default function ReportView({ data, decisions }: Props) {
           </table>
           {!client && (
             <p className="rp-meta">
-              จัดทำแล้ว {t.prepared}/{t.flags} · สอบทานแล้ว {t.reviewed}/{t.flags} · ไม่เป็นประเด็น {t.notIssues} · รอจับคู่{" "}
-              {t.pending} (ยังไม่นำไปตรวจ)
+              {tr("จัดทำแล้ว", "Prepared")} {t.prepared}/{t.flags} · {tr("สอบทานแล้ว", "Reviewed")} {t.reviewed}/{t.flags} ·{" "}
+              {tr("ไม่เป็นประเด็น", "Not an issue")} {t.notIssues} · {tr("รอจับคู่", "Unmatched")} {t.pending} ({tr("ยังไม่นำไปตรวจ", "not yet checked")})
             </p>
           )}
         </section>
 
         <section>
-          <h3>{client ? "ประเด็นและเอกสารอ้างอิง" : "รายการที่ควรตรวจ"}</h3>
+          <h3>{client ? tr("ประเด็นและเอกสารอ้างอิง", "Findings and supporting documents") : tr("รายการที่ควรตรวจ", "Items to check")}</h3>
           {report.flags.length === 0 && (
             <p className="rp-meta">
-              {client ? "ยังไม่มีรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น" : "ไม่มีรายการที่ควรตรวจ"}
+              {client
+                ? tr("ยังไม่มีรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น", "No item has been signed off as an issue yet")
+                : tr("ไม่มีรายการที่ควรตรวจ", "Nothing to check")}
             </p>
           )}
           {report.flags.map((r) => (
             <div key={r.ref} className="rp-flag">
               <div className="rp-flag-head">
                 <span className="rp-ref">{r.ref}</span>
-                <span className={"pill " + RISK_CLASS[r.flag.risk]}>{r.flag.risk}</span>
+                <span className={"pill " + RISK_CLASS[r.flag.risk]}>{RISK_LABEL[r.flag.risk]}</span>
                 <span className="rp-type">{r.typeLabel}</span>
                 <strong>{r.flag.title}</strong>
                 <span className="rp-amt">{r.flag.at_stake_thb != null ? baht(r.flag.at_stake_thb) : ""}</span>
@@ -174,7 +186,7 @@ export default function ReportView({ data, decisions }: Props) {
               {client ? (
                 r.flag.questions.length > 0 && (
                   <div className="rp-ask">
-                    <b>ขอคำชี้แจง</b>
+                    <b>{tr("ขอคำชี้แจง", "Please explain")}</b>
                     <ul>
                       {r.flag.questions.map((q) => (
                         <li key={q}>{q}</li>
@@ -186,7 +198,7 @@ export default function ReportView({ data, decisions }: Props) {
                 <table className="rp-decision">
                   <tbody>
                     <tr>
-                      <th>ผลการพิจารณา</th>
+                      <th>{tr("ผลการพิจารณา", "Conclusion")}</th>
                       <td>
                         <span className={"pill " + (r.decision?.verdict === "issue" ? "bad" : r.decision ? "ok" : "")}>
                           {r.decision ? r.verdictLabel : r.stateLabel}
@@ -195,11 +207,11 @@ export default function ReportView({ data, decisions }: Props) {
                       </td>
                     </tr>
                     <tr>
-                      <th>ผู้จัดทำ</th>
+                      <th>{tr("ผู้จัดทำ", "Preparer")}</th>
                       <td>{r.decision ? `${r.decision.by ?? "-"} · ${when(r.decision.at)}` : "-"}</td>
                     </tr>
                     <tr>
-                      <th>ผู้สอบทาน</th>
+                      <th>{tr("ผู้สอบทาน", "Reviewer")}</th>
                       <td>{r.decision?.review ? `${r.decision.review.by} · ${when(r.decision.review.at)}` : "-"}</td>
                     </tr>
                   </tbody>
@@ -211,14 +223,14 @@ export default function ReportView({ data, decisions }: Props) {
 
         {!client && data.pending.length > 0 && (
           <section>
-            <h3>รอจับคู่ (ยังไม่นำไปตรวจ)</h3>
+            <h3>{tr("รอจับคู่ (ยังไม่นำไปตรวจ)", "Unmatched (not yet checked)")}</h3>
             <table className="rp-table">
               <thead>
                 <tr>
-                  <th>เอกสาร</th>
-                  <th>ประเภท</th>
-                  <th>เหตุผล</th>
-                  <th>ตัวเลือก</th>
+                  <th>{tr("เอกสาร", "Document")}</th>
+                  <th>{tr("ประเภท", "Type")}</th>
+                  <th>{tr("เหตุผล", "Reason")}</th>
+                  <th>{tr("ตัวเลือก", "Candidates")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,10 +249,11 @@ export default function ReportView({ data, decisions }: Props) {
 
         {!client && (
           <section>
-            <h3>ขอบเขตข้อมูล</h3>
+            <h3>{tr("ขอบเขตข้อมูล", "Data coverage")}</h3>
             <p className="rp-meta">
-              อ่าน {data.coverage.files} ไฟล์ · {data.documents.length} เอกสาร · {data.transactions.length} ธุรกรรม · ไฟล์อ่านไม่ได้{" "}
-              {data.coverage.unreadable_files.length} · ช่องอ่านไม่ชัด {data.coverage.unclear_fields.length} (ไม่ใช้ยกประเด็น)
+              {tr("อ่าน", "Read")} {data.coverage.files} {tr("ไฟล์", "files")} · {data.documents.length} {tr("เอกสาร", "documents")} ·{" "}
+              {data.transactions.length} {tr("ธุรกรรม", "transactions")} · {tr("ไฟล์อ่านไม่ได้", "unreadable files")} {data.coverage.unreadable_files.length} ·{" "}
+              {tr("ช่องอ่านไม่ชัด", "unclear fields")} {data.coverage.unclear_fields.length} ({tr("ไม่ใช้ยกประเด็น", "never used to raise a flag")})
             </p>
           </section>
         )}
@@ -249,7 +262,7 @@ export default function ReportView({ data, decisions }: Props) {
           <span>
             {report.client} · Run {report.runId}
           </span>
-          <span>เลขบัญชีธนาคารแสดงแบบปิดบัง · ข้อมูลลับ</span>
+          <span>{tr("เลขบัญชีธนาคารแสดงแบบปิดบัง · ข้อมูลลับ", "Bank accounts shown masked · Confidential")}</span>
         </footer>
       </article>
     </div>

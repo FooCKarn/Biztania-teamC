@@ -1,33 +1,44 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ROLE_LABEL, when, type EngagementDetail, type FileRow, type Role, type RunProgress, type User } from "../api";
+import { bi, locale, t } from "../i18n";
+import Loading from "../components/Loading";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.json";
-const RUN_LABEL = { queued: "รอคิว", running: "กำลังประมวลผล", done: "เสร็จ", failed: "ไม่สำเร็จ" } as const;
-const ACTIVITY_LABEL: Record<string, string> = {
-  create: "สร้าง Engagement",
-  member: "กำหนดบทบาททีม",
-  remove_member: "นำออกจากทีม",
-  upload: "อัปโหลด",
-  replace_file: "อัปโหลดแทนไฟล์เดิม",
-  delete_file: "ลบไฟล์",
-  download: "ดาวน์โหลด",
-  run: "เริ่มประมวลผล",
-  run_done: "ประมวลผลเสร็จ",
-  run_failed: "ประมวลผลไม่สำเร็จ",
-  settings: "แก้ tolerance / materiality",
-  close: "ปิดงาน",
-  purge: "ลบไฟล์ดิบตามนโยบาย",
-};
+const RUN_LABEL = bi({ queued: ["รอคิว", "Queued"], running: ["กำลังประมวลผล", "Processing"], done: ["เสร็จ", "Done"], failed: ["ไม่สำเร็จ", "Failed"] });
+const ACTIVITY_LABEL: Record<string, string> = bi({
+  create: ["สร้าง Engagement", "Created engagement"],
+  member: ["กำหนดบทบาททีม", "Set team role"],
+  remove_member: ["นำออกจากทีม", "Removed from team"],
+  upload: ["อัปโหลด", "Uploaded"],
+  replace_file: ["อัปโหลดแทนไฟล์เดิม", "Replaced file"],
+  delete_file: ["ลบไฟล์", "Deleted file"],
+  download: ["ดาวน์โหลด", "Downloaded"],
+  run: ["เริ่มประมวลผล", "Started processing"],
+  run_done: ["ประมวลผลเสร็จ", "Processing done"],
+  run_failed: ["ประมวลผลไม่สำเร็จ", "Processing failed"],
+  settings: ["แก้ tolerance / materiality", "Changed tolerance / materiality"],
+  close: ["ปิดงาน", "Closed engagement"],
+  purge: ["ลบไฟล์ดิบตามนโยบาย", "Purged raw files per policy"],
+});
 // Share of the bar each stage covers; the rest of a stage is filled by done/total.
-const STAGE_SPAN: Record<RunProgress["stage"], [number, number, string]> = {
-  waking: [0, 8, "กำลังปลุกเครื่องประมวลผล (ครั้งแรกอาจรอราว 1 นาที)"],
-  download: [8, 18, "ส่งไฟล์ไปเครื่องประมวลผล"],
-  ocr: [18, 50, "อ่านตัวอักษรจากรูป (OCR)"],
-  read: [50, 85, "สกัดข้อมูลจากเอกสาร"],
-  pages: [85, 88, "เตรียมภาพหน้าเอกสาร"],
-  check: [88, 92, "จับคู่และตรวจความขัดแย้ง"],
-  upload: [92, 99, "บันทึกผลและภาพหน้าเอกสาร"],
+const STAGE_SPAN: Record<RunProgress["stage"], [number, number]> = {
+  waking: [0, 8],
+  download: [8, 18],
+  ocr: [18, 50],
+  read: [50, 85],
+  pages: [85, 88],
+  check: [88, 92],
+  upload: [92, 99],
 };
+const STAGE_LABEL = bi<RunProgress["stage"]>({
+  waking: ["กำลังปลุกเครื่องประมวลผล (ครั้งแรกอาจรอราว 1 นาที)", "Waking the processor (the first run may take about a minute)"],
+  download: ["ส่งไฟล์ไปเครื่องประมวลผล", "Sending files to the processor"],
+  ocr: ["อ่านตัวอักษรจากรูป (OCR)", "Reading text from images (OCR)"],
+  read: ["สกัดข้อมูลจากเอกสาร", "Extracting data from documents"],
+  pages: ["เตรียมภาพหน้าเอกสาร", "Preparing page images"],
+  check: ["จับคู่และตรวจความขัดแย้ง", "Matching and checking for conflicts"],
+  upload: ["บันทึกผลและภาพหน้าเอกสาร", "Saving results and page images"],
+});
 const percent = (p: RunProgress) => {
   const [a, b] = STAGE_SPAN[p.stage];
   return Math.round(a + (b - a) * (p.total ? Math.min(1, (p.done ?? 0) / p.total) : 0));
@@ -47,10 +58,10 @@ function RunBar({ p, started }: { p: RunProgress; started: string }) {
         <div className="runbar-fill" style={{ width: `${percent(p)}%` }} />
       </div>
       <p className="small">
-        {STAGE_SPAN[p.stage][2]}
+        {STAGE_LABEL[p.stage]}
         {count}
         {p.file && (p.stage === "read" || p.stage === "download") ? ` · ${p.file}` : ""}
-        <span className="muted"> · {percent(p)}% · ผ่านไป {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>
+        <span className="muted"> · {percent(p)}% · {t("ผ่านไป", "elapsed")} {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>
       </p>
     </div>
   );
@@ -58,7 +69,7 @@ function RunBar({ p, started }: { p: RunProgress; started: string }) {
 
 const size = (n: number) => (n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`);
 const detailText = (d: Record<string, unknown> | null) =>
-  !d ? "" : [d.file, d.user && `${d.user}${d.role ? ` → ${ROLE_LABEL[String(d.role)] ?? d.role}` : ""}`, d.flags != null && `${d.flags} จุดควรตรวจ`, d.error].filter(Boolean).join(" · ");
+  !d ? "" : [d.file, d.user && `${d.user}${d.role ? ` → ${ROLE_LABEL[String(d.role)] ?? d.role}` : ""}`, d.flags != null && `${d.flags} ${t("จุดควรตรวจ", "to check")}`, d.error].filter(Boolean).join(" · ");
 
 export default function EngagementPage({ id, me }: { id: string; me: User }) {
   const [d, setD] = useState<EngagementDetail | null>(null);
@@ -69,6 +80,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   const [add, setAdd] = useState<{ user: string; role: Role }>({ user: "", role: "preparer" });
   const [settings, setSettings] = useState<{ t: string; m: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
 
   const load = useCallback(
     () =>
@@ -118,13 +130,13 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
     act(async () => {
       const list = [...files];
       for (const [i, f] of list.entries()) {
-        setNote(`กำลังอัปโหลด ${i + 1}/${list.length}: ${f.name}`);
+        setNote(t(`กำลังอัปโหลด ${i + 1}/${list.length}: ${f.name}`, `Uploading ${i + 1}/${list.length}: ${f.name}`));
         await api(`api/engagements/${id}/files?name=${encodeURIComponent(f.name.normalize("NFC"))}`, { bytes: f });
       }
       if (input.current) input.current.value = "";
-    }, `อัปโหลดแล้ว ${files.length} ไฟล์`);
+    }, t(`อัปโหลดแล้ว ${files.length} ไฟล์`, `Uploaded ${files.length} file(s)`));
 
-  if (!d) return <p className="empty">{error ?? "กำลังโหลด…"}</p>;
+  if (!d) return error ? <p className="empty error">{error}</p> : <Loading />;
   const e = d.engagement;
   const purgeOn = e.closed_at ? new Date(Date.parse(e.closed_at) + d.retention_days * 86400_000) : null;
   const memberIds = new Set(d.members.map((m) => m.id));
@@ -149,11 +161,14 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
             <tr key={f.id}>
               <td>
                 <a href={`api/engagements/${id}/files/${f.id}`} title={`SHA-256 ${f.sha256}`}>
+                  <span className="ext" aria-hidden>
+                    {f.name.split(".").pop()?.slice(0, 4).toUpperCase()}
+                  </span>
                   {f.name}
                 </a>
                 {st && (
                   <div className="small">
-                    <span className={"pill " + (st.read ? "ok" : "bad")}>{st.read ? "ประมวลผลแล้ว" : "อ่านไม่ได้"}</span>
+                    <span className={"pill " + (st.read ? "ok" : "bad")}>{st.read ? t("ประมวลผลแล้ว", "Processed") : t("อ่านไม่ได้", "Unreadable")}</span>
                     {!st.read && st.reason && <span className="error"> {st.reason}</span>}
                   </div>
                 )}
@@ -167,9 +182,9 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                   <button
                     className="link destructive small"
                     disabled={busy}
-                    onClick={() => confirm(`ลบ ${f.name}?`) && act(() => api(`api/engagements/${id}/files/${f.id}/delete`, { method: "POST" }))}
+                    onClick={() => confirm(t(`ลบ ${f.name}?`, `Delete ${f.name}?`)) && act(() => api(`api/engagements/${id}/files/${f.id}/delete`, { method: "POST" }))}
                   >
-                    ลบ
+                    {t("ลบ", "Delete")}
                   </button>
                 )}
               </td>
@@ -183,31 +198,38 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
   return (
     <div>
       <a className="back" href="#/">
-        ‹ Engagement ทั้งหมด
+        ‹ {t("Engagement ทั้งหมด", "All engagements")}
       </a>
       <div className="between page-head">
         <div>
           <h2>{e.client}</h2>
           <p className="muted small">
-            {e.period ? `${e.period} · ` : ""}บทบาทของคุณ: {ROLE_LABEL[e.my_role]} · tolerance {e.tolerance_pct}% · materiality{" "}
-            {e.materiality_thb.toLocaleString("th-TH")} ฿{e.synthetic && " · ข้อมูลสมมติ"}
+            {e.period ? `${e.period} · ` : ""}
+            {t("บทบาทของคุณ", "Your role")}: {ROLE_LABEL[e.my_role]} · tolerance {e.tolerance_pct}% · materiality{" "}
+            {e.materiality_thb.toLocaleString(locale())} ฿{e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
           </p>
         </div>
         <div className="row">
-          <span className={"pill " + (open ? "ok" : "")}>{open ? "เปิดอยู่" : "ปิดแล้ว"}</span>
+          <span className={"pill " + (open ? "ok" : "")}>{open ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
           {d.current_run && (
             <a className="btn filled" href={`#/e/${id}/review`}>
-              เปิดผลการตรวจ
+              {t("เปิดผลการตรวจ", "Open results")}
             </a>
           )}
         </div>
       </div>
       {!open && (
         <p className="banner" role="note">
-          ปิดงานเมื่อ {when(e.closed_at!)} · ดูได้อย่างเดียว ·{" "}
+          {t("ปิดงานเมื่อ", "Closed on")} {when(e.closed_at!)} · {t("ดูได้อย่างเดียว", "Read only")} ·{" "}
           {e.purged_at
-            ? `ไฟล์ดิบและภาพหน้าเอกสารถูกลบแล้วเมื่อ ${when(e.purged_at)} (กระดาษทำการและ Audit Trail ยังอยู่)`
-            : `ไฟล์ดิบจะถูกลบอัตโนมัติประมาณ ${purgeOn!.toLocaleDateString("th-TH", { dateStyle: "medium" })} (${d.retention_days} วันหลังปิดงาน)`}
+            ? t(
+                `ไฟล์ดิบและภาพหน้าเอกสารถูกลบแล้วเมื่อ ${when(e.purged_at)} (กระดาษทำการและ Audit Trail ยังอยู่)`,
+                `Raw files and page images were deleted on ${when(e.purged_at)} (the working paper and Audit Trail remain)`,
+              )
+            : t(
+                `ไฟล์ดิบจะถูกลบอัตโนมัติประมาณ ${purgeOn!.toLocaleDateString(locale(), { dateStyle: "medium" })} (${d.retention_days} วันหลังปิดงาน)`,
+                `Raw files will be deleted automatically around ${purgeOn!.toLocaleDateString(locale(), { dateStyle: "medium" })} (${d.retention_days} days after closing)`,
+              )}
         </p>
       )}
       {error && (
@@ -220,53 +242,84 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
       <div className="eng-grid">
         <div>
           <section className="group">
-            <h3 className="group-title">เอกสารของ Engagement ({d.files.length})</h3>
+            <h3 className="group-title between row">
+              <span>
+                {t("เอกสารของ Engagement", "Engagement documents")} ({d.files.length})
+              </span>
+              <a className="link small" href={`#/files/${id}`}>
+                {t("จัดการไฟล์ ›", "Manage files ›")}
+              </a>
+            </h3>
             <div className="group-body">
-              {!d.store_configured && <p className="small error">ยังไม่ได้ตั้งค่ากุญแจเข้ารหัสไฟล์ (FILES_KEY) จึงอัปโหลดไม่ได้</p>}
+              {!d.store_configured && <p className="small error">{t("ยังไม่ได้ตั้งค่ากุญแจเข้ารหัสไฟล์ (FILES_KEY) จึงอัปโหลดไม่ได้", "The file encryption key (FILES_KEY) is not set, so uploads are off.")}</p>}
               {open && role && (
                 <div
-                  className="dropzone"
-                  onDragOver={(ev) => ev.preventDefault()}
+                  className={"dropzone" + (dragging ? " over" : "")}
+                  onDragOver={(ev) => {
+                    ev.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
                   onDrop={(ev) => {
                     ev.preventDefault();
+                    setDragging(false);
                     upload(ev.dataTransfer.files);
                   }}
                 >
+                  <span className="drop-icon" aria-hidden>
+                    ⇪
+                  </span>
                   <p>
-                    ลากไฟล์มาวาง หรือ{" "}
+                    {t("ลากไฟล์มาวาง หรือ", "Drop files here or")}{" "}
                     <button className="link" disabled={busy} onClick={() => input.current?.click()}>
-                      เลือกไฟล์
+                      {t("เลือกไฟล์", "choose files")}
                     </button>
                   </p>
-                  <p className="muted small">PDF, สแกน (PNG/JPG/TIFF), CSV, XLSX ไม่เกิน 10 MB ต่อไฟล์ · กฎของบริษัทใส่เป็น remember.json · ไฟล์ถูกเข้ารหัสแยกต่อ Engagement</p>
+                  <p className="muted small">
+                    {t(
+                      "PDF, สแกน (PNG/JPG/TIFF), CSV, XLSX ไม่เกิน 10 MB ต่อไฟล์ · กฎของบริษัทใส่เป็น remember.json · ไฟล์ถูกเข้ารหัสแยกต่อ Engagement",
+                      "PDF, scans (PNG/JPG/TIFF), CSV, XLSX up to 10 MB each · Company rules go in remember.json · Files are encrypted per engagement",
+                    )}
+                  </p>
                   <input ref={input} type="file" multiple accept={ACCEPT} hidden onChange={(ev) => upload(ev.target.files)} />
                 </div>
               )}
               {d.files.length === 0 ? (
-                <p className="muted small">{e.purged_at ? "ไฟล์ถูกลบตามนโยบายแล้ว" : "ยังไม่มีไฟล์"}</p>
+                <p className="muted small">{e.purged_at ? t("ไฟล์ถูกลบตามนโยบายแล้ว", "Files were deleted per the retention policy") : t("ยังไม่มีไฟล์", "No files yet")}</p>
               ) : (
                 <>
                   {latest && fresh.length === 0 && (
                     <div className="banner done-banner" role="status">
                       <span>
-                        ประมวลผลเสร็จเมื่อ {when(latest.finished_at ?? latest.started_at)} · {latest.summary?.flags ?? 0} จุดควรตรวจ
-                        {unreadable > 0 && ` · อ่านไม่ได้ ${unreadable} ไฟล์`}
+                        {t("ประมวลผลเสร็จเมื่อ", "Processed on")} {when(latest.finished_at ?? latest.started_at)} · {latest.summary?.flags ?? 0}{" "}
+                        {t("จุดควรตรวจ", "to check")}
+                        {unreadable > 0 && ` · ${t(`อ่านไม่ได้ ${unreadable} ไฟล์`, `${unreadable} unreadable`)}`}
                       </span>{" "}
                       <a className="btn filled" href={`#/e/${id}/review`}>
-                        เปิดผลการตรวจ
+                        {t("เปิดผลการตรวจ", "Open results")}
                       </a>
                     </div>
                   )}
                   {fresh.length > 0 && (
                     <>
-                      {latest && <p className="muted small">รอประมวลผล ({fresh.length}) · ไฟล์ใหม่หรือไฟล์ที่ถูกแทนที่หลังรอบล่าสุด</p>}
+                      {latest && (
+                        <p className="muted small">
+                          {t("รอประมวลผล", "Not yet processed")} ({fresh.length}) ·{" "}
+                          {t("ไฟล์ใหม่หรือไฟล์ที่ถูกแทนที่หลังรอบล่าสุด", "new or replaced since the last run")}
+                        </p>
+                      )}
                       <FileTable rows={fresh} />
                     </>
                   )}
                   {processed.length > 0 && (
                     <details className="processed" open={unreadable > 0 || fresh.length === 0}>
                       <summary>
-                        ประมวลผลแล้ว ({processed.length}){unreadable > 0 && <span className="pill bad"> อ่านไม่ได้ {unreadable}</span>}
+                        {t("ประมวลผลแล้ว", "Processed")} ({processed.length})
+                        {unreadable > 0 && (
+                          <span className="pill bad">
+                            {t("อ่านไม่ได้", "Unreadable")} {unreadable}
+                          </span>
+                        )}
                       </summary>
                       <FileTable rows={processed} />
                     </details>
@@ -277,45 +330,50 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
           </section>
 
           <section className="group">
-            <h3 className="group-title">ประมวลผล</h3>
+            <h3 className="group-title">{t("ประมวลผล", "Processing")}</h3>
             <div className="group-body stack">
               {open && (
                 <div className="row">
                   <button
                     className="btn filled"
                     disabled={busy || running || !docs.length || !d.pipeline_configured}
-                    onClick={() => act(() => api(`api/engagements/${id}/runs`, { method: "POST" }), "เริ่มประมวลผลแล้ว ระบบจะอัปเดตสถานะให้เอง")}
+                    onClick={() => act(() => api(`api/engagements/${id}/runs`, { method: "POST" }), t("เริ่มประมวลผลแล้ว ระบบจะอัปเดตสถานะให้เอง", "Processing started. Status updates on its own."))}
                   >
-                    {running ? "กำลังประมวลผล…" : busy ? "กำลังปลุกเครื่องประมวลผล…" : "ประมวลผลเอกสารทั้งหมด"}
+                    {running ? t("กำลังประมวลผล…", "Processing…") : busy ? t("กำลังปลุกเครื่องประมวลผล…", "Waking the processor…") : t("ประมวลผลเอกสารทั้งหมด", "Process all documents")}
                   </button>
                   <span className="muted small">
                     {d.pipeline_configured
-                      ? "อ่านเอกสาร จับคู่ และตรวจขัดแย้งบน server (ครั้งแรกของวันอาจรอเครื่องตื่นราว 1 นาที)"
-                      : "ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL)"}
+                      ? t(
+                          "อ่านเอกสาร จับคู่ และตรวจขัดแย้งบน server (ครั้งแรกของวันอาจรอเครื่องตื่นราว 1 นาที)",
+                          "Reads, matches and checks documents on the server (the first run of the day may wait about a minute)",
+                        )
+                      : t("ยังไม่ได้ตั้งค่าเครื่องประมวลผล (PIPELINE_URL)", "The processor (PIPELINE_URL) is not configured")}
                   </span>
                 </div>
               )}
               {d.runs.length === 0 ? (
-                <p className="muted small">ยังไม่เคยประมวลผล</p>
+                <p className="muted small">{t("ยังไม่เคยประมวลผล", "Not processed yet")}</p>
               ) : (
                 <ol className="runs">
                   {d.runs.map((r) => (
                     <li key={r.id}>
                       <span className={"pill " + (r.status === "done" ? "ok" : r.status === "failed" ? "bad" : "warn")}>{RUN_LABEL[r.status]}</span>{" "}
                       <span className="muted small">
-                        {when(r.started_at)} · {r.files} ไฟล์
+                        {when(r.started_at)} · {r.files} {t("ไฟล์", "files")}
                       </span>
                       {r.summary && (
                         <span className="small">
                           {" "}
-                          · {r.summary.flags} จุดควรตรวจ · รอจับคู่ {r.summary.pending} · {r.summary.documents} เอกสาร
-                          {r.summary.unreadable > 0 && ` · อ่านไม่ได้ ${r.summary.unreadable} ไฟล์`}
-                          {r.summary.documents === 0 && " · ไม่พบเอกสารที่อ่านได้ (เปิดหน้าผลเพื่อดูสาเหตุรายไฟล์)"}
+                          · {r.summary.flags} {t("จุดควรตรวจ", "to check")} · {t("รอจับคู่", "unmatched")} {r.summary.pending} · {r.summary.documents}{" "}
+                          {t("เอกสาร", "documents")}
+                          {r.summary.unreadable > 0 && ` · ${t(`อ่านไม่ได้ ${r.summary.unreadable} ไฟล์`, `${r.summary.unreadable} unreadable`)}`}
+                          {r.summary.documents === 0 &&
+                            ` · ${t("ไม่พบเอกสารที่อ่านได้ (เปิดหน้าผลเพื่อดูสาเหตุรายไฟล์)", "no readable documents (open the results for per-file reasons)")}`}
                         </span>
                       )}
                       {r.status === "running" && <RunBar p={r.progress ?? { stage: "waking", done: 0, total: r.files, file: null, at: r.started_at }} started={r.started_at} />}
                       {r.error && <span className="small error"> · {r.error}</span>}
-                      {r.result_run_id === d.current_run && r.status === "done" && <span className="muted small"> · ผลที่แสดงอยู่</span>}
+                      {r.result_run_id === d.current_run && r.status === "done" && <span className="muted small"> · {t("ผลที่แสดงอยู่", "current results")}</span>}
                     </li>
                   ))}
                 </ol>
@@ -326,7 +384,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
 
         <div>
           <section className="group">
-            <h3 className="group-title">ทีม</h3>
+            <h3 className="group-title">{t("ทีม", "Team")}</h3>
             <div className="group-body">
               <table className="fields">
                 <tbody>
@@ -334,14 +392,14 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                     <tr key={m.id}>
                       <td>
                         <strong>{m.initials}</strong> {m.name}
-                        {m.id === me.id && <span className="muted small"> (คุณ)</span>}
+                        {m.id === me.id && <span className="muted small"> ({t("คุณ", "you")})</span>}
                       </td>
                       <td>
                         {manager && open ? (
                           <select
                             value={m.role}
                             disabled={busy}
-                            aria-label={`บทบาทของ ${m.name}`}
+                            aria-label={t(`บทบาทของ ${m.name}`, `Role of ${m.name}`)}
                             onChange={(ev) => act(() => api(`api/engagements/${id}/members`, { body: { user_id: m.id, role: ev.target.value } }))}
                           >
                             {Object.entries(ROLE_LABEL).map(([k, v]) => (
@@ -357,7 +415,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                       <td>
                         {manager && open && m.id !== me.id && (
                           <button className="link destructive small" disabled={busy} onClick={() => act(() => api(`api/engagements/${id}/members/${m.id}/remove`, { method: "POST" }))}>
-                            นำออก
+                            {t("นำออก", "Remove")}
                           </button>
                         )}
                       </td>
@@ -367,8 +425,8 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
               </table>
               {manager && open && (
                 <div className="row add-member">
-                  <select value={add.user} onChange={(ev) => setAdd({ ...add, user: ev.target.value })} aria-label="ผู้ใช้">
-                    <option value="">เพิ่มคนในทีม…</option>
+                  <select value={add.user} onChange={(ev) => setAdd({ ...add, user: ev.target.value })} aria-label={t("ผู้ใช้", "User")}>
+                    <option value="">{t("เพิ่มคนในทีม…", "Add a team member…")}</option>
                     {users
                       .filter((u) => !memberIds.has(u.id))
                       .map((u) => (
@@ -377,7 +435,7 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                         </option>
                       ))}
                   </select>
-                  <select value={add.role} onChange={(ev) => setAdd({ ...add, role: ev.target.value as Role })} aria-label="บทบาท">
+                  <select value={add.role} onChange={(ev) => setAdd({ ...add, role: ev.target.value as Role })} aria-label={t("บทบาท", "Role")}>
                     {Object.entries(ROLE_LABEL).map(([k, v]) => (
                       <option key={k} value={k}>
                         {v}
@@ -392,17 +450,22 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                       setAdd({ ...add, user: "" });
                     })}
                   >
-                    เพิ่ม
+                    {t("เพิ่ม", "Add")}
                   </button>
                 </div>
               )}
-              <p className="muted small">ผู้จัดทำ: อัปโหลด ประมวลผล ลงนามผู้จัดทำ · ผู้สอบทาน: ลงนามสอบทาน (ต้องไม่ใช่คนที่จัดทำรายการนั้น) · Manager: ทุกอย่าง รวมถึงทีมและปิดงาน</p>
+              <p className="muted small">
+                {t(
+                  "ผู้จัดทำ: อัปโหลด ประมวลผล ลงนามผู้จัดทำ · ผู้สอบทาน: ลงนามสอบทาน (ต้องไม่ใช่คนที่จัดทำรายการนั้น) · Manager: ทุกอย่าง รวมถึงทีมและปิดงาน",
+                  "Preparer: upload, process, sign as preparer · Reviewer: sign off reviews (not on items they prepared) · Manager: everything, including the team and closing",
+                )}
+              </p>
             </div>
           </section>
 
           {manager && open && (
             <section className="group">
-              <h3 className="group-title">ตั้งค่าและปิดงาน (Manager)</h3>
+              <h3 className="group-title">{t("ตั้งค่าและปิดงาน (Manager)", "Settings and closing (manager)")}</h3>
               <div className="group-body stack">
                 <div className="row">
                   <label className="form-field">
@@ -420,10 +483,10 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                       act(async () => {
                         await api(`api/engagements/${id}/settings`, { body: { tolerance_pct: Number(settings!.t), materiality_thb: Number(settings!.m) } });
                         setSettings(null);
-                      }, "บันทึกแล้ว มีผลกับการประมวลผลรอบถัดไป")
+                      }, t("บันทึกแล้ว มีผลกับการประมวลผลรอบถัดไป", "Saved. Applies from the next run."))
                     }
                   >
-                    บันทึก
+                    {t("บันทึก", "Save")}
                   </button>
                 </div>
                 <div className="row">
@@ -431,33 +494,43 @@ export default function EngagementPage({ id, me }: { id: string; me: User }) {
                     className="btn destructive"
                     disabled={busy}
                     onClick={() =>
-                      confirm(`ปิดงาน ${e.client}? หลังปิดจะแก้ไขไม่ได้ และไฟล์ดิบจะถูกลบอัตโนมัติหลัง ${d.retention_days} วัน`) &&
+                      confirm(
+                        t(
+                          `ปิดงาน ${e.client}? หลังปิดจะแก้ไขไม่ได้ และไฟล์ดิบจะถูกลบอัตโนมัติหลัง ${d.retention_days} วัน`,
+                          `Close ${e.client}? It becomes read only, and raw files are deleted automatically after ${d.retention_days} days.`,
+                        ),
+                      ) &&
                       act(() => api(`api/engagements/${id}/close`, { method: "POST" }))
                     }
                   >
-                    ปิดงาน
+                    {t("ปิดงาน", "Close engagement")}
                   </button>
-                  <span className="muted small">ไฟล์ดิบจะถูกลบ {d.retention_days} วันหลังปิดงาน กระดาษทำการและ Audit Trail เก็บไว้</span>
+                  <span className="muted small">
+                    {t(
+                      `ไฟล์ดิบจะถูกลบ ${d.retention_days} วันหลังปิดงาน กระดาษทำการและ Audit Trail เก็บไว้`,
+                      `Raw files are deleted ${d.retention_days} days after closing; the working paper and Audit Trail are kept`,
+                    )}
+                  </span>
                 </div>
               </div>
             </section>
           )}
 
           <section className="group">
-            <h3 className="group-title">บันทึกการใช้งาน</h3>
+            <h3 className="group-title">{t("บันทึกการใช้งาน", "Activity log")}</h3>
             <div className="group-body">
               <ol className="activity">
                 {d.activity.map((a) => (
                   <li key={a.seq}>
                     <span className="muted small">
-                      {when(a.at)} · {a.actor === "SYSTEM" ? "ระบบ" : a.actor}
+                      {when(a.at)} · {a.actor === "SYSTEM" ? t("ระบบ", "System") : a.actor}
                     </span>{" "}
                     {ACTIVITY_LABEL[a.action] ?? a.action}
                     <span className="muted small"> {detailText(a.detail)}</span>
                   </li>
                 ))}
               </ol>
-              <p className="muted small">บันทึกนี้เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้</p>
+              <p className="muted small">{t("บันทึกนี้เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้", "This log is append-only; entries cannot be edited or deleted.")}</p>
             </div>
           </section>
         </div>

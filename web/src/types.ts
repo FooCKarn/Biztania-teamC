@@ -122,7 +122,16 @@ export interface ConflictMap {
     unreadable_reasons?: Record<string, string>;
     unclear_fields: { doc: string; field: string; locator: string; quote: string }[];
     unverified_fields: { doc: string; field: string }[];
+    /** Checks the rules could not run on a document, and why (no flag here means "not checked", not "fine"). */
+    skipped_checks?: SkippedCheck[];
   };
+}
+
+export interface SkippedCheck {
+  doc: string;
+  kind: string;
+  checks: string[];
+  reason: string;
 }
 
 /** Working-paper sign-off: the preparer gives the verdict and reason, a different person reviews. */

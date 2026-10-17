@@ -1,3 +1,5 @@
+import { bi, locale, t } from "./i18n";
+
 // Calls to the Worker API for signed-in pages. Every state change carries the x-ac-csrf header,
 // which the Worker requires (a cross-site page cannot add it without a preflight the Worker refuses).
 
@@ -19,7 +21,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   try {
     r = await fetch(path, { method, headers, body: opts.bytes ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined), credentials: "same-origin" });
   } catch {
-    throw new ApiError(0, "เชื่อมต่อ server ไม่ได้");
+    throw new ApiError(0, t("เชื่อมต่อ server ไม่ได้", "Cannot reach the server"));
   }
   const b = await r.json().catch(() => ({}));
   if (!r.ok) throw new ApiError(r.status, b.error ?? b.answer ?? `HTTP ${r.status}`);
@@ -38,7 +40,7 @@ export interface User {
 }
 
 export type Role = "preparer" | "reviewer" | "manager";
-export const ROLE_LABEL: Record<string, string> = { preparer: "ผู้จัดทำ", reviewer: "ผู้สอบทาน", manager: "Manager" };
+export const ROLE_LABEL: Record<string, string> = bi({ preparer: ["ผู้จัดทำ", "Preparer"], reviewer: ["ผู้สอบทาน", "Reviewer"], manager: ["Manager", "Manager"] });
 
 export interface Engagement {
   id: string;
@@ -95,4 +97,30 @@ export interface EngagementDetail {
   store_configured: boolean;
 }
 
-export const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+export interface ManagedFile {
+  id: string;
+  engagement_id: string;
+  name: string;
+  ext: string;
+  size: number;
+  sha256: string;
+  uploaded_at: string;
+  uploaded_by: string;
+  in_latest_run: boolean;
+}
+
+export interface FilesOverview {
+  storage: {
+    quota: number;
+    used: number;
+    files: number;
+    pages: number;
+    others: number;
+    overhead: number;
+    by_type: { ext: string; bytes: number; count: number }[];
+  };
+  engagements: { id: string; client: string; period: string | null; status: "open" | "closed"; purged: boolean; my_role: Role; can_delete: boolean }[];
+  files: ManagedFile[];
+}
+
+export const when = (iso: string) => new Date(iso).toLocaleString(locale(), { dateStyle: "medium", timeStyle: "short" });

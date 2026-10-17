@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Decision } from "../types";
 import type { Trail, TrailAction } from "../decisions";
-import { ROLE_LABEL } from "../api";
+import { ROLE_LABEL, when } from "../api";
+import { bi, t } from "../i18n";
 
 interface Props {
   flagId: string;
@@ -9,15 +10,14 @@ interface Props {
 }
 
 const INITIALS_KEY = "ac-initials";
-const when = (iso: string) => new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
-const ACTION_LABEL: Record<string, string> = {
-  prepare: "ลงนามผู้จัดทำ",
-  review: "ลงนามสอบทาน",
-  unreview: "ยกเลิกการสอบทาน",
-  reopen: "เปิดแก้ไข",
-  pair: "ยืนยันคู่",
-};
-const VERDICT_LABEL: Record<string, string> = { issue: "เป็นประเด็น", not_issue: "ไม่เป็นประเด็น" };
+const ACTION_LABEL: Record<string, string> = bi({
+  prepare: ["ลงนามผู้จัดทำ", "Signed as preparer"],
+  review: ["ลงนามสอบทาน", "Signed off review"],
+  unreview: ["ยกเลิกการสอบทาน", "Withdrew review"],
+  reopen: ["เปิดแก้ไข", "Reopened"],
+  pair: ["ยืนยันคู่", "Confirmed pair"],
+});
+const VERDICT_LABEL: Record<string, string> = bi({ issue: ["เป็นประเด็น", "Issue"], not_issue: ["ไม่เป็นประเด็น", "Not an issue"] });
 
 function loadInitials() {
   try {
@@ -62,22 +62,29 @@ export default function DecisionBox({ flagId, trail }: Props) {
     setBusy(false);
   };
   const prepare = (verdict: Decision["verdict"]) => run({ action: "prepare", target: flagId, value: verdict, reason: reason.trim(), actor: who });
-  const needWho = () => (who.length >= 2 ? true : (setError("ใส่ชื่อย่อก่อน"), false));
+  const needWho = () => (who.length >= 2 ? true : (setError(t("ใส่ชื่อย่อก่อน", "Enter your initials first")), false));
   const samePerson = !!decision?.by && decision.by === who;
 
   return (
-    <section className="group" aria-label="ลงนาม">
-      <h3 className="group-title">ลงนามกระดาษทำการ</h3>
+    <section className="group" aria-label={t("ลงนาม", "Sign-off")}>
+      <h3 className="group-title">{t("ลงนามกระดาษทำการ", "Working paper sign-off")}</h3>
       <div className="group-body signoff">
         {signedIn ? (
           <p className="muted small">
-            ลงนามในชื่อ <b>{trail.actor}</b> ({ROLE_LABEL[trail.role ?? ""] ?? trail.role}) จากบัญชีที่เข้าสู่ระบบ
-            {locked && " · Engagement ปิดแล้ว ดูได้อย่างเดียว"}
+            {t("ลงนามในชื่อ", "Signing as")} <b>{trail.actor}</b> ({ROLE_LABEL[trail.role ?? ""] ?? trail.role}){" "}
+            {t("จากบัญชีที่เข้าสู่ระบบ", "from the signed-in account")}
+            {locked && ` · ${t("Engagement ปิดแล้ว ดูได้อย่างเดียว", "Engagement closed, read only")}`}
           </p>
         ) : (
           <label className="field-row">
-            <span>ชื่อย่อของคุณ</span>
-            <input value={initials} onChange={(e) => remember(e.target.value)} maxLength={4} placeholder="เช่น SK" aria-label="ชื่อย่อผู้ลงนาม" />
+            <span>{t("ชื่อย่อของคุณ", "Your initials")}</span>
+            <input
+              value={initials}
+              onChange={(e) => remember(e.target.value)}
+              maxLength={4}
+              placeholder={t("เช่น SK", "e.g. SK")}
+              aria-label={t("ชื่อย่อผู้ลงนาม", "Signer initials")}
+            />
           </label>
         )}
 
@@ -86,7 +93,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
             {decision ? "✓" : "1"}
           </span>
           <div className="step-main">
-            <strong>ผู้จัดทำ (Prepared)</strong>
+            <strong>{t("ผู้จัดทำ (Prepared)", "Prepared")}</strong>
             {decision ? (
               <p>
                 <span className={"pill " + (decision.verdict === "issue" ? "bad" : "ok")}>{VERDICT_LABEL[decision.verdict]}</span>{" "}
@@ -99,9 +106,9 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   className="link"
                   disabled={busy || locked}
                   onClick={() => needWho() && run({ action: "reopen", target: flagId, actor: who })}
-                  title="ประวัติเดิมยังอยู่ใน Audit Trail"
+                  title={t("ประวัติเดิมยังอยู่ใน Audit Trail", "The earlier history stays in the Audit Trail")}
                 >
-                  แก้ไข
+                  {t("แก้ไข", "Edit")}
                 </button>
               </p>
             ) : (
@@ -112,18 +119,23 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   onChange={(e) => setReason(e.target.value)}
                   rows={2}
                   maxLength={500}
-                  aria-label="เหตุผล"
-                  placeholder="เหตุผล (จำเป็น) เช่น ได้รับหนังสือแจ้งเปลี่ยนบัญชีจาก vendor ลงวันที่ …"
+                  aria-label={t("เหตุผล", "Reason")}
+                  placeholder={t(
+                    "เหตุผล (จำเป็น) เช่น ได้รับหนังสือแจ้งเปลี่ยนบัญชีจาก vendor ลงวันที่ …",
+                    "Reason (required), e.g. received the vendor's bank change letter dated …",
+                  )}
                 />
                 <div className="row">
                   <button className="btn destructive" disabled={!ok} onClick={() => prepare("issue")}>
-                    เป็นประเด็น
+                    {VERDICT_LABEL.issue}
                   </button>
                   <button className="btn" disabled={!ok} onClick={() => prepare("not_issue")}>
-                    ไม่เป็นประเด็น
+                    {VERDICT_LABEL.not_issue}
                   </button>
                   {!ok && !busy && !locked && (
-                    <span className="muted small">{signedIn ? "ใส่เหตุผลอย่างน้อย 5 ตัวอักษร" : "ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร"}</span>
+                    <span className="muted small">{signedIn
+                        ? t("ใส่เหตุผลอย่างน้อย 5 ตัวอักษร", "Enter a reason of at least 5 characters")
+                        : t("ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร", "Enter your initials and a reason of at least 5 characters")}</span>
                   )}
                 </div>
               </>
@@ -136,10 +148,10 @@ export default function DecisionBox({ flagId, trail }: Props) {
             {decision?.review ? "✓" : "2"}
           </span>
           <div className="step-main">
-            <strong>ผู้สอบทาน (Reviewed)</strong>
+            <strong>{t("ผู้สอบทาน (Reviewed)", "Reviewed")}</strong>
             {decision?.review ? (
               <p>
-                สอบทานแล้ว
+                {t("สอบทานแล้ว", "Reviewed")}
                 <span className="muted small">
                   {" "}
                   · {decision.review.by} · {when(decision.review.at)}
@@ -149,7 +161,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   disabled={busy || locked || !canReview}
                   onClick={() => needWho() && run({ action: "unreview", target: flagId, actor: who })}
                 >
-                  ยกเลิก
+                  {t("ยกเลิก", "Withdraw")}
                 </button>
               </p>
             ) : decision ? (
@@ -159,13 +171,15 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   disabled={who.length < 2 || samePerson || busy || locked || !canReview}
                   onClick={() => run({ action: "review", target: flagId, actor: who })}
                 >
-                  ลงนามสอบทาน
+                  {t("ลงนามสอบทาน", "Sign off review")}
                 </button>
-                {samePerson && <span className="muted small">ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ</span>}
-                {!canReview && !samePerson && <span className="muted small">ต้องเป็นผู้สอบทานหรือ Manager ของ Engagement นี้</span>}
+                {samePerson && <span className="muted small">{t("ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ", "The reviewer must not be the preparer")}</span>}
+                {!canReview && !samePerson && (
+                  <span className="muted small">{t("ต้องเป็นผู้สอบทานหรือ Manager ของ Engagement นี้", "Only this engagement's reviewer or manager can sign")}</span>
+                )}
               </div>
             ) : (
-              <p className="muted small">รอผู้จัดทำลงนามก่อน</p>
+              <p className="muted small">{t("รอผู้จัดทำลงนามก่อน", "Waiting for the preparer to sign")}</p>
             )}
           </div>
         </div>
@@ -177,7 +191,9 @@ export default function DecisionBox({ flagId, trail }: Props) {
 
         {history.length > 0 && (
           <details className="trail">
-            <summary>ประวัติ Audit Trail ({history.length})</summary>
+            <summary>
+              {t("ประวัติ Audit Trail", "Audit Trail history")} ({history.length})
+            </summary>
             <ol>
               {history.map((e) => (
                 <li key={e.seq}>
@@ -188,7 +204,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
                   {e.value && e.action === "prepare" && ` · ${VERDICT_LABEL[e.value] ?? e.value}`}
                   {e.reason && ` · ${e.reason}`}
                   {e.hash && (
-                    <span className="muted small mono" title={`หลักฐาน: ${e.evidence.map((x) => `${x.doc}${x.locator ? ` (${x.locator})` : ""}`).join(", ")}`}>
+                    <span className="muted small mono" title={`${t("หลักฐาน", "Evidence")}: ${e.evidence.map((x) => `${x.doc}${x.locator ? ` (${x.locator})` : ""}`).join(", ")}`}>
                       {" "}
                       · {e.hash.slice(0, 8)}
                     </span>
@@ -200,12 +216,14 @@ export default function DecisionBox({ flagId, trail }: Props) {
         )}
         <p className="muted small">
           {trail.mode === "server"
-            ? `บันทึกเป็น Audit Trail บน server (เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้) · ${
-                trail.chainOk ? "สายแฮชครบ ไม่ถูกแก้ไข" : "สายแฮชไม่ตรง ควรตรวจว่ามีการแก้ข้อมูล"
+            ? `${t("บันทึกเป็น Audit Trail บน server (เพิ่มได้อย่างเดียว แก้หรือลบไม่ได้)", "Recorded in the server Audit Trail (append-only)")} · ${
+                trail.chainOk
+                  ? t("สายแฮชครบ ไม่ถูกแก้ไข", "hash chain intact")
+                  : t("สายแฮชไม่ตรง ควรตรวจว่ามีการแก้ข้อมูล", "hash chain broken, check whether data was altered")
               }${trail.actor ? "" : ` · workspace ${trail.workspace}`}`
             : trail.mode === "local"
-              ? "เดโม: ยังไม่ได้เชื่อมฐานข้อมูล จึงบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น"
-              : "กำลังโหลด Audit Trail…"}
+              ? t("เดโม: ยังไม่ได้เชื่อมฐานข้อมูล จึงบันทึกไว้ในเบราว์เซอร์นี้เท่านั้น", "Demo: no database connected, so this is kept in this browser only")
+              : t("กำลังโหลด Audit Trail…", "Loading Audit Trail…")}
         </p>
       </div>
     </section>

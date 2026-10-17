@@ -153,7 +153,7 @@ function crc32(b: Uint8Array) {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-function zip(entries: [string, Uint8Array][]): Uint8Array {
+export function zip(entries: [string, Uint8Array][]): Uint8Array {
   const enc = new TextEncoder();
   const local: Uint8Array[] = [];
   const central: Uint8Array[] = [];

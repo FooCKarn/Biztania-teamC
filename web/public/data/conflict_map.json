@@ -6898,9 +6898,16 @@
    ]
   }
  ],
+ "extraction": {
+  "mode": "template",
+  "models": {},
+  "template_fallback": [],
+  "errors": []
+ },
  "coverage": {
   "files": 19,
   "unreadable_files": [],
+  "unreadable_reasons": {},
   "unclear_fields": [
    {
     "doc": "INV-BS-205_scan (อ่านเลขที่ไม่ชัด)",
@@ -6909,6 +6916,42 @@
     "quote": "เลขที่ปงง-88-205"
    }
   ],
-  "unverified_fields": []
+  "unverified_fields": [],
+  "skipped_checks": [
+   {
+    "doc": "INV-BS-205_scan (อ่านเลขที่ไม่ชัด)",
+    "kind": "invoice",
+    "checks": [
+     "CONTRACT_BREACH"
+    ],
+    "reason": "invoice_no อ่านไม่ชัด จึงไม่ได้ใช้ตรวจ"
+   },
+   {
+    "doc": "INV-TG-110",
+    "kind": "invoice",
+    "checks": [
+     "CONTRACT_BREACH",
+     "DATE_ORDER",
+     "VALUE_MISMATCH"
+    ],
+    "reason": "รอจับคู่: ยังไม่ได้เทียบกับเอกสารคู่และสัญญาจนกว่าผู้ตรวจยืนยันคู่"
+   },
+   {
+    "doc": "PO-2026-007",
+    "kind": "po",
+    "checks": [
+     "VALUE_MISMATCH"
+    ],
+    "reason": "มีใบรับของแต่ยังไม่มี Invoice ในชุดเอกสาร (ค้างครึ่งทาง ยังไม่ได้เทียบยอดกับ Invoice)"
+   },
+   {
+    "doc": "PO-2026-008",
+    "kind": "po",
+    "checks": [
+     "VALUE_MISMATCH"
+    ],
+    "reason": "มีใบรับของแต่ยังไม่มี Invoice ในชุดเอกสาร (ค้างครึ่งทาง ยังไม่ได้เทียบยอดกับ Invoice)"
+   }
+  ]
  }
 }
