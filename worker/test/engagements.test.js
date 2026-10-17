@@ -508,8 +508,8 @@ test("edit and delete a company: team members only, closed ones cannot be edited
   const up = await prep.b.post(`${base}/update`, { client: "บริษัท ใหม่ จำกัด", period: "FY2027" });
   assert.equal(up.status, 200);
   const list = (await admin.get("/api/engagements")).body;
-  assert.equal(list.can_delete, true);
   const row = list.engagements.find((e) => e.id === id);
+  assert.equal(row.can_delete, true);
   assert.deepEqual([row.client, row.period], ["บริษัท ใหม่ จำกัด", "FY2027"]);
 
   const second = await admin.post("/api/engagements", { client: "Closed Co" });
