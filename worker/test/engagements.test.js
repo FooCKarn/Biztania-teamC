@@ -457,6 +457,13 @@ test("file manager: only the user's engagements, storage per kind, other clients
   assert.equal(r3.storage.files, PDF.length + csv.length);
   assert.ok(a.body.file.id);
 
+  // Deleting the last raw file also removes the page images; the working paper stays.
+  const pagesBefore = r3.storage.pages;
+  for (const f of r3.files) await rev.b.post(`/api/engagements/${id}/files/${f.id}/delete`);
+  const r4 = (await rev.b.get("/api/files")).body;
+  assert.equal(r4.files.length, 0);
+  assert.ok(r4.storage.pages > 0 && r4.storage.pages < pagesBefore);
+
   await admin.post(`/api/engagements/${id}/close`);
   assert.equal((await rev.b.get("/api/files")).body.engagements.find((e) => e.id === id).can_delete, false);
   env.STORAGE_QUOTA_MB = "10240";
