@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Doc } from "../types";
 import { fieldLabel, KIND_LABEL } from "../labels";
 import { useSource } from "../source";
+import { t } from "../i18n";
 
 /** One value to tick on the source: a box on a page image, or a row (and cell) in a table file. */
 export interface Mark {
@@ -77,7 +78,10 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
   if (doc.page && engagement?.purged) {
     body = (
       <p className="viewer-hint">
-        ไฟล์ต้นฉบับและภาพหน้าเอกสารถูกลบแล้วตามนโยบายลบไฟล์หลังปิดงาน ข้อความอ้างอิง (quote) ยังอยู่ในกระดาษทำการ
+        {t(
+          "ไฟล์ต้นฉบับและภาพหน้าเอกสารถูกลบแล้วตามนโยบายลบไฟล์หลังปิดงาน ข้อความอ้างอิง (quote) ยังอยู่ในกระดาษทำการ",
+          "The source file and page images were deleted under the post-closing retention policy. The quotes remain in the working paper.",
+        )}
       </p>
     );
   } else if (doc.page) {
@@ -90,7 +94,7 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
     });
     body = (
       <div className="page">
-        <img src={`${base}${doc.page.image}`} alt={`หน้าเอกสาร ${doc.file}`} width={W} height={H} />
+        <img src={`${base}${doc.page.image}`} alt={t(`หน้าเอกสาร ${doc.file}`, `Page of ${doc.file}`)} width={W} height={H} />
         {marks
           .filter((m) => m.doc === doc.id && m.bbox)
           .map((m) => (
@@ -167,7 +171,7 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
         </table>
       </div>
     ) : (
-      <p className="muted pad">ไม่มีข้อมูลตารางให้แสดง</p>
+      <p className="muted pad">{t("ไม่มีข้อมูลตารางให้แสดง", "No table data to show")}</p>
     );
   }
 
@@ -181,15 +185,19 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
             <span className="tick ok" aria-hidden>
               ✓
             </span>{" "}
-            <strong>{active.label}</strong> พบข้อความนี้ในไฟล์ต้นฉบับ · {active.locator}
+            <strong>{active.label}</strong> {t("พบข้อความนี้ในไฟล์ต้นฉบับ", "found in the source file")} · {active.locator}
           </p>
           <blockquote>{active.quote}</blockquote>
         </div>
       ) : (
-        <p className="viewer-hint muted small">แตะกรอบบนเอกสารหรือแถวในตารางหลักฐานเพื่อดูข้อความต้นฉบับ</p>
+        <p className="viewer-hint muted small">
+          {t("แตะกรอบบนเอกสารหรือแถวในตารางหลักฐานเพื่อดูข้อความต้นฉบับ", "Tap a box on the document or a row in the evidence table to see the source text")}
+        </p>
       )}
       <details className="viewer-fields">
-        <summary>ข้อมูลที่ระบบอ่านได้จากเอกสารนี้ ({Object.keys(doc.fields).length})</summary>
+        <summary>
+          {t("ข้อมูลที่ระบบอ่านได้จากเอกสารนี้", "Fields read from this document")} ({Object.keys(doc.fields).length})
+        </summary>
         <table className="fields">
           <tbody>
             {Object.values(doc.fields).map((f) => (
@@ -197,9 +205,11 @@ export default function DocViewer({ doc, siblings, marks, onPick }: Props) {
                 <th>{fieldLabel(f.name)}</th>
                 <td>
                   {String(f.value)}
-                  {!f.clear && <span className="pill warn">? อ่านไม่ชัด ไม่นำไปใช้ตรวจ</span>}
-                  {!f.verified && <span className="pill warn">ไม่พบข้อความต้นฉบับ</span>}
-                  {f.crop && !engagement?.purged && <img src={`${base}${f.crop}`} alt={`ภาพจากไฟล์สแกน: ${f.quote}`} className="crop" />}
+                  {!f.clear && <span className="pill warn">? {t("อ่านไม่ชัด ไม่นำไปใช้ตรวจ", "unclear, not used for checks")}</span>}
+                  {!f.verified && <span className="pill warn">{t("ไม่พบข้อความต้นฉบับ", "source text not found")}</span>}
+                  {f.crop && !engagement?.purged && (
+                    <img src={`${base}${f.crop}`} alt={`${t("ภาพจากไฟล์สแกน", "Scan crop")}: ${f.quote}`} className="crop" />
+                  )}
                 </td>
                 <td className="muted small">{f.locator}</td>
               </tr>

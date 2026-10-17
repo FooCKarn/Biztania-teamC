@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { api } from "../api";
+import { api, ROLE_LABEL } from "../api";
+import { LangToggle, t } from "../i18n";
 
 function useSubmit(fn: () => Promise<void>) {
   const [busy, setBusy] = useState(false);
@@ -26,11 +27,12 @@ const Field = ({ label, ...p }: { label: string } & React.InputHTMLAttributes<HT
   </label>
 );
 
-const DEMO_CHOICES = [
-  ["preparer", "ผู้จัดทำ", "อัปโหลด ประมวลผล และลงนามจัดทำ"],
-  ["reviewer", "ผู้สอบทาน", "สอบทานและลงนามรับรองผลของผู้จัดทำ"],
-  ["manager", "Manager", "ทำได้ทุกอย่างในเดโม"],
-] as const;
+const demoChoices = () =>
+  [
+    ["preparer", "P", t("อัปโหลด ประมวลผล และลงนามจัดทำ", "Upload, process and sign as preparer")],
+    ["reviewer", "R", t("สอบทานและลงนามรับรองผลของผู้จัดทำ", "Review and sign off the preparer's work")],
+    ["manager", "M", t("ทำได้ทุกอย่างในเดโม", "Everything in the demo")],
+  ] as const;
 
 export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: boolean; demoMode?: boolean; onDone: () => void }) {
   const [setup, setSetup] = useState(setupNeeded);
@@ -62,45 +64,74 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
 
   return (
     <div className="shell narrow">
+      <div className="login-lang">
+        <LangToggle />
+      </div>
       <div className="login-head">
         <span className="app-icon big" aria-hidden>
           ✓
         </span>
         <h1>AI Audit Concierge</h1>
-        <p className="muted">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
+        <p className="muted">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
       </div>
       {demoMode && (
         <div className="group-body form">
-          <h3>เลือกมุมมองเพื่อลองใช้ (ไม่ต้องเข้าสู่ระบบ)</h3>
+          <h3>{t("เลือกมุมมองเพื่อลองใช้ (ไม่ต้องเข้าสู่ระบบ)", "Pick a role to try it (no sign-in)")}</h3>
           <p className="muted small">
-            เข้าด้วยบัญชีทดลองตามบทบาทที่เลือก ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง สลับบทบาทได้ภายหลังจากแบนเนอร์
+            {t(
+              "เข้าด้วยบัญชีทดลองตามบทบาทที่เลือก ใช้อัปโหลด ประมวลผล ดูประเด็นที่ควรตรวจ ถามตอบ และลงนามได้ ข้อมูลเป็นข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง สลับบทบาทได้ภายหลังจากแบนเนอร์",
+              "You enter with a shared trial account for that role: upload, process, review flagged items, ask questions and sign off. Synthetic data only, never upload real documents. You can switch roles later from the banner.",
+            )}
           </p>
           {demoError && (
             <p className="small error" role="alert">
               {demoError}
             </p>
           )}
-          {DEMO_CHOICES.map(([role, label, hint]) => (
-            <button key={role} type="button" className="btn wide" onClick={() => enterDemo(role)} disabled={demoBusy !== null}>
-              {demoBusy === role ? "กำลังเข้า…" : `เข้าเป็น${label}`} <span className="muted small">· {hint}</span>
-            </button>
-          ))}
+          <div className="role-picker">
+            {demoChoices().map(([role, letter, hint]) => (
+              <button key={role} type="button" className="role-card" onClick={() => enterDemo(role)} disabled={demoBusy !== null}>
+                <span className="avatar big" aria-hidden>
+                  {letter}
+                </span>
+                <span className="role-text">
+                  <strong>{demoBusy === role ? t("กำลังเข้า…", "Signing in…") : t(`เข้าเป็น${ROLE_LABEL[role]}`, `Enter as ${ROLE_LABEL[role]}`)}</strong>
+                  <span className="muted small">{hint}</span>
+                </span>
+                <span className="chev" aria-hidden>
+                  ›
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
       {showForm && (
       <form className="group-body form" onSubmit={submit}>
-        <h3>{setup ? "ตั้งค่าบัญชีผู้ดูแลระบบคนแรก" : "เข้าสู่ระบบ"}</h3>
+        <h3>{setup ? t("ตั้งค่าบัญชีผู้ดูแลระบบคนแรก", "Set up the first admin account") : t("เข้าสู่ระบบ", "Sign in")}</h3>
         {setup && (
           <>
-            <p className="muted small">ใช้รหัสตั้งค่า (SETUP_TOKEN) ที่ตั้งไว้ใน Worker ใช้ได้ครั้งเดียวตอนยังไม่มีผู้ใช้</p>
-            <Field label="รหัสตั้งค่า" value={f.token} onChange={set("token")} type="password" required autoComplete="off" />
-            <Field label="ชื่อ-นามสกุล" value={f.name} onChange={set("name")} required />
-            <Field label="ชื่อย่อ (ใช้ลงนาม)" value={f.initials} onChange={set("initials")} maxLength={4} required placeholder="เช่น SK" />
+            <p className="muted small">
+              {t(
+                "ใช้รหัสตั้งค่า (SETUP_TOKEN) ที่ตั้งไว้ใน Worker ใช้ได้ครั้งเดียวตอนยังไม่มีผู้ใช้",
+                "Use the setup token (SETUP_TOKEN) set on the Worker. It works once, while there are no users.",
+              )}
+            </p>
+            <Field label={t("รหัสตั้งค่า", "Setup token")} value={f.token} onChange={set("token")} type="password" required autoComplete="off" />
+            <Field label={t("ชื่อ-นามสกุล", "Full name")} value={f.name} onChange={set("name")} required />
+            <Field
+              label={t("ชื่อย่อ (ใช้ลงนาม)", "Initials (used to sign)")}
+              value={f.initials}
+              onChange={set("initials")}
+              maxLength={4}
+              required
+              placeholder={t("เช่น SK", "e.g. SK")}
+            />
           </>
         )}
-        <Field label="อีเมล" value={f.email} onChange={set("email")} type="email" required autoComplete="username" />
+        <Field label={t("อีเมล", "Email")} value={f.email} onChange={set("email")} type="email" required autoComplete="username" />
         <Field
-          label="รหัสผ่าน"
+          label={t("รหัสผ่าน", "Password")}
           value={f.password}
           onChange={set("password")}
           type="password"
@@ -114,20 +145,22 @@ export default function Login({ setupNeeded, demoMode, onDone }: { setupNeeded: 
           </p>
         )}
         <button className="btn filled wide" disabled={busy}>
-          {busy ? "กำลังดำเนินการ…" : setup ? "สร้างบัญชีและเข้าสู่ระบบ" : "เข้าสู่ระบบ"}
+          {busy ? t("กำลังดำเนินการ…", "Working…") : setup ? t("สร้างบัญชีและเข้าสู่ระบบ", "Create account and sign in") : t("เข้าสู่ระบบ", "Sign in")}
         </button>
         {setupNeeded && (
           <button type="button" className="link small" onClick={() => setSetup(!setup)}>
-            {setup ? "มีบัญชีแล้ว เข้าสู่ระบบ" : "ตั้งค่าบัญชีแรก"}
+            {setup ? t("มีบัญชีแล้ว เข้าสู่ระบบ", "I have an account, sign in") : t("ตั้งค่าบัญชีแรก", "Set up the first account")}
           </button>
         )}
-        <p className="muted small">ยังไม่มีบัญชี? ให้ผู้ดูแลระบบของสำนักงานสร้างให้ (ไม่มีการสมัครเอง)</p>
+        <p className="muted small">
+          {t("ยังไม่มีบัญชี? ให้ผู้ดูแลระบบของสำนักงานสร้างให้ (ไม่มีการสมัครเอง)", "No account? Ask your firm's admin to create one (there is no self sign-up).")}
+        </p>
       </form>
       )}
       {showForm && (
         <p className="center">
           <a className="btn" href="#/demo">
-            ดูเดโมด้วยข้อมูลสมมติ (ไม่ต้องเข้าสู่ระบบ)
+            {t("ดูเดโมด้วยข้อมูลสมมติ (ไม่ต้องเข้าสู่ระบบ)", "View the demo with synthetic data (no sign-in)")}
           </a>
         </p>
       )}
@@ -139,26 +172,42 @@ export function ChangePassword({ first, onDone }: { first?: boolean; onDone: () 
   const [f, setF] = useState({ current: "", next: "", again: "" });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
   const { busy, error, submit } = useSubmit(async () => {
-    if (f.next !== f.again) throw new Error("รหัสผ่านใหม่สองช่องไม่ตรงกัน");
+    if (f.next !== f.again) throw new Error(t("รหัสผ่านใหม่สองช่องไม่ตรงกัน", "The two new passwords do not match"));
     await api("api/auth/password", { body: { current: f.current, next: f.next } });
     onDone();
   });
   return (
     <form className="group-body form" onSubmit={submit}>
-      <h3>{first ? "ตั้งรหัสผ่านใหม่ก่อนเริ่มใช้งาน" : "เปลี่ยนรหัสผ่าน"}</h3>
-      {first && <p className="muted small">รหัสผ่านที่ได้รับจากผู้ดูแลใช้ได้ครั้งเดียว</p>}
-      <Field label="รหัสผ่านปัจจุบัน" value={f.current} onChange={set("current")} type="password" required autoComplete="current-password" />
-      <Field label="รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)" value={f.next} onChange={set("next")} type="password" minLength={10} required autoComplete="new-password" />
-      <Field label="ยืนยันรหัสผ่านใหม่" value={f.again} onChange={set("again")} type="password" minLength={10} required autoComplete="new-password" />
+      <h3>{first ? t("ตั้งรหัสผ่านใหม่ก่อนเริ่มใช้งาน", "Set a new password before you start") : t("เปลี่ยนรหัสผ่าน", "Change password")}</h3>
+      {first && <p className="muted small">{t("รหัสผ่านที่ได้รับจากผู้ดูแลใช้ได้ครั้งเดียว", "The password from your admin works only once.")}</p>}
+      <Field label={t("รหัสผ่านปัจจุบัน", "Current password")} value={f.current} onChange={set("current")} type="password" required autoComplete="current-password" />
+      <Field
+        label={t("รหัสผ่านใหม่ (อย่างน้อย 10 ตัวอักษร)", "New password (at least 10 characters)")}
+        value={f.next}
+        onChange={set("next")}
+        type="password"
+        minLength={10}
+        required
+        autoComplete="new-password"
+      />
+      <Field
+        label={t("ยืนยันรหัสผ่านใหม่", "Confirm new password")}
+        value={f.again}
+        onChange={set("again")}
+        type="password"
+        minLength={10}
+        required
+        autoComplete="new-password"
+      />
       {error && (
         <p className="small error" role="alert">
           {error}
         </p>
       )}
       <button className="btn filled wide" disabled={busy}>
-        บันทึก
+        {t("บันทึก", "Save")}
       </button>
-      <p className="muted small">เมื่อเปลี่ยนแล้ว ระบบจะออกจากระบบในอุปกรณ์อื่นทั้งหมด</p>
+      <p className="muted small">{t("เมื่อเปลี่ยนแล้ว ระบบจะออกจากระบบในอุปกรณ์อื่นทั้งหมด", "Changing it signs you out on every other device.")}</p>
     </form>
   );
 }

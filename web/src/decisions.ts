@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Decision, TrailEvent } from "./types";
 import type { Source } from "./source";
+import { t } from "./i18n";
 
 // The auditor's sign-offs and pair confirmations as an append-only Audit Trail.
 // With the Worker's D1 store bound, /api/trail is the record and the server stamps time and evidence.
@@ -62,9 +63,9 @@ export function replay(events: TrailEvent[]) {
 // Same state rules as the Worker, for the browser-only fallback.
 function localCheck(a: TrailAction, decisions: Record<string, Decision>): string | null {
   const cur = decisions[a.target];
-  if (a.action === "prepare" && cur) return "รายการนี้ลงนามผู้จัดทำแล้ว";
-  if (a.action === "review" && !cur) return "ต้องให้ผู้จัดทำลงนามก่อน";
-  if (a.action === "review" && cur.by === a.actor) return "ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ";
+  if (a.action === "prepare" && cur) return t("รายการนี้ลงนามผู้จัดทำแล้ว", "This item is already signed by the preparer");
+  if (a.action === "review" && !cur) return t("ต้องให้ผู้จัดทำลงนามก่อน", "The preparer must sign first");
+  if (a.action === "review" && cur.by === a.actor) return t("ผู้สอบทานต้องไม่ใช่คนเดียวกับผู้จัดทำ", "The reviewer must not be the preparer");
   return null;
 }
 
@@ -124,15 +125,15 @@ export function useTrail(runId: string, source?: Source): Trail {
             body: JSON.stringify({ ws: workspace, run: runId, ...a }),
           });
           const b = await r.json();
-          if (!r.ok) return b.error ?? `บันทึกไม่สำเร็จ (${r.status})`;
+          if (!r.ok) return b.error ?? `${t("บันทึกไม่สำเร็จ", "Not saved")} (${r.status})`;
           setEvents((prev) => [...prev, b.event]);
           setChainOk(b.chain_ok);
           return null;
         } catch {
-          return "เชื่อมต่อ server ไม่ได้ ยังไม่ได้บันทึก";
+          return t("เชื่อมต่อ server ไม่ได้ ยังไม่ได้บันทึก", "Cannot reach the server, nothing was saved");
         }
       }
-      if (isEng) return "ยังเชื่อมต่อ Audit Trail ไม่ได้ จึงยังไม่ได้บันทึก";
+      if (isEng) return t("ยังเชื่อมต่อ Audit Trail ไม่ได้ จึงยังไม่ได้บันทึก", "The Audit Trail is not reachable yet, nothing was saved");
       const err = localCheck(a, replay(events).decisions);
       if (err) return err;
       const e: TrailEvent = {

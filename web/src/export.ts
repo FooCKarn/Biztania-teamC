@@ -1,8 +1,9 @@
 import type { TrailEvent } from "./types";
+import { t } from "./i18n";
 
 // The full append-only log, one row per event, for the engagement file.
 export function exportTrailCsv(runId: string, events: TrailEvent[]) {
-  const head = ["ลำดับ", "เวลา (UTC)", "ผู้ลงนาม", "การกระทำ", "รายการ", "ผล", "เหตุผล", "หลักฐาน", "แฮชก่อนหน้า", "แฮช"];
+  const head = t("ลำดับ|เวลา (UTC)|ผู้ลงนาม|การกระทำ|รายการ|ผล|เหตุผล|หลักฐาน|แฮชก่อนหน้า|แฮช", "Seq|Time (UTC)|Signer|Action|Item|Value|Reason|Evidence|Previous hash|Hash").split("|");
   const rows = events.map((e) => [e.seq, e.at, e.actor, e.action, e.target, e.value ?? "", e.reason ?? "",
     e.evidence.map((x) => [x.doc, x.file, x.locator, x.sha256].filter(Boolean).join(" ")).join("; "), e.prev_hash, e.hash]);
   download([head, ...rows], `audit-trail-${runId}.csv`);

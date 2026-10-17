@@ -1,5 +1,6 @@
 import type { Flag, Rule } from "../types";
 import { fieldLabel } from "../labels";
+import { locale, t } from "../i18n";
 import type { Mark } from "./DocViewer";
 
 interface Props {
@@ -10,7 +11,7 @@ interface Props {
   onPick: (key: string) => void;
 }
 
-const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? v.toLocaleString("th-TH", { minimumFractionDigits: 2 }) : v);
+const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? v.toLocaleString(locale(), { minimumFractionDigits: 2 }) : v);
 
 // Every flag carries the exact quotes it was raised from, with file + location. Each row is a
 // "snip": pick it and the viewer opens the source with a box on that value, so the auditor checks
@@ -18,16 +19,16 @@ const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? v.
 export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }: Props) {
   const rule = rules.find((r) => r.id === flag.basis);
   return (
-    <section className="group" aria-label="หลักฐาน">
-      <h3 className="group-title">หลักฐาน</h3>
+    <section className="group" aria-label={t("หลักฐาน", "Evidence")}>
+      <h3 className="group-title">{t("หลักฐาน", "Evidence")}</h3>
       <div className="group-body">
         <table className="evidence-table">
           <thead>
             <tr>
               <th aria-label="tick mark" />
-              <th>ข้อมูล</th>
-              <th className="num">ค่า</th>
-              <th className="src">ที่มา</th>
+              <th>{t("ข้อมูล", "Field")}</th>
+              <th className="num">{t("ค่า", "Value")}</th>
+              <th className="src">{t("ที่มา", "Source")}</th>
             </tr>
           </thead>
           <tbody>
@@ -43,7 +44,7 @@ export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }:
                   aria-selected={m.key === activeKey}
                 >
                   <td>
-                    <span className="tick ok" title="พบข้อความนี้ในไฟล์ต้นฉบับ">
+                    <span className="tick ok" title={t("พบข้อความนี้ในไฟล์ต้นฉบับ", "Found in the source file")}>
                       ✓
                     </span>
                   </td>
@@ -67,8 +68,9 @@ export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }:
         </table>
         {rule && (
           <p className="rule small">
-            <span className={"tick " + (rule.verified ? "ok" : "warn")}>{rule.verified ? "✓" : "?"}</span> กฎ {rule.id} จาก{" "}
-            {rule.source_doc}: “{rule.source_quote}” {rule.verified ? "พบข้อความนี้ในเอกสารนโยบาย" : "ไม่พบข้อความนี้ในเอกสาร"}
+            <span className={"tick " + (rule.verified ? "ok" : "warn")}>{rule.verified ? "✓" : "?"}</span> {t("กฎ", "Rule")} {rule.id}{" "}
+            {t("จาก", "from")} {rule.source_doc}: “{rule.source_quote}”{" "}
+            {rule.verified ? t("พบข้อความนี้ในเอกสารนโยบาย", "found in the policy document") : t("ไม่พบข้อความนี้ในเอกสาร", "not found in the document")}
           </p>
         )}
       </div>

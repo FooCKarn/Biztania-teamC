@@ -95,4 +95,7 @@ reconciliation, follow-up, dashboards, ERP/accounting integration, custom risk r
 
 - The team writes in **Thai**; keep user-facing docs in Thai, with English for technical/business terms
   (as the deck does). Code, identifiers and commit messages in English.
+- The web UI is bilingual (Thai default, English via the ไทย/EN switch, kept in localStorage `ac-lang`).
+  Write every user-facing string as a pair, `t("ไทย", "English")`, or a `bi({...})` label table (`web/src/i18n.tsx`).
+  Text produced by the pipeline (flag titles, summaries, questions, locators) stays Thai.
 - When adding numbers or claims, keep them consistent with this file or update this file in the same change.

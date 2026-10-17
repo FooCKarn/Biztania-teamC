@@ -11,8 +11,22 @@ import ReportView from "./report/ReportView";
 import { buildReport } from "./report/model";
 import { downloadWorkbook } from "./report/workbook";
 import { exportTrailCsv } from "./export";
+import { LangToggle, locale, t } from "./i18n";
+import Loading from "./components/Loading";
 
 type Tab = "flags" | "pending" | "overview" | "report";
+
+// Sign-off progress as a small bar, so the count reads at a glance.
+const Meter = ({ label, n, of }: { label: string; n: number; of: number }) => (
+  <span className="meter">
+    <span>
+      {label} <b>{n}</b>/{of}
+    </span>
+    <span className="meter-track" aria-hidden>
+      <span className="meter-fill" style={{ width: `${of ? (n / of) * 100 : 0}%` }} />
+    </span>
+  </span>
+);
 
 // The three-pane review workspace for one set of results: the public demo or an engagement's latest run.
 export default function Workspace({ source, back }: { source: Source; back?: ReactNode }) {
@@ -33,22 +47,22 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
   const { decisions } = trail;
   const docs = useMemo(() => new Map((data?.documents ?? []).map((d) => [d.id, d])), [data]);
 
-  if (error && source.engagement) return <div className="empty">โหลดผลการตรวจไม่ได้ ({error})</div>;
+  if (error && source.engagement) return <div className="empty">{t("โหลดผลการตรวจไม่ได้", "Could not load the results")} ({error})</div>;
   if (error)
     return (
       <div className="empty">
-        โหลด conflict_map.json ไม่ได้ ({error}) ให้รัน pipeline ก่อน: <code>python -m auditconcierge samples/tg_company --out ../web/public/data</code>
+        {t("โหลด conflict_map.json ไม่ได้", "Could not load conflict_map.json")} ({error}) {t("ให้รัน pipeline ก่อน", "Run the pipeline first")}: <code>python -m auditconcierge samples/tg_company --out ../web/public/data</code>
       </div>
     );
-  if (!data) return <div className="empty">กำลังโหลด…</div>;
+  if (!data) return <Loading />;
 
   const prepared = data.flags.filter((f) => decisions[f.id]).length;
   const reviewed = data.flags.filter((f) => decisions[f.id]?.review).length;
   const TABS: [Tab, string, number | null][] = [
-    ["flags", "ควรตรวจ", data.flags.length],
-    ["pending", "รอจับคู่", data.pending.length],
-    ["overview", "ภาพรวม", null],
-    ["report", "รายงาน", null],
+    ["flags", t("ควรตรวจ", "To check"), data.flags.length],
+    ["pending", t("รอจับคู่", "Unmatched"), data.pending.length],
+    ["overview", t("ภาพรวม", "Overview"), null],
+    ["report", t("รายงาน", "Report"), null],
   ];
 
   return (
@@ -57,8 +71,8 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       {data.engagement.synthetic && (
         <div className="synthetic" role="note">
           {source.engagement
-            ? "Engagement นี้ใช้ข้อมูลสมมติ (synthetic)"
-            : "ข้อมูลทั้งหมดในเดโมนี้เป็นข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง"}
+            ? t("Engagement นี้ใช้ข้อมูลสมมติ (synthetic)", "This engagement uses synthetic data")
+            : t("ข้อมูลทั้งหมดในเดโมนี้เป็นข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "All data in this demo is synthetic. No real client data.")}
         </div>
       )}
       <header className="navbar">
@@ -70,11 +84,12 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
           <div>
             <h1>AI Audit Concierge</h1>
             <p className="sub">
-              {data.engagement.client} · {data.coverage.files} ไฟล์ · {data.documents.length} เอกสาร · {data.transactions.length} ธุรกรรม
+              {data.engagement.client} · {data.coverage.files} {t("ไฟล์", "files")} · {data.documents.length} {t("เอกสาร", "documents")} ·{" "}
+              {data.transactions.length} {t("ธุรกรรม", "transactions")}
             </p>
           </div>
         </div>
-        <nav className="segmented" role="tablist" aria-label="มุมมอง">
+        <nav className="segmented" role="tablist" aria-label={t("มุมมอง", "View")}>
           {TABS.map(([id, label, n]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
               {label}
@@ -83,13 +98,9 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
           ))}
         </nav>
         <div className="nav-actions">
-          <div className="progress" title="ลงนามผู้จัดทำ / ผู้สอบทาน">
-            <span>
-              จัดทำ <b>{prepared}</b>/{data.flags.length}
-            </span>
-            <span>
-              สอบทาน <b>{reviewed}</b>/{data.flags.length}
-            </span>
+          <div className="progress" title={t("ลงนามผู้จัดทำ / ผู้สอบทาน", "Preparer / reviewer sign-offs")}>
+            <Meter label={t("จัดทำ", "Prepared")} n={prepared} of={data.flags.length} />
+            <Meter label={t("สอบทาน", "Reviewed")} n={reviewed} of={data.flags.length} />
           </div>
           <button className="btn" onClick={() => downloadWorkbook(buildReport(data, decisions, "manager"), data)}>
             Export Excel
@@ -97,9 +108,10 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
           <button className="btn" disabled={!trail.events.length} onClick={() => exportTrailCsv(data.run_id, trail.events)}>
             Audit Trail
           </button>
+          <LangToggle />
         </div>
       </header>
-      <p className="principle">ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน</p>
+      <p className="principle">{t("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides.")}</p>
 
       <ReadProblems data={data} />
       <main>
@@ -123,7 +135,7 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       <AskBox run={data.run_id} />
       <footer className="foot">
         run {data.run_id} · schema {data.schema_version} · tolerance {data.engagement.tolerance_pct}% · materiality{" "}
-        {data.engagement.materiality_thb.toLocaleString("th-TH")} ฿
+        {data.engagement.materiality_thb.toLocaleString(locale())} ฿
       </footer>
     </div>
     </SourceContext.Provider>
