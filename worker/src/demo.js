@@ -11,7 +11,7 @@ import { createEngagement, setMember, wipeEngagement } from "./engagements.js";
 export const DEMO_ACCOUNT = { email: `auditor@${DEMO_DOMAIN}`, name: "ผู้สอบบัญชี (บัญชีทดลอง)", initials: "DA" };
 
 // Matches pipeline/samples/tg_company/remember.json.
-export const DEMO_ENGAGEMENT = { client: "บริษัท สยามออโต้พาร์ท จำกัด", period: "Q1 2026 (ข้อมูลสมมติ)", tolerance_pct: 1, materiality_thb: 10000, synthetic: true };
+export const DEMO_ENGAGEMENT = { client: "บริษัท สยามออโต้พาร์ท จำกัด", period: "Q1 2026 (ข้อมูลสมมติ)", synthetic: true };
 
 export async function handleDemo(request, env, path) {
   await ensureAppSchema(env);

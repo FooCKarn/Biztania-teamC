@@ -45,8 +45,6 @@ export interface Engagement {
   id: string;
   client: string;
   period: string | null;
-  tolerance_pct: number;
-  materiality_thb: number;
   synthetic: boolean;
   status: "open" | "closed";
   /** Sign-off of the current results, if any (separate from closing the company). */
