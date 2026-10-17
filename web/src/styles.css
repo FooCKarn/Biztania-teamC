@@ -67,6 +67,7 @@
   --muted: #a1a1aa;
   --sep: rgba(255, 255, 255, 0.09);
   --accent: #f472b6;
+  --on-accent: #1a1013;
   --logo-text: #f4f4f5;
   --logo-accent: #f472b6;
   --accent-soft: rgba(244, 114, 182, 0.17);
@@ -149,6 +150,10 @@ h3 { margin: 0; font-size: 15px; font-weight: 600; }
 .btn.filled { background: var(--text); color: var(--bg); }
 .btn.filled:hover:not(:disabled) { opacity: 0.86; background: var(--text); }
 .btn.destructive { color: var(--bad); }
+.btn.process-btn { background: var(--accent); color: var(--on-accent, #fff); font-size: 17px; font-weight: 700; padding: 14px 28px; border-radius: 14px; box-shadow: 0 6px 18px var(--accent-soft); }
+.btn.process-btn:hover:not(:disabled) { opacity: 1; background: var(--accent); filter: brightness(1.08); }
+.btn.process-btn:disabled { opacity: 1; background: var(--fill); color: var(--muted, var(--text)); box-shadow: none; }
+.btn.process-btn:disabled:not(:hover) { opacity: 0.6; }
 .link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; }
 input, select, textarea {
   border: 0; background: var(--fill); border-radius: 10px; padding: 7px 10px; outline: none;
