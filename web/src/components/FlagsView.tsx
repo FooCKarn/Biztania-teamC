@@ -1,3 +1,4 @@
+import { setAskFlag } from "../askContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ConflictMap, Doc, Flag } from "../types";
 import type { Trail } from "../decisions";
@@ -63,6 +64,12 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
   const flag = data.flags.find((f) => f.id === selected) ?? (txnOnly ? undefined : list[0]);
   const txnId = flag?.transaction ?? txnOnly;
   const txn = data.transactions.find((t) => t.id === txnId);
+
+  const flagId = flag?.id;
+  useEffect(() => {
+    setAskFlag(flag ? { id: flag.id, title: flag.title, questions: flag.questions } : null);
+    return () => setAskFlag(null);
+  }, [flagId]);
 
   useEffect(() => {
     const now = new Set(data.flags.filter((f) => decisions[f.id]).map((f) => f.id));
@@ -250,14 +257,6 @@ export default function FlagsView({ data, docs, trail, focusTxn }: Props) {
         {flag && (
           <>
             <EvidencePanel flag={flag} marks={marks} rules={data.rules} activeKey={activeKey} onPick={pickMark} />
-            <section className="group" aria-label={t("คำถามที่ควรถามต่อ", "Follow-up questions")}>
-              <h3 className="group-title">{t("คำถามที่ควรถามต่อ", "Follow-up questions")}</h3>
-              <ul className="group-body questions">
-                {flag.questions.map((qq) => (
-                  <li key={qq}>{qq}</li>
-                ))}
-              </ul>
-            </section>
             <DecisionBox flagId={flag.id} trail={trail} />
           </>
         )}

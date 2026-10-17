@@ -77,7 +77,6 @@ export default function EngagementPage({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [settings, setSettings] = useState<{ t: string; m: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -103,7 +102,6 @@ export default function EngagementPage({ id }: { id: string }) {
   }, [running, busy, load]);
 
   const role = d?.engagement.my_role;
-  const member = !!role;
   const open = d?.engagement.status === "open";
 
   const act = async (fn: () => Promise<unknown>, done?: string) => {
@@ -375,59 +373,6 @@ export default function EngagementPage({ id }: { id: string }) {
         </div>
 
         <div>
-          {member && open && (
-            <section className="group">
-              <h3 className="group-title">{t("ตั้งค่าและปิดงาน", "Settings and closing")}</h3>
-              <div className="group-body stack">
-                <div className="row">
-                  <label className="form-field">
-                    <span>Tolerance (%)</span>
-                    <input type="number" step="0.1" min="0" max="20" value={settings?.t ?? e.tolerance_pct} onChange={(ev) => setSettings({ t: ev.target.value, m: settings?.m ?? String(e.materiality_thb) })} />
-                  </label>
-                  <label className="form-field">
-                    <span>Materiality (฿)</span>
-                    <input type="number" min="0" value={settings?.m ?? e.materiality_thb} onChange={(ev) => setSettings({ t: settings?.t ?? String(e.tolerance_pct), m: ev.target.value })} />
-                  </label>
-                  <button
-                    className="btn"
-                    disabled={!settings || busy}
-                    onClick={() =>
-                      act(async () => {
-                        await api(`api/engagements/${id}/settings`, { body: { tolerance_pct: Number(settings!.t), materiality_thb: Number(settings!.m) } });
-                        setSettings(null);
-                      }, t("บันทึกแล้ว มีผลกับการประมวลผลรอบถัดไป", "Saved. Applies from the next run."))
-                    }
-                  >
-                    {t("บันทึก", "Save")}
-                  </button>
-                </div>
-                <div className="row">
-                  <button
-                    className="btn destructive"
-                    disabled={busy}
-                    onClick={() =>
-                      confirm(
-                        t(
-                          `ปิดงาน ${e.client}? หลังปิดจะแก้ไขไม่ได้ และไฟล์ดิบจะถูกลบอัตโนมัติหลัง ${d.retention_days} วัน`,
-                          `Close ${e.client}? It becomes read only, and raw files are deleted automatically after ${d.retention_days} days.`,
-                        ),
-                      ) &&
-                      act(() => api(`api/engagements/${id}/close`, { method: "POST" }))
-                    }
-                  >
-                    {t("ปิดงาน", "Close engagement")}
-                  </button>
-                  <span className="muted small">
-                    {t(
-                      `ไฟล์ดิบจะถูกลบ ${d.retention_days} วันหลังปิดงาน กระดาษทำการและ Audit Trail เก็บไว้`,
-                      `Raw files are deleted ${d.retention_days} days after closing; the working paper and Audit Trail are kept`,
-                    )}
-                  </span>
-                </div>
-              </div>
-            </section>
-          )}
-
           <section className="group">
             <h3 className="group-title">{t("บันทึกการใช้งาน", "Activity log")}</h3>
             <div className="group-body">

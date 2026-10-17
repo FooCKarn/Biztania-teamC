@@ -161,3 +161,14 @@ test("a rejected key stops the chain instead of trying every model", async () =>
   await assert.rejects(askGemini(env, "q", buildContext(MAP), fakeFetch), /all models failed/);
   assert.deepEqual(calls, ["key-a"]);
 });
+
+test("buildHistory keeps the last turns verbatim and digests older questions", async () => {
+  const { buildHistory, RECENT_TURNS } = await import("../src/ask-history.js");
+  const msgs = [];
+  for (let i = 0; i < RECENT_TURNS + 3; i++) msgs.push({ role: "user", content: `q${i}` }, { role: "assistant", content: `a${i}` });
+  const h = buildHistory(msgs);
+  assert.equal(h.turns.length, RECENT_TURNS * 2);
+  assert.equal(h.turns[0].parts[0].text, "q3");
+  assert.match(h.digest, /q0 \| q1 \| q2/);
+  assert.deepEqual(buildHistory([]), { digest: "", turns: [] });
+});

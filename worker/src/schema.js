@@ -10,6 +10,29 @@ const MEMBERS_TABLE = `CREATE TABLE IF NOT EXISTS members (
     PRIMARY KEY (engagement_id, user_id)
   )`;
 
+// Saved AI Q&A conversations (see ask-history.js), per engagement and per user.
+const ASK_SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS ask_conversations (
+    id            TEXT PRIMARY KEY,
+    engagement_id TEXT NOT NULL,
+    user_id       TEXT NOT NULL,
+    title         TEXT NOT NULL,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS ask_conversations_by_user ON ask_conversations (engagement_id, user_id, updated_at)`,
+  `CREATE TABLE IF NOT EXISTS ask_messages (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    role            TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content         TEXT NOT NULL,
+    cited           TEXT,
+    model           TEXT,
+    created_at      TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS ask_messages_by_conversation ON ask_messages (conversation_id, id)`,
+];
+
 const APP_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (
     id         TEXT PRIMARY KEY,
@@ -88,6 +111,7 @@ const APP_SCHEMA = [
    BEGIN SELECT RAISE(ABORT, 'activity log is append-only'); END`,
   `CREATE TRIGGER IF NOT EXISTS activity_no_delete BEFORE DELETE ON activity
    BEGIN SELECT RAISE(ABORT, 'activity log is append-only'); END`,
+  ...ASK_SCHEMA,
 ];
 
 // Encrypted file contents live in their own database (FILES_DB) so the 90-day purge and the

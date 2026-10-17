@@ -16,6 +16,7 @@ import { handleEngagements, handleInternal, loadEngagementMap, purgeExpired } fr
 import { ensureAppSchema } from "./schema.js";
 import { handleDemo, handleDemoEntry } from "./demo.js";
 import { handleFiles } from "./files.js";
+import { buildHistory, handleConversations, loadConversation, saveTurn } from "./ask-history.js";
 
 const MAX_QUESTION = 300;
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
@@ -113,7 +114,7 @@ class ModelError extends Error {
   }
 }
 
-async function callModel(env, model, question, ctx, fetchImpl) {
+async function callModel(env, model, question, ctx, fetchImpl, history = { digest: "", turns: [] }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const r = await fetchImpl(url, {
     method: "POST",
@@ -121,7 +122,10 @@ async function callModel(env, model, question, ctx, fetchImpl) {
     signal: AbortSignal.timeout(Number(env.MODEL_TIMEOUT_MS || 20000)),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: `CONTEXT:\n${JSON.stringify(ctx)}\n\nคำถาม: ${question}` }] }],
+      contents: [
+        ...history.turns,
+        { role: "user", parts: [{ text: `CONTEXT:\n${JSON.stringify(ctx)}\n\n${history.digest ? history.digest + "\n\n" : ""}คำถาม: ${question}` }] },
+      ],
       // Gemma models on the Gemini API are not documented to support JSON mode, so for them
       // the JSON shape comes from the prompt alone and is parsed leniently below.
       generationConfig: {
@@ -149,13 +153,13 @@ async function callModel(env, model, question, ctx, fetchImpl) {
 
 // Try each model in order. Quota (429), token-limit (400), unknown model (404), server errors,
 // timeouts and empty answers move on to the next model; a rejected key stops at once.
-export async function askGemini(env, question, ctx, fetchImpl = fetch, now = Date.now()) {
+export async function askGemini(env, question, ctx, fetchImpl = fetch, now = Date.now(), history) {
   const chain = modelChain(env);
   const ready = chain.filter((m) => !(cooling.get(m) > now));
   const tried = [];
   for (const model of ready.length ? ready : chain) {
     try {
-      return await callModel(env, model, question, ctx, fetchImpl);
+      return await callModel(env, model, question, ctx, fetchImpl, history);
     } catch (e) {
       tried.push(e.message);
       if (e.fatal) break;
@@ -177,11 +181,13 @@ export async function handleAsk(request, env, fetchImpl = fetch) {
   if (question.length > MAX_QUESTION) return json({ answer: `คำถามยาวเกิน ${MAX_QUESTION} ตัวอักษร` }, 400);
 
   let map;
+  let user;
+  let conv = null; // saved conversation to continue (engagement mode only)
+  let history = { digest: "", turns: [] };
   if (body.engagement) {
     // An engagement's own results, for its members, and only while its data is synthetic.
     if (!env.AUDIT_DB) return json({ answer: "ยังไม่ได้ผูกฐานข้อมูล" }, 503);
     await ensureAppSchema(env);
-    let user;
     try {
       user = await requireUser(request, env);
     } catch (e) {
@@ -198,14 +204,32 @@ export async function handleAsk(request, env, fetchImpl = fetch) {
     if (!/^[a-f0-9]{12}$/.test(String(body.run || ""))) return json({ answer: "ต้องระบุ run" }, 400);
     map = await loadEngagementMap(env, id, String(body.run));
     if (!map) return json({ answer: "ไม่พบผลการตรวจ" }, 404);
+    if (body.conversation) {
+      conv = await loadConversation(env, id, user.id, String(body.conversation));
+      if (!conv) return json({ answer: "ไม่พบบทสนทนา" }, 404);
+      history = buildHistory(conv.messages);
+    }
   } else {
     const res = await env.ASSETS.fetch(new Request(new URL("/data/conflict_map.json", request.url)));
     if (!res.ok) return json({ answer: "ไม่พบผลการตรวจ (conflict_map.json)" }, 500);
     map = await res.json();
+    // No account here, so nothing is stored: the page sends its own recent turns back.
+    const sent = Array.isArray(body.history) ? body.history.slice(-40) : [];
+    history = buildHistory(
+      sent
+        .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+        .map((m) => ({ role: m.role, content: m.content.slice(0, 1000) })),
+    );
   }
   const ctx = buildContext(map);
 
-  if (!env.GEMINI_API_KEY) return json(offlineAnswer(question, ctx));
+  // Saves the turn when this is an engagement chat, and tells the client which conversation it belongs to.
+  const reply = async (out, status = 200) => {
+    if (user) out = { ...out, conversation: await saveTurn(env, { engagementId: String(body.engagement), userId: user.id, convId: conv?.id, question, answer: out }) };
+    return json(out, status);
+  };
+
+  if (!env.GEMINI_API_KEY) return reply(offlineAnswer(question, ctx));
 
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
   const today = new Date().toISOString().slice(0, 10);
@@ -213,10 +237,10 @@ export async function handleAsk(request, env, fetchImpl = fetch) {
     return json({ answer: "ใช้โควตาถามตอบของเดโมวันนี้ครบแล้ว ลองใหม่พรุ่งนี้" }, 429);
 
   try {
-    return json(await askGemini(env, question, ctx, fetchImpl));
+    return await reply(await askGemini(env, question, ctx, fetchImpl, Date.now(), history));
   } catch {
     const fallback = offlineAnswer(question, ctx);
-    return json({ ...fallback, answer: fallback.answer.replace(/^[^\n]*/, "บริการ AI ขัดข้องชั่วคราว จึงแสดงรายการที่เกี่ยวข้องจากการค้นคำแทน:") }, 502);
+    return reply({ ...fallback, answer: fallback.answer.replace(/^[^\n]*/, "บริการ AI ขัดข้องชั่วคราว จึงแสดงรายการที่เกี่ยวข้องจากการค้นคำแทน:") }, 502);
   }
 }
 
@@ -226,9 +250,10 @@ const needsCsrfHeader = (request, path) =>
   request.method !== "GET" && /^\/api\/(auth|users|engagements)/.test(path) && request.headers.get("x-ac-csrf") !== "1";
 
 async function route(request, env, path) {
-  if (/^\/api\/(auth|users|engagements|files|internal)/.test(path) && !env.AUDIT_DB)
+  if (/^\/api\/(auth|users|engagements|files|internal|ask\/conversations)/.test(path) && !env.AUDIT_DB)
     return json({ error: "ยังไม่ได้ผูกฐานข้อมูล (D1 binding AUDIT_DB)" }, 503);
   if (needsCsrfHeader(request, path)) return json({ error: "คำขอไม่ถูกต้อง (CSRF)" }, 403);
+  if (path === "/api/ask/conversations") return handleConversations(request, env);
   if (path === "/api/auth/demo-login" || path === "/api/auth/demo-reset") return handleDemoEntry(request, env, path);
   if (path.startsWith("/api/auth/")) return handleAuth(request, env, path);
   if (path.startsWith("/api/users/demo/")) return handleDemo(request, env, path);
