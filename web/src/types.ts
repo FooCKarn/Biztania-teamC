@@ -10,7 +10,7 @@ export interface Field {
   quote: string;
   locator: string;
   verified: boolean;
-  method: "template" | "table" | "ocr";
+  method: "template" | "llm" | "table" | "ocr";
   clear: boolean;
   bbox: number[] | null;
   crop: string | null;
