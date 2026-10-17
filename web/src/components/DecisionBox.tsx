@@ -34,9 +34,11 @@ export default function DecisionBox({ flagId, trail }: Props) {
   const [initials, setInitials] = useState(loadInitials);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<Decision["verdict"] | null>(null);
   useEffect(() => {
     setReason(decision?.reason ?? "");
     setError(null);
+    setPending(null);
   }, [flagId, decision]);
   // Engagement: the account signs. Demo: typed initials.
   const signedIn = !!trail.actor;
@@ -58,9 +60,13 @@ export default function DecisionBox({ flagId, trail }: Props) {
     setError(await trail.act(a));
     setBusy(false);
   };
-  const check = (verdict: Decision["verdict"]) =>
-    (verdict !== "issue" || window.confirm(t("บันทึกรายการนี้เป็นประเด็น?", "Record this item as an issue?"))) &&
-    run({ action: "check", target: flagId, value: verdict, reason: reason.trim(), actor: who });
+  // Decisions are append-only in the Audit Trail, so both verdicts ask once more before saving.
+  const confirmCheck = async () => {
+    if (!pending) return;
+    const verdict = pending;
+    setPending(null);
+    await run({ action: "check", target: flagId, value: verdict, reason: reason.trim(), actor: who });
+  };
   const needWho = () => (who.length >= 2 ? true : (setError(t("ใส่ชื่อย่อก่อน", "Enter your initials first")), false));
 
   return (
@@ -110,7 +116,7 @@ export default function DecisionBox({ flagId, trail }: Props) {
               onChange={(e) => setReason(e.target.value)}
               rows={2}
               maxLength={500}
-              onKeyDown={(ev) => (ev.ctrlKey || ev.metaKey) && ev.key === "Enter" && ok && (ev.preventDefault(), check("not_issue"))}
+              onKeyDown={(ev) => (ev.ctrlKey || ev.metaKey) && ev.key === "Enter" && ok && (ev.preventDefault(), setPending("not_issue"))}
               aria-label={t("เหตุผล", "Reason")}
               placeholder={t(
                 "เหตุผล (จำเป็น) เช่น ได้รับหนังสือแจ้งเปลี่ยนบัญชีจาก vendor ลงวันที่ …",
@@ -118,19 +124,41 @@ export default function DecisionBox({ flagId, trail }: Props) {
               )}
               title={t("Ctrl+Enter = ไม่เป็นประเด็น", "Ctrl+Enter = not an issue")}
             />
-            <div className="row">
-              <button className="btn destructive" disabled={!ok} onClick={() => check("issue")}>
-                {VERDICT_LABEL.issue}
-              </button>
-              <button className="btn" disabled={!ok} onClick={() => check("not_issue")}>
-                {VERDICT_LABEL.not_issue}
-              </button>
-              {!ok && !busy && !locked && (
-                <span className="muted small">{signedIn
-                    ? t("ใส่เหตุผลอย่างน้อย 5 ตัวอักษร", "Enter a reason of at least 5 characters")
-                    : t("ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร", "Enter your initials and a reason of at least 5 characters")}</span>
-              )}
-            </div>
+            {pending ? (
+              <div
+                className="row"
+                role="alertdialog"
+                aria-label={t("ยืนยันการบันทึก", "Confirm decision")}
+                onKeyDown={(ev) => ev.key === "Escape" && (ev.stopPropagation(), setPending(null))}
+              >
+                <span>
+                  {pending === "issue"
+                    ? t("บันทึกรายการนี้เป็นประเด็น?", "Record this item as an issue?")
+                    : t("บันทึกรายการนี้ว่าไม่เป็นประเด็น?", "Record this item as not an issue?")}
+                </span>
+                <button className={"btn" + (pending === "issue" ? " destructive" : "")} autoFocus disabled={busy} onClick={confirmCheck}>
+                  {t("ยืนยัน", "Confirm")}
+                </button>
+                <button className="btn" onClick={() => setPending(null)}>
+                  {t("ยกเลิก", "Cancel")}
+                </button>
+                <span className="muted small">{t("Enter = ยืนยัน · Esc = ยกเลิก · บันทึกลง Audit Trail (แก้ไขภายหลังได้ แต่ประวัติยังอยู่)", "Enter = confirm · Esc = cancel · Saved to the Audit Trail (editable, history stays)")}</span>
+              </div>
+            ) : (
+              <div className="row">
+                <button className="btn destructive" disabled={!ok} onClick={() => setPending("issue")}>
+                  {VERDICT_LABEL.issue}
+                </button>
+                <button className="btn" disabled={!ok} onClick={() => setPending("not_issue")}>
+                  {VERDICT_LABEL.not_issue}
+                </button>
+                {!ok && !busy && !locked && (
+                  <span className="muted small">{signedIn
+                      ? t("ใส่เหตุผลอย่างน้อย 5 ตัวอักษร", "Enter a reason of at least 5 characters")
+                      : t("ใส่ชื่อย่อและเหตุผลอย่างน้อย 5 ตัวอักษร", "Enter your initials and a reason of at least 5 characters")}</span>
+                )}
+              </div>
+            )}
           </>
         )}
         {error && (
