@@ -3,11 +3,8 @@ import type { Decision, Signoff, TrailEvent } from "./types";
 import type { Source } from "./source";
 import { t } from "./i18n";
 
-// The auditor's sign-offs and pair confirmations as an append-only Audit Trail.
-// With the Worker's D1 store bound, /api/trail is the record and the server stamps time and evidence.
-// Without it (e.g. `npm run dev` alone or static hosting) the same log is kept in this browser.
-// In an engagement the signer is the signed-in account (the server ignores any typed name). Every
-// item just needs one "check"; once every item is checked, the whole run is signed off once.
+// Audit Trail client. With the Worker bound, /api/trail is the record; otherwise the log stays in this browser.
+// In an engagement the signer is the signed-in account.
 
 /** Fixed target for the one engagement-level sign-off; never collides with a flag id. */
 export const SIGNOFF_TARGET = "__engagement__";

@@ -13,9 +13,7 @@ interface Props {
 
 const show = (v: Mark["value"]) => (v == null ? "-" : typeof v === "number" ? v.toLocaleString(locale(), { minimumFractionDigits: 2 }) : v);
 
-// Every flag carries the exact quotes it was raised from, with file + location. Each row is a
-// "snip": pick it and the viewer opens the source with a box on that value, so the auditor checks
-// the document instead of trusting the system.
+// Each row is a quote with file + location; picking it opens the source with a box on the value.
 export default function EvidencePanel({ flag, marks, rules, activeKey, onPick }: Props) {
   const rule = rules.find((r) => r.id === flag.basis);
   return (

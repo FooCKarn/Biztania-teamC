@@ -30,8 +30,6 @@ export default function Workspace({ source, back }: { source: Source; back?: Rea
       .catch((e) => setError(String(e)));
   }, [source.base]);
 
-  // Switching tabs (via the nav or a link from Overview) should land at the top of the new tab's
-  // content, not wherever the previous tab had been scrolled to.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [tab]);

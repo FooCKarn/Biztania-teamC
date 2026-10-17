@@ -1,16 +1,7 @@
-// A demo account and a synthetic engagement, so people outside the firm can try the deployed app.
-//
-// Only a firm admin can call these, from the users page (web/src/pages/Users.tsx):
-//   POST /api/users/demo/account     create or reset the shared account, returns its password once
-//   POST /api/users/demo/engagement  create (or reuse) the open demo engagement with that account
-//                                    on its team; returns the files it already has
-// The browser then uploads the sample set (built into web/dist/demo/tg_company/ from
-// pipeline/samples/tg_company, without the answer key) through the normal upload API and starts a run.
-// One request per step keeps each one inside the Free plan's CPU and D1 query limits.
-//
-// The password is generated here and shown only to the admin; it is never stored in the repo. The
-// demo account is an ordinary member (not an admin), never needs a first-login change and cannot
-// change its own password.
+// Demo account and synthetic engagement. Admin-only, from the users page:
+//   POST /api/users/demo/account     create or reset the shared account (password returned once)
+//   POST /api/users/demo/engagement  create or reuse the open demo engagement
+// The browser then uploads the sample set (without the answer key) and starts a run.
 
 import { HttpError, json, nowIso, randomId, readJson, clientIp } from "./http.js";
 import { ensureAppSchema } from "./schema.js";
@@ -77,10 +68,9 @@ export async function handleDemo(request, env, path) {
 //   POST /api/auth/demo-login  signs the visitor in as the shared demo account, no password, and
 //                               makes sure the synthetic engagement exists with that account on its team
 //   POST /api/auth/demo-reset  (signed in as the demo account) wipes the demo engagement and starts a new one
-// Scope, on purpose: the session is an ordinary one for the @demo.example.com account, a member of the
-// demo engagement only. Every other API still checks team membership, so real engagements stay out of reach;
-// the user directory, team changes, closing, password change and account admin are closed to demo accounts
-// (auth.js, engagements.js). Nothing here runs unless DEMO_MODE is "true" and ALLOW_REAL_DATA is not.
+// The session is an ordinary one for the demo account; the user directory, team changes, closing, password
+// change and account admin are closed to it (auth.js, engagements.js). Runs only when DEMO_MODE is "true"
+// and ALLOW_REAL_DATA is not.
 
 const memoryHits = new Map(); // fallback when no KV namespace is bound (per Worker instance only)
 const ENTRY_LIMIT = 40; // demo entries/resets per IP per 15 minutes

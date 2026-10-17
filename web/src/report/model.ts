@@ -2,7 +2,7 @@ import type { ConflictMap, Decision, Flag, Risk, Signoff } from "../types";
 import { RISK_ORDER, TYPE_LABEL, fieldLabel } from "../labels";
 import { bi, locale, t } from "../i18n";
 
-// One model feeds both the printable report (PDF) and the Word export, so the two never disagree.
+// One model feeds both the PDF and the Word export.
 
 /** manager: every flag with its sign-off state. client: only flags from a signed-off run, checked as an issue, no internal notes. */
 export type Audience = "manager" | "client";

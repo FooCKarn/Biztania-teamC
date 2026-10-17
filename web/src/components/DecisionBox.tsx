@@ -27,10 +27,7 @@ function loadInitials() {
   }
 }
 
-// Professional judgment stays with the auditor. One check per item: a verdict with a written
-// reason, evidence cited automatically. Every step, including edits, is appended to the Audit
-// Trail; nothing is overwritten. Once every item is checked, the whole engagement is signed off
-// in one place (SignoffBar), not item by item.
+// One check per item (verdict + reason); sign-off for the whole engagement lives in SignoffBar.
 export default function DecisionBox({ flagId, trail }: Props) {
   const decision: Decision | undefined = trail.decisions[flagId];
   const [reason, setReason] = useState("");

@@ -1,8 +1,6 @@
 import { createContext, useContext } from "react";
 
-// Where the workspace reads its results from:
-//  - the public demo: static files under data/ (synthetic TG Company sample)
-//  - an engagement: the Worker API, for members only, from that engagement's latest pipeline run
+// Where the workspace reads results from: static demo files, or an engagement's latest run via the Worker.
 export interface Source {
   base: string; // prefix for conflict_map.json, pages/*, crops/*
   engagement?: { id: string; synthetic: boolean; closed: boolean; purged: boolean };

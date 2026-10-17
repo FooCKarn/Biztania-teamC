@@ -1,16 +1,5 @@
-// File manager: every uploaded file of the engagements the signed-in user is a member of, plus how
-// much of the file store is used (like a cloud drive's storage meter).
-//
-//   GET /api/files → { storage, engagements, files }
-//
-// Only engagements the user belongs to are listed. Storage used by other engagements is shown as one
-// number (no names, no files), so a member can see how full the shared store is without learning
-// anything about other clients. Downloading and deleting go through the engagement routes
-// (engagements.js), which check the role and that the engagement is still open.
-//
-// Raw files are deleted only by a person here or on the engagement page, or by the retention cron
-// after closing. Page images rendered by the pipeline are never listed for deletion: the evidence
-// viewer needs them.
+// GET /api/files → { storage, engagements, files } for the user's own engagements.
+// Other engagements' usage is a single number. Download/delete go through engagements.js.
 
 import { HttpError, json } from "./http.js";
 import { ensureAppSchema, filesDb } from "./schema.js";

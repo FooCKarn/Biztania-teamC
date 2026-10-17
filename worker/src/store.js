@@ -1,15 +1,6 @@
-// Encrypted file store on D1 (works on the free plan, no R2 needed).
-//
-// Every object belongs to one engagement and is encrypted with AES-256-GCM under a key derived
-// for that engagement only: HKDF(FILES_KEY secret, info = "engagement:<id>"). The object's key
-// path is bound in as associated data, so ciphertext copied to another engagement or path will
-// not decrypt. Without the FILES_KEY secret the store refuses to work rather than store plain text.
-//
-// Large files are split into ~1 MB rows (D1 limits a row to 2 MB).
-//
-// Plaintext is gzip-compressed before it is encrypted (compressing ciphertext does nothing, since
-// encrypted bytes look random) and gunzipped again after decryption. Applied the same way on every
-// put and get, so no extra metadata is needed to know a blob was compressed.
+// Encrypted file store on D1. AES-256-GCM per engagement: HKDF(FILES_KEY, "engagement:<id>"), with the
+// object path as associated data. Refuses to work without FILES_KEY. Files are gzipped before encryption
+// and split into ~1 MB rows (D1 row limit is 2 MB).
 
 import { HttpError, nowIso } from "./http.js";
 import { filesDb } from "./schema.js";
