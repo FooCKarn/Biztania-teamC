@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, when, type FilesOverview, type ManagedFile } from "../api";
+import { bi, t } from "../i18n";
 import "./files.css";
 
 // File manager (#/files, or #/files/<engagement id> to open on one engagement): storage meter like a
@@ -7,14 +8,22 @@ import "./files.css";
 // download and delete. Page images the pipeline rendered count toward storage but are not listed:
 // the evidence viewer needs them, and only the retention policy removes them.
 
-const KIND: Record<string, { label: string; color: string }> = {
-  pdf: { label: "PDF", color: "var(--ft-pdf)" },
-  image: { label: "รูปภาพ", color: "var(--ft-image)" },
-  csv: { label: "CSV", color: "var(--ft-csv)" },
-  xlsx: { label: "Excel", color: "var(--ft-xlsx)" },
-  json: { label: "กฎบริษัท (JSON)", color: "var(--ft-json)" },
-  other: { label: "อื่นๆ", color: "var(--ft-other)" },
+const KIND: Record<string, { color: string }> = {
+  pdf: { color: "var(--ft-pdf)" },
+  image: { color: "var(--ft-image)" },
+  csv: { color: "var(--ft-csv)" },
+  xlsx: { color: "var(--ft-xlsx)" },
+  json: { color: "var(--ft-json)" },
+  other: { color: "var(--ft-other)" },
 };
+const KIND_LABEL: Record<string, string> = bi({
+  pdf: ["PDF", "PDF"],
+  image: ["รูปภาพ", "Images"],
+  csv: ["CSV", "CSV"],
+  xlsx: ["Excel", "Excel"],
+  json: ["กฎบริษัท (JSON)", "Company rules (JSON)"],
+  other: ["อื่นๆ", "Other"],
+});
 const kindOf = (ext: string) =>
   ext === "pdf" ? "pdf" : ["png", "jpg", "jpeg", "tif", "tiff"].includes(ext) ? "image" : ["csv", "xlsx", "json"].includes(ext) ? ext : "other";
 
@@ -31,13 +40,13 @@ export const bytes = (n: number) => {
 };
 
 type Sort = "new" | "old" | "name" | "big" | "small";
-const SORTS: [Sort, string][] = [
-  ["new", "อัปโหลดล่าสุด"],
-  ["old", "อัปโหลดเก่าสุด"],
-  ["name", "ชื่อ ก–ฮ / A–Z"],
-  ["big", "ขนาดใหญ่สุด"],
-  ["small", "ขนาดเล็กสุด"],
-];
+const SORT_LABEL = bi<Sort>({
+  new: ["อัปโหลดล่าสุด", "Newest upload"],
+  old: ["อัปโหลดเก่าสุด", "Oldest upload"],
+  name: ["ชื่อ ก–ฮ / A–Z", "Name A–Z"],
+  big: ["ขนาดใหญ่สุด", "Largest"],
+  small: ["ขนาดเล็กสุด", "Smallest"],
+});
 const sorters: Record<Sort, (a: ManagedFile, b: ManagedFile) => number> = {
   new: (a, b) => b.uploaded_at.localeCompare(a.uploaded_at),
   old: (a, b) => a.uploaded_at.localeCompare(b.uploaded_at),
@@ -57,28 +66,28 @@ function StorageMeter({ o }: { o: FilesOverview }) {
   const byKind = new Map<string, number>();
   for (const t of s.by_type) byKind.set(kindOf(t.ext), (byKind.get(kindOf(t.ext)) ?? 0) + t.bytes);
   const parts = [
-    ...[...byKind.entries()].map(([k, b]) => ({ key: k, label: KIND[k].label, color: KIND[k].color, bytes: b })),
-    { key: "pages", label: "ภาพหน้าเอกสารและผลการตรวจ", color: "var(--ft-pages)", bytes: s.pages },
-    { key: "others", label: "Engagement อื่นในสำนักงาน", color: "var(--ft-others)", bytes: s.others },
-    { key: "overhead", label: "ระบบฐานข้อมูล", color: "var(--ft-overhead)", bytes: s.overhead },
+    ...[...byKind.entries()].map(([k, b]) => ({ key: k, label: KIND_LABEL[k], color: KIND[k].color, bytes: b })),
+    { key: "pages", label: t("ภาพหน้าเอกสารและผลการตรวจ", "Page images and results"), color: "var(--ft-pages)", bytes: s.pages },
+    { key: "others", label: t("Engagement อื่นในสำนักงาน", "Other engagements in the firm"), color: "var(--ft-others)", bytes: s.others },
+    { key: "overhead", label: t("ระบบฐานข้อมูล", "Database"), color: "var(--ft-overhead)", bytes: s.overhead },
   ].filter((p) => p.bytes > 0);
   const pct = (n: number) => Math.min(100, (n / s.quota) * 100);
   const used = pct(s.used);
   const level = used >= 90 ? "bad" : used >= 75 ? "warn" : "";
   return (
-    <section className="group-body storage" aria-label="พื้นที่จัดเก็บ">
+    <section className="group-body storage" aria-label={t("พื้นที่จัดเก็บ", "Storage")}>
       <div className="between row">
         <div>
           <p className="storage-big">
-            ใช้ไป <strong>{bytes(s.used)}</strong> <span className="muted">จาก {bytes(s.quota)}</span>
+            {t("ใช้ไป", "Used")} <strong>{bytes(s.used)}</strong> <span className="muted">{t("จาก", "of")} {bytes(s.quota)}</span>
           </p>
           <p className="muted small">
-            ไฟล์ของคุณ {o.files.length} ไฟล์ · {bytes(s.files)} · เข้ารหัสแยกต่อ Engagement
+            {t(`ไฟล์ของคุณ ${o.files.length} ไฟล์`, `Your files: ${o.files.length}`)} · {bytes(s.files)} · {t("เข้ารหัสแยกต่อ Engagement", "Encrypted per engagement")}
           </p>
         </div>
         <span className={`pill ${level}`}>{used < 0.1 && s.used > 0 ? "<0.1" : used.toFixed(used < 10 ? 1 : 0)}%</span>
       </div>
-      <div className="storage-bar" role="meter" aria-valuemin={0} aria-valuemax={s.quota} aria-valuenow={s.used} aria-label="พื้นที่ที่ใช้">
+      <div className="storage-bar" role="meter" aria-valuemin={0} aria-valuemax={s.quota} aria-valuenow={s.used} aria-label={t("พื้นที่ที่ใช้", "Storage used")}>
         {parts.map((p) => (
           <span key={p.key} style={{ width: `${pct(p.bytes)}%`, background: p.color }} title={`${p.label} ${bytes(p.bytes)}`} />
         ))}
@@ -92,10 +101,10 @@ function StorageMeter({ o }: { o: FilesOverview }) {
         ))}
         <li>
           <span className="ft-dot free" aria-hidden />
-          ว่าง <span className="muted">{bytes(Math.max(0, s.quota - s.used))}</span>
+          {t("ว่าง", "Free")} <span className="muted">{bytes(Math.max(0, s.quota - s.used))}</span>
         </li>
       </ul>
-      {level && <p className="small error">พื้นที่ใกล้เต็ม ลบไฟล์ที่ไม่ใช้แล้ว หรือปิดงานที่เสร็จแล้วเพื่อให้ระบบลบไฟล์ดิบตามนโยบาย</p>}
+      {level && <p className="small error">{t("พื้นที่ใกล้เต็ม ลบไฟล์ที่ไม่ใช้แล้ว หรือปิดงานที่เสร็จแล้วเพื่อให้ระบบลบไฟล์ดิบตามนโยบาย", "Storage is nearly full. Delete files you no longer need, or close finished engagements so raw files are removed under the retention policy.")}</p>}
     </section>
   );
 }
@@ -145,7 +154,7 @@ export default function Files({ engagement }: { engagement?: string }) {
     if (ext && !exts.some(([x]) => x === ext)) setExt("");
   }, [ext, exts]);
 
-  if (!o) return <p className="empty">{error ?? "กำลังโหลด…"}</p>;
+  if (!o) return <p className="empty">{error ?? t("กำลังโหลด…", "Loading…")}</p>;
 
   const canDelete = (f: ManagedFile) => !!engOf.get(f.engagement_id)?.can_delete;
   const chosen = shown.filter((f) => picked.has(f.id));
@@ -164,9 +173,16 @@ export default function Files({ engagement }: { engagement?: string }) {
     if (!ok.length) return;
     const used = ok.filter((f) => f.in_latest_run).length;
     const msg =
-      (ok.length === 1 ? `ลบ ${ok[0].name}?` : `ลบ ${ok.length} ไฟล์ (${bytes(ok.reduce((n, f) => n + f.size, 0))})?`) +
-      (used ? `\n\n${used} ไฟล์ถูกใช้ในผลการตรวจล่าสุด ผลการตรวจและภาพหน้าเอกสารยังเปิดดูได้ แต่การประมวลผลรอบถัดไปจะไม่มีไฟล์นี้` : "") +
-      "\n\nการลบบันทึกไว้ในบันทึกการใช้งานของ Engagement และกู้คืนไม่ได้";
+      (ok.length === 1
+        ? t(`ลบ ${ok[0].name}?`, `Delete ${ok[0].name}?`)
+        : t(`ลบ ${ok.length} ไฟล์ (${bytes(ok.reduce((n, f) => n + f.size, 0))})?`, `Delete ${ok.length} files (${bytes(ok.reduce((n, f) => n + f.size, 0))})?`)) +
+      (used
+        ? t(
+            `\n\n${used} ไฟล์ถูกใช้ในผลการตรวจล่าสุด ผลการตรวจและภาพหน้าเอกสารยังเปิดดูได้ แต่การประมวลผลรอบถัดไปจะไม่มีไฟล์นี้`,
+            `\n\n${used} of these files are in the latest results. The results and page images stay viewable, but the next run will not have the file.`,
+          )
+        : "") +
+      t("\n\nการลบบันทึกไว้ในบันทึกการใช้งานของ Engagement และกู้คืนไม่ได้", "\n\nThe deletion is recorded in the engagement's usage log and cannot be undone.");
     if (!confirm(msg)) return;
     setBusy(true);
     setError(null);
@@ -174,13 +190,13 @@ export default function Files({ engagement }: { engagement?: string }) {
     let done = 0;
     try {
       for (const f of ok) {
-        setNote(`กำลังลบ ${done + 1}/${ok.length}: ${f.name}`);
+        setNote(t(`กำลังลบ ${done + 1}/${ok.length}: ${f.name}`, `Deleting ${done + 1}/${ok.length}: ${f.name}`));
         await api(`api/engagements/${f.engagement_id}/files/${f.id}/delete`, { method: "POST" });
         done++;
       }
-      setNote(`ลบแล้ว ${done} ไฟล์`);
+      setNote(t(`ลบแล้ว ${done} ไฟล์`, `Deleted ${done} files`));
     } catch (x) {
-      setError(`ลบได้ ${done} จาก ${ok.length} ไฟล์: ${(x as Error).message}`);
+      setError(t(`ลบได้ ${done} จาก ${ok.length} ไฟล์: ${(x as Error).message}`, `Deleted ${done} of ${ok.length} files: ${(x as Error).message}`));
     } finally {
       setPicked(new Set());
       setBusy(false);
@@ -206,12 +222,17 @@ export default function Files({ engagement }: { engagement?: string }) {
   return (
     <div className="files-page">
       <a className="back" href={current ? `#/e/${current.id}` : "#/"}>
-        ‹ {current ? current.client : "Engagement ทั้งหมด"}
+        ‹ {current ? current.client : t("Engagement ทั้งหมด", "All engagements")}
       </a>
       <div className="between page-head">
         <div>
-          <h2>จัดการไฟล์</h2>
-          <p className="muted small">ไฟล์ดิบของทุก Engagement ที่คุณอยู่ในทีม · ไฟล์ดิบถูกลบอัตโนมัติหลังปิดงานตามนโยบาย กระดาษทำการและ Audit Trail เก็บไว้</p>
+          <h2>{t("จัดการไฟล์", "Files")}</h2>
+          <p className="muted small">
+            {t(
+              "ไฟล์ดิบของทุก Engagement ที่คุณอยู่ในทีม · ไฟล์ดิบถูกลบอัตโนมัติหลังปิดงานตามนโยบาย กระดาษทำการและ Audit Trail เก็บไว้",
+              "Raw files of every engagement you are on · Raw files are deleted automatically after closing under the retention policy; the working paper and Audit Trail are kept",
+            )}
+          </p>
         </div>
       </div>
 
@@ -225,37 +246,37 @@ export default function Files({ engagement }: { engagement?: string }) {
       {note && !error && <p className="small muted">{note}</p>}
 
       <div className="files-toolbar">
-        <input className="search" type="search" placeholder="ค้นหาชื่อไฟล์" value={q} onChange={(e) => setQ(e.target.value)} aria-label="ค้นหาชื่อไฟล์" />
+        <input className="search" type="search" placeholder={t("ค้นหาชื่อไฟล์", "Search file names")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("ค้นหาชื่อไฟล์", "Search file names")} />
         <select value={eng} onChange={(e) => setEng(e.target.value)} aria-label="Engagement">
-          <option value="">ทุก Engagement ({o.engagements.length})</option>
+          <option value="">{t("ทุก Engagement", "All engagements")} ({o.engagements.length})</option>
           {o.engagements.map((e) => (
             <option key={e.id} value={e.id}>
               {e.client}
               {e.period ? ` · ${e.period}` : ""}
-              {e.status === "closed" ? " (ปิดแล้ว)" : ""}
+              {e.status === "closed" ? t(" (ปิดแล้ว)", " (closed)") : ""}
             </option>
           ))}
         </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="เรียงตาม">
-          {SORTS.map(([k, v]) => (
+        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={t("เรียงตาม", "Sort by")}>
+          {(Object.keys(SORT_LABEL) as Sort[]).map((k) => (
             <option key={k} value={k}>
-              {v}
+              {SORT_LABEL[k]}
             </option>
           ))}
         </select>
-        <div className="segmented" role="radiogroup" aria-label="มุมมอง">
+        <div className="segmented" role="radiogroup" aria-label={t("มุมมอง", "View")}>
           <button role="radio" aria-checked={view === "list"} onClick={() => setView("list")}>
-            รายการ
+            {t("รายการ", "List")}
           </button>
           <button role="radio" aria-checked={view === "grid"} onClick={() => setView("grid")}>
-            ไอคอน
+            {t("ไอคอน", "Icons")}
           </button>
         </div>
       </div>
 
-      <div className="ext-chips" role="radiogroup" aria-label="ประเภทไฟล์">
+      <div className="ext-chips" role="radiogroup" aria-label={t("ประเภทไฟล์", "File type")}>
         <button role="radio" aria-checked={!ext} className="chip" onClick={() => setExt("")}>
-          ทั้งหมด <span className="count">{inEng.length}</span>
+          {t("ทั้งหมด", "All")} <span className="count">{inEng.length}</span>
         </button>
         {exts.map(([x, v]) => (
           <button key={x} role="radio" aria-checked={ext === x} className="chip" onClick={() => setExt(x)} title={bytes(v.bytes)}>
@@ -265,26 +286,26 @@ export default function Files({ engagement }: { engagement?: string }) {
       </div>
 
       {chosen.length > 0 && (
-        <div className="bulk-bar" role="toolbar" aria-label="ไฟล์ที่เลือก">
+        <div className="bulk-bar" role="toolbar" aria-label={t("ไฟล์ที่เลือก", "Selected files")}>
           <span>
-            เลือก {chosen.length} ไฟล์ · {bytes(chosen.reduce((n, f) => n + f.size, 0))}
+            {t(`เลือก ${chosen.length} ไฟล์`, `${chosen.length} selected`)} · {bytes(chosen.reduce((n, f) => n + f.size, 0))}
           </span>
           <div className="row">
             <button className="btn" disabled={busy} onClick={() => downloadAll(chosen)}>
-              ดาวน์โหลด
+              {t("ดาวน์โหลด", "Download")}
             </button>
             <button className="btn destructive" disabled={busy || !chosen.some(canDelete)} onClick={() => remove(chosen)}>
-              ลบ{chosen.some((f) => !canDelete(f)) ? ` (${chosen.filter(canDelete).length})` : ""}
+              {t("ลบ", "Delete")}{chosen.some((f) => !canDelete(f)) ? ` (${chosen.filter(canDelete).length})` : ""}
             </button>
             <button className="link small" onClick={() => setPicked(new Set())}>
-              ยกเลิกการเลือก
+              {t("ยกเลิกการเลือก", "Clear selection")}
             </button>
           </div>
         </div>
       )}
 
       {shown.length === 0 ? (
-        <p className="group-body muted">{inEng.length ? "ไม่พบไฟล์ที่ตรงกับตัวกรอง" : o.engagements.length ? "ยังไม่มีไฟล์ อัปโหลดได้ที่หน้า Engagement" : "ยังไม่มี Engagement ที่คุณอยู่ในทีม"}</p>
+        <p className="group-body muted">{inEng.length ? t("ไม่พบไฟล์ที่ตรงกับตัวกรอง", "No files match the filter") : o.engagements.length ? t("ยังไม่มีไฟล์ อัปโหลดได้ที่หน้า Engagement", "No files yet. Upload them on the engagement page.") : t("ยังไม่มี Engagement ที่คุณอยู่ในทีม", "You are not on any engagement team yet")}</p>
       ) : view === "list" ? (
         <div className="group-body files-list">
           <table className="fields">
@@ -294,14 +315,14 @@ export default function Files({ engagement }: { engagement?: string }) {
                   <input
                     type="checkbox"
                     checked={allPicked}
-                    aria-label="เลือกทั้งหมด"
+                    aria-label={t("เลือกทั้งหมด", "Select all")}
                     onChange={() => setPicked(allPicked ? new Set() : new Set(shown.map((f) => f.id)))}
                   />
                 </th>
-                <th>ชื่อ</th>
+                <th>{t("ชื่อ", "Name")}</th>
                 {!eng && <th className="hide-narrow">Engagement</th>}
-                <th className="num">ขนาด</th>
-                <th className="hide-narrow">อัปโหลด</th>
+                <th className="num">{t("ขนาด", "Size")}</th>
+                <th className="hide-narrow">{t("อัปโหลด", "Uploaded")}</th>
                 <th />
               </tr>
             </thead>
@@ -309,7 +330,7 @@ export default function Files({ engagement }: { engagement?: string }) {
               {shown.map((f) => (
                 <tr key={f.id} className={picked.has(f.id) ? "picked" : ""}>
                   <td className="pick">
-                    <input type="checkbox" checked={picked.has(f.id)} onChange={() => toggle(f.id)} aria-label={`เลือก ${f.name}`} />
+                    <input type="checkbox" checked={picked.has(f.id)} onChange={() => toggle(f.id)} aria-label={t(`เลือก ${f.name}`, `Select ${f.name}`)} />
                   </td>
                   <td>
                     <div className="file-name">
@@ -318,7 +339,7 @@ export default function Files({ engagement }: { engagement?: string }) {
                         <a href={href(f)} title={`SHA-256 ${f.sha256}`}>
                           {f.name}
                         </a>
-                        {f.in_latest_run && <span className="pill ok small-pill">ใช้ในผลล่าสุด</span>}
+                        {f.in_latest_run && <span className="pill ok small-pill">{t("ใช้ในผลล่าสุด", "In latest results")}</span>}
                         {eng ? null : <div className="muted small show-narrow">{engName(f)}</div>}
                       </div>
                     </div>
@@ -337,7 +358,7 @@ export default function Files({ engagement }: { engagement?: string }) {
                   <td className="actions">
                     {canDelete(f) && (
                       <button className="link destructive small" disabled={busy} onClick={() => remove([f])}>
-                        ลบ
+                        {t("ลบ", "Delete")}
                       </button>
                     )}
                   </td>
@@ -351,7 +372,7 @@ export default function Files({ engagement }: { engagement?: string }) {
           {shown.map((f) => (
             <li key={f.id} className={picked.has(f.id) ? "picked" : ""}>
               <label className="grid-pick">
-                <input type="checkbox" checked={picked.has(f.id)} onChange={() => toggle(f.id)} aria-label={`เลือก ${f.name}`} />
+                <input type="checkbox" checked={picked.has(f.id)} onChange={() => toggle(f.id)} aria-label={t(`เลือก ${f.name}`, `Select ${f.name}`)} />
               </label>
               <a href={href(f)} className="grid-tile" title={`${f.name} · ${bytes(f.size)}`}>
                 <span className="grid-icon" style={{ background: KIND[kindOf(f.ext)].color }}>
@@ -368,7 +389,10 @@ export default function Files({ engagement }: { engagement?: string }) {
         </ul>
       )}
       <p className="muted small files-foot">
-        ลบได้เฉพาะ Engagement ที่ยังเปิดอยู่ · ทุกการดาวน์โหลดและลบถูกบันทึกในบันทึกการใช้งานของ Engagement
+        {t(
+          "ลบได้เฉพาะ Engagement ที่ยังเปิดอยู่ · ทุกการดาวน์โหลดและลบถูกบันทึกในบันทึกการใช้งานของ Engagement",
+          "Files can be deleted only while the engagement is open · Every download and delete is recorded in the engagement's usage log",
+        )}
       </p>
     </div>
   );

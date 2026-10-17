@@ -1,5 +1,6 @@
 import type { ConflictMap, Decision, Flag, Risk } from "../types";
 import { RISK_ORDER, TYPE_LABEL, fieldLabel } from "../labels";
+import { bi, locale, t } from "../i18n";
 
 // One model feeds both the printable report (PDF) and the Excel workbook, so the two never disagree.
 
@@ -36,20 +37,20 @@ export interface Report {
   reviewers: string[];
 }
 
-const STATE_LABEL: Record<FlagState, string> = {
-  open: "ยังไม่พิจารณา",
-  prepared: "จัดทำแล้ว รอสอบทาน",
-  reviewed: "สอบทานแล้ว",
-};
+const STATE_LABEL = bi<FlagState>({
+  open: ["ยังไม่พิจารณา", "Not yet considered"],
+  prepared: ["จัดทำแล้ว รอสอบทาน", "Prepared, awaiting review"],
+  reviewed: ["สอบทานแล้ว", "Reviewed"],
+});
 
 export const verdictLabel = (d?: Decision) =>
-  !d ? "-" : d.verdict === "issue" ? "เป็นประเด็น" : "ไม่เป็นประเด็น";
+  !d ? "-" : d.verdict === "issue" ? t("เป็นประเด็น", "Issue") : t("ไม่เป็นประเด็น", "Not an issue");
 
 export const evidenceRef = (e: Flag["evidence"][number]) =>
   `${e.doc} · ${fieldLabel(e.field)}: “${e.quote}” (${e.file}, ${e.locator})`;
 
 export const when = (iso?: string) =>
-  iso ? new Date(iso).toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) : "-";
+  iso ? new Date(iso).toLocaleString(locale(), { dateStyle: "medium", timeStyle: "short" }) : "-";
 
 const uniq = (xs: (string | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))].sort();
 
@@ -88,7 +89,10 @@ export function buildReport(data: ConflictMap, decisions: Record<string, Decisio
 
   return {
     audience,
-    title: audience === "client" ? "รายงานประเด็นจากการตรวจสอบ" : "สรุปกระดาษทำการ: รายการที่ควรตรวจ",
+    title:
+      audience === "client"
+        ? t("รายงานประเด็นจากการตรวจสอบ", "Audit findings report")
+        : t("สรุปกระดาษทำการ: รายการที่ควรตรวจ", "Working paper summary: items to check"),
     client: data.engagement.client,
     runId: data.run_id,
     synthetic: data.engagement.synthetic,

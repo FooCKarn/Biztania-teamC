@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, ROLE_LABEL, when, type Engagement } from "../api";
+import { t } from "../i18n";
+import Loading from "../components/Loading";
 
 interface List {
   engagements: Engagement[];
@@ -31,14 +33,14 @@ export default function Engagements() {
     }
   };
 
-  if (!list) return <p className="empty">{error ?? "กำลังโหลด…"}</p>;
+  if (!list) return error ? <p className="empty error">{error}</p> : <Loading />;
   return (
     <div>
       <div className="between page-head">
-        <h2>Engagement ของฉัน</h2>
+        <h2>{t("Engagement ของฉัน", "My engagements")}</h2>
         {list.can_create && (
           <button className="btn filled" onClick={() => setCreating(!creating)}>
-            {creating ? "ยกเลิก" : "สร้าง Engagement"}
+            {creating ? t("ยกเลิก", "Cancel") : t("สร้าง Engagement", "New engagement")}
           </button>
         )}
       </div>
@@ -50,14 +52,14 @@ export default function Engagements() {
 
       {creating && (
         <form className="group-body form" onSubmit={create}>
-          <h3>Engagement ใหม่</h3>
+          <h3>{t("Engagement ใหม่", "New engagement")}</h3>
           <label className="form-field">
-            <span>ชื่อลูกค้า</span>
+            <span>{t("ชื่อลูกค้า", "Client name")}</span>
             <input value={f.client} onChange={(e) => setF({ ...f, client: e.target.value })} required minLength={2} maxLength={120} />
           </label>
           <label className="form-field">
-            <span>งวดที่ตรวจ</span>
-            <input value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} placeholder="เช่น ปี 2026" maxLength={40} />
+            <span>{t("งวดที่ตรวจ", "Period")}</span>
+            <input value={f.period} onChange={(e) => setF({ ...f, period: e.target.value })} placeholder={t("เช่น ปี 2026", "e.g. FY2026")} maxLength={40} />
           </label>
           <div className="row">
             <label className="form-field">
@@ -76,20 +78,33 @@ export default function Engagements() {
               disabled={!list.real_data_allowed}
               onChange={(e) => setF({ ...f, synthetic: e.target.checked })}
             />
-            ข้อมูลสมมติ (synthetic)
+            {t("ข้อมูลสมมติ (synthetic)", "Synthetic data")}
           </label>
           {!list.real_data_allowed && (
-            <p className="muted small">ระบบยังรับเฉพาะข้อมูลสมมติ จนกว่าจะเปลี่ยนผู้ให้บริการ AI ตามสัญญาข้อมูล (ALLOW_REAL_DATA)</p>
+            <p className="muted small">
+              {t(
+                "ระบบยังรับเฉพาะข้อมูลสมมติ จนกว่าจะเปลี่ยนผู้ให้บริการ AI ตามสัญญาข้อมูล (ALLOW_REAL_DATA)",
+                "Only synthetic data is accepted until the AI provider is switched under a data agreement (ALLOW_REAL_DATA).",
+              )}
+            </p>
           )}
-          <p className="muted small">คุณจะเป็น Manager ของ Engagement นี้ แล้วเพิ่มทีมได้ในหน้าถัดไป</p>
-          <button className="btn filled">สร้าง</button>
+          <p className="muted small">
+            {t("คุณจะเป็น Manager ของ Engagement นี้ แล้วเพิ่มทีมได้ในหน้าถัดไป", "You will be this engagement's manager and can add the team on the next page.")}
+          </p>
+          <button className="btn filled">{t("สร้าง", "Create")}</button>
         </form>
       )}
 
       {list.engagements.length === 0 ? (
-        <p className="muted pad">
-          ยังไม่มี Engagement ที่คุณอยู่ในทีม {list.can_create ? "กด สร้าง Engagement เพื่อเริ่ม" : "ให้ Manager เพิ่มคุณเข้าทีม"}
-        </p>
+        <div className="empty-state">
+          <span className="empty-icon" aria-hidden>
+            ▤
+          </span>
+          <strong>{t("ยังไม่มี Engagement ที่คุณอยู่ในทีม", "You are not on any engagement yet")}</strong>
+          <p className="muted small">
+            {list.can_create ? t("กด สร้าง Engagement เพื่อเริ่ม", "Press New engagement to start.") : t("ให้ Manager เพิ่มคุณเข้าทีม", "Ask a manager to add you to a team.")}
+          </p>
+        </div>
       ) : (
         <div className="group-body list">
           {list.engagements.map((e) => (
@@ -97,13 +112,14 @@ export default function Engagements() {
               <div>
                 <strong>{e.client}</strong>
                 <p className="muted small">
-                  {e.period ? `${e.period} · ` : ""}สร้าง {when(e.created_at)}
-                  {e.synthetic && " · ข้อมูลสมมติ"}
+                  {e.period ? `${e.period} · ` : ""}
+                  {t("สร้าง", "Created")} {when(e.created_at)}
+                  {e.synthetic && ` · ${t("ข้อมูลสมมติ", "Synthetic")}`}
                 </p>
               </div>
               <div className="row">
                 <span className="pill">{ROLE_LABEL[e.my_role]}</span>
-                <span className={"pill " + (e.status === "open" ? "ok" : "")}>{e.status === "open" ? "เปิดอยู่" : "ปิดแล้ว"}</span>
+                <span className={"pill " + (e.status === "open" ? "ok" : "")}>{e.status === "open" ? t("เปิดอยู่", "Open") : t("ปิดแล้ว", "Closed")}</span>
                 <span className="chev" aria-hidden>
                   ›
                 </span>

@@ -1,5 +1,6 @@
 import type { ConflictMap } from "../types";
-import { KIND_LABEL, baht, fieldLabel } from "../labels";
+import { KIND_LABEL, RISK_LABEL, baht, fieldLabel } from "../labels";
+import { t as tr } from "../i18n";
 import { when, type Report } from "./model";
 import { zip } from "./xlsx";
 
@@ -96,64 +97,67 @@ export function reportBody(report: Report, data: ConflictMap): string {
   const t = report.totals;
   const out: string[] = [];
 
-  out.push(para([["AI Audit Concierge · กระดาษทำการ", { color: "6E6E73", size: 18 }]]));
+  out.push(para([[tr("AI Audit Concierge · กระดาษทำการ", "AI Audit Concierge · Working paper"), { color: "6E6E73", size: 18 }]]));
   out.push(h(report.title, 1));
   out.push(para([[report.client, { bold: true }]]));
   out.push(
     muted(
-      `Run ${report.runId} · จัดทำรายงาน ${when(report.generatedAt)} · Materiality ${baht(report.materiality)} · Tolerance ${report.tolerancePct}%`,
+      `Run ${report.runId} · ${tr("จัดทำรายงาน", "Generated")} ${when(report.generatedAt)} · Materiality ${baht(report.materiality)} · Tolerance ${report.tolerancePct}%`,
     ),
   );
-  if (report.synthetic) out.push(para([["ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", { bold: true, color: "C93400" }]]));
+  if (report.synthetic) out.push(para([[tr("ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "Synthetic data, no real client data"), { bold: true, color: "C93400" }]]));
 
   out.push(
     table(
       [
-        { header: "การลงนาม", width: 2400 },
-        { header: "ชื่อ", width: 4000 },
+        { header: tr("การลงนาม", "Sign-off"), width: 2400 },
+        { header: tr("ชื่อ", "Name"), width: 4000 },
       ],
       [
-        ["จัดทำโดย", report.preparers.join(", ")],
-        ["สอบทานโดย", report.reviewers.join(", ")],
-        ["อนุมัติ (Manager)", ""],
+        [tr("จัดทำโดย", "Prepared by"), report.preparers.join(", ")],
+        [tr("สอบทานโดย", "Reviewed by"), report.reviewers.join(", ")],
+        [tr("อนุมัติ (Manager)", "Approved (Manager)"), ""],
       ],
       { headerCol: true },
     ),
   );
 
   out.push(
-    para([["ระบบชี้จุดที่ควรตรวจพร้อมหลักฐานจากเอกสารต้นฉบับ ข้อสรุปทุกข้อเป็นดุลยพินิจของผู้สอบบัญชี ไม่ใช่การตัดสินของระบบ", { italic: true }]]),
+    para([[tr("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐานจากเอกสารต้นฉบับ ข้อสรุปทุกข้อเป็นดุลยพินิจของผู้สอบบัญชี ไม่ใช่การตัดสินของระบบ", "The system points out what to check, with evidence from the source documents. Every conclusion is the auditor's professional judgment, not the system's."), { italic: true }]]),
   );
 
-  out.push(h("สรุป", 2));
+  out.push(h(tr("สรุป", "Summary"), 2));
   const num = (c: string): Col => ({ header: c, width: 1500, align: "right" });
   const summaryRows: string[][] = [
-    [client ? "ประเด็นที่พบ" : "รายการที่ควรตรวจ", ...report.byRisk.map((r) => String(r.total)), String(t.flags)],
+    [client ? tr("ประเด็นที่พบ", "Issues found") : tr("รายการที่ควรตรวจ", "Items to check"), ...report.byRisk.map((r) => String(r.total)), String(t.flags)],
     ...(client
       ? []
       : [
-          ["สอบทานแล้ว", ...report.byRisk.map((r) => String(r.reviewed)), String(t.reviewed)],
-          ["สรุปว่าเป็นประเด็น", ...report.byRisk.map((r) => String(r.issues)), String(t.issues)],
+          [tr("สอบทานแล้ว", "Reviewed"), ...report.byRisk.map((r) => String(r.reviewed)), String(t.reviewed)],
+          [tr("สรุปว่าเป็นประเด็น", "Concluded as issue"), ...report.byRisk.map((r) => String(r.issues)), String(t.issues)],
         ]),
-    ["ยอดที่เกี่ยวข้อง", ...report.byRisk.map((r) => baht(r.atStake)), baht(report.byRisk.reduce((s, r) => s + r.atStake, 0))],
+    [tr("ยอดที่เกี่ยวข้อง", "Amount at stake"), ...report.byRisk.map((r) => baht(r.atStake)), baht(report.byRisk.reduce((s, r) => s + r.atStake, 0))],
   ];
-  out.push(table([{ header: "", width: 3138 }, ...report.byRisk.map((r) => num(r.risk)), num("รวม")], summaryRows, { headerCol: true }));
+  out.push(table([{ header: "", width: 3138 }, ...report.byRisk.map((r) => num(RISK_LABEL[r.risk])), num(tr("รวม", "Total"))], summaryRows, { headerCol: true }));
   if (!client)
     out.push(
       muted(
-        `จัดทำแล้ว ${t.prepared}/${t.flags} · สอบทานแล้ว ${t.reviewed}/${t.flags} · ไม่เป็นประเด็น ${t.notIssues} · รอจับคู่ ${t.pending} (ยังไม่นำไปตรวจ)`,
+        tr(
+          `จัดทำแล้ว ${t.prepared}/${t.flags} · สอบทานแล้ว ${t.reviewed}/${t.flags} · ไม่เป็นประเด็น ${t.notIssues} · รอจับคู่ ${t.pending} (ยังไม่นำไปตรวจ)`,
+          `Prepared ${t.prepared}/${t.flags} · Reviewed ${t.reviewed}/${t.flags} · Not an issue ${t.notIssues} · Unmatched ${t.pending} (not yet checked)`,
+        ),
       ),
     );
 
-  out.push(h(client ? "ประเด็นและเอกสารอ้างอิง" : "รายการที่ควรตรวจ", 2));
+  out.push(h(client ? tr("ประเด็นและเอกสารอ้างอิง", "Issues and supporting documents") : tr("รายการที่ควรตรวจ", "Items to check"), 2));
   if (report.flags.length === 0)
-    out.push(muted(client ? "ยังไม่มีรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น" : "ไม่มีรายการที่ควรตรวจ"));
+    out.push(muted(client ? tr("ยังไม่มีรายการที่ผู้สอบทานลงนามแล้วว่าเป็นประเด็น", "No items signed off by the reviewer as issues yet") : tr("ไม่มีรายการที่ควรตรวจ", "No items to check")));
   for (const r of report.flags) {
     out.push(
       para(
         [
           [`${r.ref}  `, { bold: true, color: "6E6E73" }],
-          [`[${r.flag.risk}]  `, { bold: true, color: RISK_COLOR[r.flag.risk] }],
+          [`[${RISK_LABEL[r.flag.risk]}]  `, { bold: true, color: RISK_COLOR[r.flag.risk] }],
           [`${r.typeLabel} · `, { color: "6E6E73" }],
           [r.flag.title, { bold: true }],
           ...(r.flag.at_stake_thb != null ? [[`  ${baht(r.flag.at_stake_thb)}`, { bold: true }] as Inline] : []),
@@ -177,7 +181,7 @@ export function reportBody(report: Report, data: ConflictMap): string {
     );
     if (client) {
       if (r.flag.questions.length) {
-        out.push(para([["ขอคำชี้แจง", { bold: true }]], { keepNext: true }));
+        out.push(para([[tr("ขอคำชี้แจง", "Please explain"), { bold: true }]], { keepNext: true }));
         for (const q of r.flag.questions) out.push(para(`•\t${q}`, { hanging: true }));
       }
     } else {
@@ -188,9 +192,9 @@ export function reportBody(report: Report, data: ConflictMap): string {
             { header: "", width: 7238 },
           ],
           [
-            ["ผลการพิจารณา", `${r.decision ? r.verdictLabel : r.stateLabel}${r.decision?.reason ? ` · ${r.decision.reason}` : ""}`],
-            ["ผู้จัดทำ", r.decision ? `${r.decision.by ?? "-"} · ${when(r.decision.at)}` : "-"],
-            ["ผู้สอบทาน", r.decision?.review ? `${r.decision.review.by} · ${when(r.decision.review.at)}` : "-"],
+            [tr("ผลการพิจารณา", "Conclusion"), `${r.decision ? r.verdictLabel : r.stateLabel}${r.decision?.reason ? ` · ${r.decision.reason}` : ""}`],
+            [tr("ผู้จัดทำ", "Preparer"), r.decision ? `${r.decision.by ?? "-"} · ${when(r.decision.at)}` : "-"],
+            [tr("ผู้สอบทาน", "Reviewer"), r.decision?.review ? `${r.decision.review.by} · ${when(r.decision.review.at)}` : "-"],
           ],
           { headerCol: true, noHeader: true },
         ),
@@ -199,14 +203,14 @@ export function reportBody(report: Report, data: ConflictMap): string {
   }
 
   if (!client && data.pending.length > 0) {
-    out.push(h("รอจับคู่ (ยังไม่นำไปตรวจ)", 2));
+    out.push(h(tr("รอจับคู่ (ยังไม่นำไปตรวจ)", "Unmatched (not yet checked)"), 2));
     out.push(
       table(
         [
-          { header: "เอกสาร", width: 1700 },
-          { header: "ประเภท", width: 1400 },
-          { header: "เหตุผล", width: 4238 },
-          { header: "ตัวเลือก", width: 2300 },
+          { header: tr("เอกสาร", "Document"), width: 1700 },
+          { header: tr("ประเภท", "Type"), width: 1400 },
+          { header: tr("เหตุผล", "Reason"), width: 4238 },
+          { header: tr("ตัวเลือก", "Candidates"), width: 2300 },
         ],
         data.pending.map((p) => [p.doc, KIND_LABEL[p.kind], p.why, p.candidates.join(", ")]),
       ),
@@ -214,10 +218,13 @@ export function reportBody(report: Report, data: ConflictMap): string {
   }
 
   if (!client) {
-    out.push(h("ขอบเขตข้อมูล", 2));
+    out.push(h(tr("ขอบเขตข้อมูล", "Data coverage"), 2));
     out.push(
       muted(
-        `อ่าน ${data.coverage.files} ไฟล์ · ${data.documents.length} เอกสาร · ${data.transactions.length} ธุรกรรม · ไฟล์อ่านไม่ได้ ${data.coverage.unreadable_files.length} · ช่องอ่านไม่ชัด ${data.coverage.unclear_fields.length} (ไม่ใช้ยกประเด็น)`,
+        tr(
+          `อ่าน ${data.coverage.files} ไฟล์ · ${data.documents.length} เอกสาร · ${data.transactions.length} ธุรกรรม · ไฟล์อ่านไม่ได้ ${data.coverage.unreadable_files.length} · ช่องอ่านไม่ชัด ${data.coverage.unclear_fields.length} (ไม่ใช้ยกประเด็น)`,
+          `Read ${data.coverage.files} files · ${data.documents.length} documents · ${data.transactions.length} transactions · Unreadable files ${data.coverage.unreadable_files.length} · Unclear fields ${data.coverage.unclear_fields.length} (never used to raise a flag)`,
+        ),
       ),
     );
   }
@@ -240,8 +247,8 @@ const STYLES = `${XML}<w:styles ${NS}>
 
 export function buildDocx(report: Report, data: ConflictMap): Uint8Array {
   const footer = `${XML}<w:ftr ${NS}><w:p><w:pPr><w:pStyle w:val="Footer"/><w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs></w:pPr>${run(
-    `${report.client} · Run ${report.runId} · เลขบัญชีธนาคารแสดงแบบปิดบัง · ข้อมูลลับ`,
-  )}<w:r><w:tab/><w:t xml:space="preserve">หน้า </w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
+    `${report.client} · Run ${report.runId} · ${tr("เลขบัญชีธนาคารแสดงแบบปิดบัง · ข้อมูลลับ", "Bank accounts shown masked · Confidential")}`,
+  )}<w:r><w:tab/><w:t xml:space="preserve">${tr("หน้า", "Page")} </w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
 
   // A4, 2 cm margins.
   const docXml = `${XML}<w:document ${NS}><w:body>${reportBody(report, data)}<w:sectPr><w:footerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;

@@ -1,5 +1,6 @@
 import type { Doc, Flag, Transaction } from "../types";
-import { KIND_LABEL, KIND_ORDER, TYPE_LABEL, baht } from "../labels";
+import { KIND_LABEL, KIND_ORDER, TYPE_LABEL, baht, fieldLabel } from "../labels";
+import { t } from "../i18n";
 
 interface Props {
   txn: Transaction;
@@ -30,7 +31,7 @@ const amountOf = (d: Doc) => {
 };
 
 const shortId = (id: string) =>
-  id.replace(/^BANK-(\d{4}-\d{2}-\d{2}).*/, "โอน $1").replace(" (อ่านเลขที่ไม่ชัด)", "");
+  id.replace(/^BANK-(\d{4}-\d{2}-\d{2}).*/, t("โอน $1", "Paid $1")).replace(" (อ่านเลขที่ไม่ชัด)", "");
 
 // PO → GR → Invoice → Payment laid out left to right; documents that a flag pulls in from
 // outside the chain (contract, vendor master, a second copy) go in an extra column.
@@ -70,7 +71,7 @@ export default function TxnChain({ txn, docs, flags, highlight, selectedDoc, onS
         viewBox={`${-pad} ${-pad} ${width + 2 * pad} ${height + 2 * pad}`}
         width={compact ? undefined : width + 2 * pad}
         role="img"
-        aria-label={`แผนที่ธุรกรรม ${txn.id}`}
+        aria-label={`${t("แผนที่ธุรกรรม", "Transaction map")} ${txn.id}`}
       >
         {edges.map((e, i) => {
           const p = pos.get(e.a);
@@ -89,8 +90,8 @@ export default function TxnChain({ txn, docs, flags, highlight, selectedDoc, onS
             <g key={i} className={"edge " + (e.bad ? "bad" : "good") + (e.inferred ? " inferred" : "")}>
               <path d={d}>
                 <title>
-                  {e.label}: {e.bad ? "ไม่ตรงกัน" : "ตรงกัน"}
-                  {e.inferred ? " (จับคู่โดยอนุมาน)" : ""}
+                  {fieldLabel(e.label)}: {e.bad ? t("ไม่ตรงกัน", "mismatch") : t("ตรงกัน", "match")}
+                  {e.inferred ? ` (${t("จับคู่โดยอนุมาน", "inferred match")})` : ""}
                 </title>
               </path>
               {!compact && e.bad && (
@@ -123,8 +124,8 @@ export default function TxnChain({ txn, docs, flags, highlight, selectedDoc, onS
               <rect width={W} height={H} rx={10} />
               <text x={10} y={18} className="n-kind">
                 {KIND_LABEL[d.kind]}
-                {d.format === "scan" ? " · สแกน" : ""}
-                {unclear ? " · อ่านไม่ชัด" : ""}
+                {d.format === "scan" ? ` · ${t("สแกน", "scan")}` : ""}
+                {unclear ? ` · ${t("อ่านไม่ชัด", "unclear")}` : ""}
               </text>
               <text x={10} y={35} className="n-id">
                 {shortId(id).slice(0, 22)}
@@ -138,7 +139,8 @@ export default function TxnChain({ txn, docs, flags, highlight, selectedDoc, onS
       </svg>
       {!compact && (
         <p className="legend muted small">
-          <span className="lg good" /> ตรงกัน <span className="lg bad" /> ไม่ตรงกัน <span className="lg inferred" /> จับคู่โดยอนุมาน · คลิกเอกสารเพื่อดูข้อมูลที่อ่านได้
+          <span className="lg good" /> {t("ตรงกัน", "Match")} <span className="lg bad" /> {t("ไม่ตรงกัน", "Mismatch")} <span className="lg inferred" />{" "}
+          {t("จับคู่โดยอนุมาน", "Inferred match")} · {t("คลิกเอกสารเพื่อดูข้อมูลที่อ่านได้", "Click a document to see what was read")}
         </p>
       )}
     </div>

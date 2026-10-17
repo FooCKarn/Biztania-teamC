@@ -1,5 +1,6 @@
 import type { ConflictMap } from "../types";
-import { MATCH_LABEL, KIND_LABEL, fieldLabel } from "../labels";
+import { MATCH_LABEL, KIND_LABEL, RISK_LABEL, RISK_ORDER, fieldLabel } from "../labels";
+import { locale, t as tr } from "../i18n";
 import { buildXlsx, type Sheet } from "./xlsx";
 import { when, type Report } from "./model";
 
@@ -8,71 +9,69 @@ import { when, type Report } from "./model";
 export function reportSheets(report: Report, data: ConflictMap): Sheet[] {
   const head = [
     report.title,
-    `ลูกค้า: ${report.client}`,
-    `Run: ${report.runId} · จัดทำรายงาน: ${when(report.generatedAt)} · Materiality ${report.materiality.toLocaleString("th-TH")} ฿ · Tolerance ${report.tolerancePct}%`,
-    ...(report.synthetic ? ["ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง"] : []),
-    "ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน",
+    `${tr("ลูกค้า", "Client")}: ${report.client}`,
+    `Run: ${report.runId} · ${tr("จัดทำรายงาน", "Generated")}: ${when(report.generatedAt)} · Materiality ${report.materiality.toLocaleString(locale())} ฿ · Tolerance ${report.tolerancePct}%`,
+    ...(report.synthetic ? [tr("ข้อมูลสมมติ (synthetic) ไม่มีข้อมูลลูกค้าจริง", "Synthetic data, no real client data")] : []),
+    tr("ระบบชี้จุดที่ควรตรวจพร้อมหลักฐาน ผู้สอบบัญชีเป็นผู้ตัดสิน", "The system points out what to check, with evidence. The auditor decides."),
   ];
   const client = report.audience === "client";
   const t = report.totals;
 
   const lead: Sheet = {
-    name: "สรุป",
+    name: tr("สรุป", "Summary"),
     preamble: head,
     columns: [
-      { header: "รายการ", width: 34 },
-      { header: "สูง", width: 14 },
-      { header: "กลาง", width: 14 },
-      { header: "ต่ำ", width: 14 },
-      { header: "รวม", width: 16 },
+      { header: tr("รายการ", "Item"), width: 34 },
+      ...RISK_ORDER.map((r) => ({ header: RISK_LABEL[r], width: 14 })),
+      { header: tr("รวม", "Total"), width: 16 },
     ],
     rows: [
-      [client ? "ประเด็นที่พบ" : "รายการที่ควรตรวจ", ...report.byRisk.map((r) => r.total), t.flags],
+      [client ? tr("ประเด็นที่พบ", "Issues found") : tr("รายการที่ควรตรวจ", "Items to check"), ...report.byRisk.map((r) => r.total), t.flags],
       ...(client
         ? []
         : [
-            ["สอบทานแล้ว", ...report.byRisk.map((r) => r.reviewed), t.reviewed],
-            ["สรุปว่าเป็นประเด็น", ...report.byRisk.map((r) => r.issues), t.issues],
+            [tr("สอบทานแล้ว", "Reviewed"), ...report.byRisk.map((r) => r.reviewed), t.reviewed],
+            [tr("สรุปว่าเป็นประเด็น", "Concluded as issue"), ...report.byRisk.map((r) => r.issues), t.issues],
           ]),
-      ["ยอดที่เกี่ยวข้อง (บาท)", ...report.byRisk.map((r) => r.atStake), report.byRisk.reduce((s, r) => s + r.atStake, 0)],
+      [tr("ยอดที่เกี่ยวข้อง (บาท)", "Amount at stake (THB)"), ...report.byRisk.map((r) => r.atStake), report.byRisk.reduce((s, r) => s + r.atStake, 0)],
       ...(client
         ? []
         : [
-            ["จัดทำแล้ว", "", "", "", t.prepared],
-            ["สรุปว่าไม่เป็นประเด็น", "", "", "", t.notIssues],
-            ["รอจับคู่ (ยังไม่นำไปตรวจ)", "", "", "", t.pending],
-            ["ผู้จัดทำ", "", "", "", report.preparers.join(", ") || "-"],
-            ["ผู้สอบทาน", "", "", "", report.reviewers.join(", ") || "-"],
+            [tr("จัดทำแล้ว", "Prepared"), "", "", "", t.prepared],
+            [tr("สรุปว่าไม่เป็นประเด็น", "Concluded not an issue"), "", "", "", t.notIssues],
+            [tr("รอจับคู่ (ยังไม่นำไปตรวจ)", "Unmatched (not yet checked)"), "", "", "", t.pending],
+            [tr("ผู้จัดทำ", "Preparer"), "", "", "", report.preparers.join(", ") || "-"],
+            [tr("ผู้สอบทาน", "Reviewer"), "", "", "", report.reviewers.join(", ") || "-"],
           ]),
     ],
   };
 
   const schedule: Sheet = {
-    name: client ? "ประเด็น" : "รายการควรตรวจ",
+    name: client ? tr("ประเด็น", "Issues") : tr("รายการควรตรวจ", "To check"),
     preamble: head.slice(0, 2),
     columns: [
-      { header: "อ้างอิง", width: 9 },
-      { header: "ความเสี่ยง", width: 10 },
-      { header: "ประเภท", width: 18 },
-      { header: "ประเด็น", width: 34 },
-      { header: "รายละเอียด", width: 60 },
-      { header: "ยอดที่เกี่ยวข้อง (บาท)", width: 16, money: true },
-      { header: "เอกสาร", width: 24 },
+      { header: tr("อ้างอิง", "Ref"), width: 9 },
+      { header: tr("ความเสี่ยง", "Risk"), width: 10 },
+      { header: tr("ประเภท", "Type"), width: 18 },
+      { header: tr("ประเด็น", "Issues"), width: 34 },
+      { header: tr("รายละเอียด", "Details"), width: 60 },
+      { header: tr("ยอดที่เกี่ยวข้อง (บาท)", "Amount at stake (THB)"), width: 16, money: true },
+      { header: tr("เอกสาร", "Document"), width: 24 },
       ...(client
-        ? [{ header: "คำถามที่ขอคำชี้แจง", width: 50 }]
+        ? [{ header: tr("คำถามที่ขอคำชี้แจง", "Questions for the client"), width: 50 }]
         : [
-            { header: "สถานะ", width: 18 },
-            { header: "ผลการพิจารณา", width: 14 },
-            { header: "เหตุผล", width: 44 },
-            { header: "ผู้จัดทำ", width: 9 },
-            { header: "วันที่จัดทำ", width: 18 },
-            { header: "ผู้สอบทาน", width: 9 },
-            { header: "วันที่สอบทาน", width: 18 },
+            { header: tr("สถานะ", "Status"), width: 18 },
+            { header: tr("ผลการพิจารณา", "Conclusion"), width: 14 },
+            { header: tr("เหตุผล", "Reason"), width: 44 },
+            { header: tr("ผู้จัดทำ", "Preparer"), width: 9 },
+            { header: tr("วันที่จัดทำ", "Prepared on"), width: 18 },
+            { header: tr("ผู้สอบทาน", "Reviewer"), width: 9 },
+            { header: tr("วันที่สอบทาน", "Reviewed on"), width: 18 },
           ]),
     ],
     rows: report.flags.map((r) => [
       r.ref,
-      r.flag.risk,
+      RISK_LABEL[r.flag.risk],
       r.typeLabel,
       r.flag.title,
       r.flag.summary,
@@ -93,16 +92,16 @@ export function reportSheets(report: Report, data: ConflictMap): Sheet[] {
   };
 
   const evidence: Sheet = {
-    name: "หลักฐาน",
+    name: tr("หลักฐาน", "Evidence"),
     preamble: head.slice(0, 2),
     columns: [
-      { header: "อ้างอิง", width: 9 },
-      { header: "เอกสาร", width: 16 },
-      { header: "ไฟล์", width: 24 },
-      { header: "ตำแหน่ง", width: 18 },
-      { header: "ช่อง", width: 22 },
-      { header: "ค่า", width: 24 },
-      { header: "ข้อความต้นฉบับ", width: 70 },
+      { header: tr("อ้างอิง", "Ref"), width: 9 },
+      { header: tr("เอกสาร", "Document"), width: 16 },
+      { header: tr("ไฟล์", "File"), width: 24 },
+      { header: tr("ตำแหน่ง", "Location"), width: 18 },
+      { header: tr("ช่อง", "Field"), width: 22 },
+      { header: tr("ค่า", "Value"), width: 24 },
+      { header: tr("ข้อความต้นฉบับ", "Source text"), width: 70 },
     ],
     rows: report.flags.flatMap((r) =>
       r.flag.evidence.map((e) => [r.ref, e.doc, e.file, e.locator, fieldLabel(e.field), e.value, e.quote]),
@@ -112,32 +111,32 @@ export function reportSheets(report: Report, data: ConflictMap): Sheet[] {
   if (client) return [lead, schedule, evidence];
 
   const pending: Sheet = {
-    name: "รอจับคู่",
+    name: tr("รอจับคู่", "Unmatched"),
     preamble: head.slice(0, 2),
     columns: [
-      { header: "เอกสาร", width: 16 },
-      { header: "ประเภท", width: 12 },
-      { header: "เหตุผล", width: 60 },
-      { header: "ตัวเลือก", width: 30 },
+      { header: tr("เอกสาร", "Document"), width: 16 },
+      { header: tr("ประเภท", "Type"), width: 12 },
+      { header: tr("เหตุผล", "Reason"), width: 60 },
+      { header: tr("ตัวเลือก", "Candidates"), width: 30 },
     ],
     rows: data.pending.map((p) => [p.doc, KIND_LABEL[p.kind], p.why, p.candidates.join(", ")]),
   };
 
   const files: Sheet = {
-    name: "ไฟล์",
+    name: tr("ไฟล์", "File"),
     preamble: head.slice(0, 2),
     columns: [
-      { header: "ไฟล์", width: 30 },
-      { header: "อ่านได้", width: 10 },
+      { header: tr("ไฟล์", "File"), width: 30 },
+      { header: tr("อ่านได้", "Readable"), width: 10 },
       { header: "SHA-256", width: 70 },
-      { header: "เอกสาร", width: 30 },
-      { header: "การจับคู่", width: 22 },
+      { header: tr("เอกสาร", "Document"), width: 30 },
+      { header: tr("การจับคู่", "Matching"), width: 22 },
     ],
     rows: data.files.map((f) => {
       const docs = data.documents.filter((d) => d.file === f.file);
       return [
         f.file,
-        f.read ? "อ่านแล้ว" : "อ่านไม่ได้",
+        f.read ? tr("อ่านแล้ว", "Read") : tr("อ่านไม่ได้", "Unreadable"),
         f.sha256 ?? "",
         docs.map((d) => d.id).join(", "),
         [...new Set(docs.map((d) => (d.link ? MATCH_LABEL[d.link.level] : "")).filter(Boolean))].join(", "),

@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Workspace from "./Workspace";
 import { DEMO, engagementSource, type Source } from "./source";
-import { api, type User, type EngagementDetail } from "./api";
+import { api, ROLE_LABEL, type User, type EngagementDetail } from "./api";
 import Login, { ChangePassword } from "./pages/Login";
 import Engagements from "./pages/Engagements";
 import EngagementPage from "./pages/EngagementPage";
 import Users from "./pages/Users";
 import Files from "./pages/Files";
+import { LangToggle, t, useLang } from "./i18n";
+import Loading from "./components/Loading";
 
 // Hash routes, so the static build works on any host:
 //   #/demo                 public demo (synthetic sample, no login)
@@ -34,11 +36,7 @@ const Back = ({ to, label }: { to: string; label: string }) => (
   </a>
 );
 
-const DEMO_ROLES = [
-  ["preparer", "ผู้จัดทำ"],
-  ["reviewer", "ผู้สอบทาน"],
-  ["manager", "Manager"],
-] as const;
+const DEMO_ROLES = ["preparer", "reviewer", "manager"] as const;
 
 // Shown for the shared demo accounts (DEMO_MODE): synthetic data only, switch role (a review needs someone
 // other than the preparer), and wipe the demo engagement.
@@ -63,7 +61,15 @@ function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
       location.hash = "/";
     });
   const reset = () => {
-    if (!confirm("รีเซ็ตเดโม: ลบไฟล์และผลการตรวจของ Engagement เดโมทั้งหมดแล้วเริ่มใหม่ ทุกคนที่ใช้เดโมร่วมกันจะเห็นผลนี้ ต้องการดำเนินการต่อหรือไม่?")) return;
+    if (
+      !confirm(
+        t(
+          "รีเซ็ตเดโม: ลบไฟล์และผลการตรวจของ Engagement เดโมทั้งหมดแล้วเริ่มใหม่ ทุกคนที่ใช้เดโมร่วมกันจะเห็นผลนี้ ต้องการดำเนินการต่อหรือไม่?",
+          "Reset the demo: delete every file and result in the demo engagement and start over. Everyone sharing the demo will see this. Continue?",
+        ),
+      )
+    )
+      return;
     return run(async () => {
       const r = await api<{ engagement: { id: string } }>("api/auth/demo-reset", { method: "POST" });
       location.hash = `/e/${r.engagement.id}`;
@@ -71,17 +77,25 @@ function DemoBanner({ user, onChange }: { user: User; onChange: () => void }) {
   };
   const current = user.initials === "DP" ? "preparer" : user.initials === "DR" ? "reviewer" : "manager";
   return (
-    <div className="banner" role="status">
-      <strong>โหมดเดโม</strong> · ข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง ทุกคนที่เข้าเดโมใช้ Engagement เดียวกัน
-      <div className="row" style={{ marginTop: 8 }}>
-        <span className="muted small">สลับบทบาท:</span>
-        {DEMO_ROLES.map(([r, label]) => (
-          <button key={r} className={`btn${r === current ? " filled" : ""}`} disabled={busy || r === current} onClick={() => switchTo(r)}>
-            {label}
-          </button>
-        ))}
+    <div className="banner demo-banner" role="status">
+      <p>
+        <strong>{t("โหมดเดโม", "Demo mode")}</strong> ·{" "}
+        {t(
+          "ข้อมูลสมมติเท่านั้น ห้ามอัปโหลดเอกสารจริง ทุกคนที่เข้าเดโมใช้ Engagement เดียวกัน",
+          "Synthetic data only, never upload real documents. Everyone in the demo shares one engagement.",
+        )}
+      </p>
+      <div className="row">
+        <span className="muted small">{t("สลับบทบาท", "Switch role")}</span>
+        <div className="segmented small-seg" role="radiogroup" aria-label={t("บทบาท", "Role")}>
+          {DEMO_ROLES.map((r) => (
+            <button key={r} role="radio" aria-checked={r === current} disabled={busy} onClick={() => r !== current && switchTo(r)}>
+              {ROLE_LABEL[r]}
+            </button>
+          ))}
+        </div>
         <button className="btn" disabled={busy} onClick={reset}>
-          รีเซ็ตเดโม
+          {t("รีเซ็ตเดโม", "Reset demo")}
         </button>
       </div>
       {error && (
@@ -99,7 +113,7 @@ function EngagementReview({ id }: { id: string }) {
   useEffect(() => {
     api<EngagementDetail>(`api/engagements/${id}`)
       .then((d) => {
-        if (!d.current_run) return setError("ยังไม่มีผลการตรวจ ให้อัปโหลดเอกสารแล้วกดประมวลผลก่อน");
+        if (!d.current_run) return setError(t("ยังไม่มีผลการตรวจ ให้อัปโหลดเอกสารแล้วกดประมวลผลก่อน", "No results yet. Upload documents and run processing first."));
         setSrc(engagementSource(id, d.current_run, d.engagement));
       })
       .catch((e) => setError(e.message));
@@ -111,11 +125,12 @@ function EngagementReview({ id }: { id: string }) {
         <p className="empty">{error}</p>
       </div>
     );
-  if (!src) return <div className="empty">กำลังโหลด…</div>;
+  if (!src) return <Loading />;
   return <Workspace source={src} back={<Back to={`#/e/${id}`} label="Engagement" />} />;
 }
 
 export default function App() {
+  useLang(); // re-render everything when the language changes
   const hash = useHash();
   const [me, setMe] = useState<Me>({ state: "loading" });
   const refresh = useCallback(() => {
@@ -130,8 +145,8 @@ export default function App() {
   useEffect(refresh, [refresh]);
 
   // The public demo needs no account; old shared links (?ws=…) still open it.
-  if (hash === "/demo" || new URLSearchParams(location.search).has("ws")) return <Workspace source={DEMO} back={<Back to="#/" label="หน้าหลัก" />} />;
-  if (me.state === "loading") return <div className="empty">กำลังโหลด…</div>;
+  if (hash === "/demo" || new URLSearchParams(location.search).has("ws")) return <Workspace source={DEMO} back={<Back to="#/" label={t("หน้าหลัก", "Home")} />} />;
+  if (me.state === "loading") return <Loading />;
   if (me.state === "no-server") return <Workspace source={DEMO} />; // static hosting: demo only
   if (me.state === "out") return <Login setupNeeded={me.setupNeeded} demoMode={me.demoMode} onDone={refresh} />;
 
@@ -148,35 +163,42 @@ export default function App() {
     refresh();
   };
   const bar = (
-    <div className="topbar">
+    <header className="topbar">
       <a className="brand-link" href="#/">
         <span className="app-icon" aria-hidden>
           ✓
         </span>
-        AI Audit Concierge
+        <span className="brand-name">AI Audit Concierge</span>
       </a>
-      <div className="row">
-        <span className="muted small">
-          {user.name} ({user.initials})
-        </span>
-        <a className="btn" href="#/files">
-          ไฟล์
+      <nav className="topnav" aria-label={t("เมนู", "Menu")}>
+        <a href="#/" aria-current={hash === "/" || hash.startsWith("/e/") ? "page" : undefined}>
+          Engagement
+        </a>
+        <a href="#/files" aria-current={hash.startsWith("/files") ? "page" : undefined}>
+          {t("ไฟล์", "Files")}
         </a>
         {user.firm_role === "admin" && (
-          <a className="btn" href="#/users">
-            ผู้ใช้
+          <a href="#/users" aria-current={hash === "/users" ? "page" : undefined}>
+            {t("ผู้ใช้", "Users")}
           </a>
         )}
         {!user.demo && (
-          <a className="btn" href="#/account">
-            รหัสผ่าน
+          <a href="#/account" aria-current={hash === "/account" ? "page" : undefined}>
+            {t("รหัสผ่าน", "Password")}
           </a>
         )}
+      </nav>
+      <div className="row topbar-end">
+        <LangToggle />
+        <span className="avatar" title={user.name} aria-hidden>
+          {user.initials}
+        </span>
+        <span className="who small">{user.name}</span>
         <button className="btn" onClick={logout}>
-          ออกจากระบบ
+          {t("ออกจากระบบ", "Sign out")}
         </button>
       </div>
-    </div>
+    </header>
   );
 
   const review = hash.match(/^\/e\/([a-f0-9]{12})\/review$/);
