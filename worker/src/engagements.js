@@ -527,12 +527,21 @@ export async function handleInternal(request, env, path) {
     }
     if (!/^[a-f0-9]{12}$/.test(map.run_id || "") || !Array.isArray(map.flags)) throw new HttpError(400, "ผลการตรวจไม่ครบ");
     await putBlob(env, eid, outKey(eid, map.run_id, "conflict_map.json"), body, "application/json; charset=utf-8");
-    const summary = { flags: map.flags.length, pending: (map.pending || []).length, documents: (map.documents || []).length, unreadable: (map.coverage?.unreadable_files || []).length };
+    const why = map.coverage?.unreadable_reasons || {};
+    const summary = {
+      flags: map.flags.length,
+      pending: (map.pending || []).length,
+      documents: (map.documents || []).length,
+      unreadable: (map.coverage?.unreadable_files || []).length,
+      // per file, so the engagement page can tell processed files from new uploads
+      files: (map.files || []).slice(0, 200).map((f) => ({ name: String(f.file).slice(0, 120), sha256: f.sha256 || null, read: !!f.read, reason: f.read ? null : String(why[f.file] || "").slice(0, 200) || null })),
+    };
     await db
       .prepare("UPDATE runs SET status = 'done', finished_at = ?1, result_run_id = ?2, summary = ?3 WHERE id = ?4")
       .bind(nowIso(), map.run_id, JSON.stringify(summary), runId)
       .run();
-    await log(env, eid, "SYSTEM", "run_done", { run: runId, result: map.run_id, ...summary });
+    const { files: _files, ...counts } = summary;
+    await log(env, eid, "SYSTEM", "run_done", { run: runId, result: map.run_id, ...counts });
     return json({ ok: true });
   }
   // fail

@@ -77,7 +77,7 @@ export interface Run {
   started_at: string;
   finished_at: string | null;
   result_run_id: string | null;
-  summary: { flags: number; pending: number; documents: number; unreadable: number } | null;
+  summary: { flags: number; pending: number; documents: number; unreadable: number; files?: { name: string; sha256: string | null; read: boolean; reason: string | null }[] } | null;
   error: string | null;
   files: number;
   progress: RunProgress | null;
